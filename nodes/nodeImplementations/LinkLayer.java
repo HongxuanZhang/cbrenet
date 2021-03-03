@@ -23,6 +23,10 @@ public abstract class LinkLayer extends MessageQueueLayer{
 
     HashMap<Integer, PriorityQueue<LinkMessage>> unsatisfiedLinkMessage;
 
+    // StatusChangedMessage必须按照顺序执行！ TODO
+
+
+
     private int receivedStatusChangedId = 0; // record the statusId has been received
 
     public void init(){
@@ -114,16 +118,49 @@ public abstract class LinkLayer extends MessageQueueLayer{
 
         }
         else if(msg instanceof LargeInsertMessage){
-            if(this.largeFlag){
-               Tools.fatalError("When a largeInsertMessage received by a node, the node has been changed into a large " +
-                       "node.");
-                return;
-            }
+            // Here should be the node which is specified in the LargeInsertMessage
+
             LargeInsertMessage insertMessage = (LargeInsertMessage) msg;
             int parentId = insertMessage.getLeafId();
             int largeNodeId = insertMessage.getLargeId();
+
+            boolean addLinkFlag = true;
+
+            if(this.largeFlag){
+               Tools.warning("When a largeInsertMessage received by a node, the node has been changed into a large " +
+                       "node.");
+               addLinkFlag = false;
+            }
+
+            if(this.isNodeSmall(largeNodeId)){
+                // This node has got the message that the Large node has been changed into small.
+                Tools.warning("The large node of the ego tree has been changed to small! The LargeInsertMessage " +
+                        "won't execute in the target node!!");
+                addLinkFlag = false;
+            }
+
+            if(!addLinkFlag){
+                Node parentNode = Tools.getNodeByID(parentId);
+                assert parentNode != null;
+
+                // Remove the link, this node don't want to be a part of ego-tree for some reason.
+                parentNode.outgoingConnections.remove(parentNode, this);
+                return;
+            }
+
+            // The node still want to be a node of the ego-tree
             this.setParent(largeNodeId, parentId);
             this.addConnectionTo(Tools.getNodeByID(parentId));
+
+            // add CP
+            this.addCommunicationPartner(largeNodeId);
+
+            // set inserted bit in the insertMessage
+            insertMessage.setInserted();
+
+            this.sendDirect(insertMessage, Tools.getNodeByID(this.getSDNId()));
+
+
         }
         else if(msg instanceof StatusChangedMessage){
             StatusChangedMessage statusChangedMessage = (StatusChangedMessage) msg;
@@ -139,14 +176,16 @@ public abstract class LinkLayer extends MessageQueueLayer{
             this.receivedStatusChangedId = Math.max(this.receivedStatusChangedId, statusTmp);
 
             if(changeId == this.ID){
-                if(smallFlag){
-                    //large -> small all link will be cleared
-                    this.clearPartners(smallFlag);
-                }
-                else{
-                    // small -> large all link will also be cleared
-                    // but we need to reserve the information about small partner to create tree
-                    this.clearPartners(smallFlag);
+                this.clearPartners(smallFlag);
+                if(!smallFlag){
+                    // small -> large, The DRM must sent ASAP!
+                    for(int largeId : this.getCommunicateLargeNodes().keySet()){
+                        // int src, int dst, boolean ego_tree, int wantToDeleteId
+                        DeleteRequestMessage drm = new DeleteRequestMessage(this.ID, largeId, true, this.ID);
+
+                        // in following method, the corresponding CP would be removed immediately!
+                        this.sendEgoTreeMessage(largeId,largeId,drm);
+                    }
                 }
             }
             else{
@@ -169,6 +208,9 @@ public abstract class LinkLayer extends MessageQueueLayer{
             }
 
             // execute the satisfied link message
+
+            //todo 除了LinkMessage,别的也可能存在这种情况啊
+
             if(this.unsatisfiedLinkMessage.keySet().size() != 0){
                 ArrayList<Integer> statusIdList = new ArrayList<Integer>(unsatisfiedLinkMessage.keySet());
                 Collections.sort(statusIdList); // 升序

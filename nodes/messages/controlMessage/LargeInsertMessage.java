@@ -20,6 +20,7 @@ public class LargeInsertMessage extends Message {
 
     private int leafId; // This will be the parent of the target.
 
+    private boolean inserted; // set inserted when this message is received by the target
 
 
     public LargeInsertMessage(int target, int largeID){
@@ -46,5 +47,13 @@ public class LargeInsertMessage extends Message {
     @Override
     public Message clone() {
         return this;
+    }
+
+    public boolean isInserted() {
+        return inserted;
+    }
+
+    public void setInserted() {
+        this.inserted = true;
     }
 }

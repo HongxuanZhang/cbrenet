@@ -33,10 +33,11 @@ public class CbRenetMessage extends NetworkMessage implements Comparable<CbRenet
         this.routing = 0;
     }
 
-    public CbRenetMessage(int src, int dst) {
+    public CbRenetMessage(int src, int dst, double priority) {
         super(src, dst);
         this.largeIdFlag = false;
         this.largeId = -1;
+        this.priority = priority;
 
         this.init();
     }
@@ -51,7 +52,8 @@ public class CbRenetMessage extends NetworkMessage implements Comparable<CbRenet
 
     }
 
-    public CbRenetMessage(int src, int dst, boolean largeIdFlag, int largeId, double priority, boolean upForward){
+    public CbRenetMessage(int src, int dst, boolean largeIdFlag, int largeId, double priority,
+                          boolean upForward){
         super(src, dst);
         this.largeIdFlag = largeIdFlag;
         this.largeId = largeId;

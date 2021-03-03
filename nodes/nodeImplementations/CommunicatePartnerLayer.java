@@ -7,6 +7,8 @@ import projects.cbrenet.nodes.messages.SDNMessage.RequestMessage;
 import sinalgo.configuration.Configuration;
 import sinalgo.tools.Tools;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 
 public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
@@ -16,10 +18,50 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
     int parac;
 
 
-
-    // todo 极低优先级 access order
+    // todo 极低优先级 true access order
     private LinkedHashMap<Integer, Integer> smallNodes;
     private LinkedHashMap<Integer, Integer> largeNodes;
+
+    private HashMap<Integer, Boolean> egoTreeDeleteMap;
+
+    public HashMap<Integer, Boolean> getEgoTreeDeleteMap() {
+        return egoTreeDeleteMap;
+    }
+
+    private HashSet<Integer> unPreparedDeleteNode; //  only use in this Layer. only use to check whether all node
+    // are prepared
+
+    public void addEgoTreeNodeToDeleteMap(int smallNodeId){
+        /**
+         *@description Called it when receive LargeInsertMessage(inserted)
+         *@parameters  [smallNodeId]
+         *@return  void
+         *@author  Zhang Hongxuan
+         *@create time  2021/3/3
+         */
+        if(this.egoTreeDeleteMap.containsKey(smallNodeId)){
+            Tools.warning("Need to add small node id to " + this.ID + "'s ego-tree, but it already store in the egoTreeDeleteMap, " +
+                    " please check whether it has been cleared last time!");
+            return;
+        }
+        this.egoTreeDeleteMap.put(smallNodeId, false);
+        this.unPreparedDeleteNode.add(smallNodeId);
+    }
+
+    public void nodeInEgoTreeArePreparedToDelete(int smallNodeId){
+        if(this.egoTreeDeleteMap.containsKey(smallNodeId)){
+            this.egoTreeDeleteMap.put(smallNodeId, true);
+            this.unPreparedDeleteNode.remove(smallNodeId);
+        }
+        else{
+            Tools.warning("The " + smallNodeId + " node are prepared to delete in the ego tree of " + this.ID + "" +
+                    ", but it not contains in the egoTreeDeleteMap!");
+        }
+    }
+
+    public boolean checkWhetherAllNodePrepareToDelete(){
+        return this.unPreparedDeleteNode.isEmpty() && !this.egoTreeDeleteMap.keySet().isEmpty();
+    }
 
 
     @Override
@@ -35,6 +77,8 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
         }
         this.smallNodes = new LinkedHashMap<>(parac,0.75f,true);
         this.largeNodes = new LinkedHashMap<>(parac,0.75f, true);
+        this.egoTreeDeleteMap = new HashMap<>();
+        this.unPreparedDeleteNode = new HashSet<>();
     }
 
 
@@ -70,22 +114,29 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
         }
     }
 
-    public void clearPartners(boolean mode)
+    public void clearPartners(boolean changeToSmall)
     {
         /**
          *@description
-         *@parameters  [mode] :  related to delete which partner, equal to the smallStatus message 's small flag
+         *@parameters  [changeToSmall] :  related to delete which partner, equal to the smallStatus message 's small flag
          *             T : means the node would be changed from large to small, all partners should be deleted
          *             F : means the node would be large, so only delete the large partners
          *@return  void
          *@author  Zhang Hongxuan
          *@create time  2021/2/21
          */
-        this.largeNodes.clear();
-        if(mode){
+        if(changeToSmall){
+            // from large change to small
+            this.largeNodes.clear();
             this.smallNodes.clear();
         }
+        else{
+            // from small change to large
+            this.smallNodes.clear();
 
+            // not clear largeNodes since DeleteRequestMessage has to sent after this.
+            // remove large CP when DeleteRequestMessage sent. (In MessageQueueLayer)
+        }
     }
 
     // TODO 这两可能没啥用
