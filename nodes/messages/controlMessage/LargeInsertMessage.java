@@ -20,7 +20,7 @@ public class LargeInsertMessage extends Message {
 
     private int leafId; // This will be the parent of the target.
 
-    private boolean inserted; // set inserted when this message is received by the target
+    private boolean inserted = false; // set inserted when this message is received by the target
 
 
     public LargeInsertMessage(int target, int largeID){

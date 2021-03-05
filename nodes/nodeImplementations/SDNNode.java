@@ -1,9 +1,7 @@
 package projects.cbrenet.nodes.nodeImplementations;
 
-import projects.cbrenet.nodes.messages.SDNMessage.LinkMessage;
-import projects.cbrenet.nodes.messages.SDNMessage.RPCSdnMessage;
-import projects.cbrenet.nodes.messages.SDNMessage.RequestMessage;
-import projects.cbrenet.nodes.messages.SDNMessage.StatusChangedMessage;
+import projects.cbrenet.nodes.messages.SDNMessage.*;
+import projects.cbrenet.nodes.messages.controlMessage.DeleteEgoTreeRequestMessage;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteRequestMessage;
 import projects.cbrenet.nodes.messages.controlMessage.LargeInsertMessage;
 import projects.cbrenet.nodes.tableEntry.Request;
@@ -296,14 +294,47 @@ public class SDNNode extends Node {
             else if(message instanceof DeleteRequestMessage){
                 DeleteRequestMessage deleteRequestMessage = (DeleteRequestMessage) message;
                 if(deleteRequestMessage.isEgo_tree()){
+                    // ready to delete
+                    int wantToDeleteId = deleteRequestMessage.getWantToDeleteId();
+                    int largeId = deleteRequestMessage.getDst();
+
+                    // send DeleteMessage not allFlag to the wantToDelete ego-tree node
+                    //int dst, int largeId
+                    DeleteMessage deleteMessage = new DeleteMessage(wantToDeleteId, largeId);
+                    this.sendDirect(deleteMessage, Tools.getNodeByID(wantToDeleteId));
 
                 }
                 else{
-                    // not prepared to delete
+                    // not prepared to delete, should send to LN to tell LN remove CP
                     int dst = deleteRequestMessage.getDst(); // which is the large node
 
                 }
             }
+            else if(message instanceof LargeInsertMessage){
+                // checked!
+                LargeInsertMessage largeInsertMessageTmp = (LargeInsertMessage) message;
+
+                int largeNodeId = largeInsertMessageTmp.getLargeId();
+                if(!largeInsertMessageTmp.isInserted())
+                {
+                    Tools.fatalError("The LargeInsertMessage received by SDN node should have inserted bit set!");
+                }
+
+                this.sendDirect(largeInsertMessageTmp, Tools.getNodeByID(largeNodeId));
+            }
+            else if(message instanceof DeleteEgoTreeRequestMessage){
+                DeleteEgoTreeRequestMessage deleteEgoTreeRequestMessage = (DeleteEgoTreeRequestMessage) message;
+                HashSet<Integer> egoTreeNodeIds = deleteEgoTreeRequestMessage.getEgoTreeIds();
+
+                int largeId = deleteEgoTreeRequestMessage.getLargeId();
+                
+                for(int wantToDeleteId : egoTreeNodeIds){
+                    //int dst, boolean allFlag, int largeId
+                    DeleteMessage deleteMessage = new DeleteMessage(wantToDeleteId, true ,largeId);
+                    this.sendDirect(deleteMessage, Tools.getNodeByID(wantToDeleteId));
+                }
+            }
+
         }
     }
 

@@ -5,7 +5,7 @@ import sinalgo.nodes.messages.Message;
 public class DeleteRequestMessage extends Message {
 
     private final int src;
-    private final int dst;
+    private final int dst; // This is also largeId
 
     private boolean ego_tree;
 

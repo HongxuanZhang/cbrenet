@@ -23,7 +23,7 @@ public abstract class LinkLayer extends MessageQueueLayer{
 
     HashMap<Integer, PriorityQueue<LinkMessage>> unsatisfiedLinkMessage;
 
-    // StatusChangedMessage必须按照顺序执行！ TODO
+    // StatusChangedMessage必须按照顺序执行！ TODO　这可能是一个比较复杂度的系统了
 
 
 
@@ -115,7 +115,14 @@ public abstract class LinkLayer extends MessageQueueLayer{
             }
         }
         else if(msg instanceof DeleteMessage){
-
+            // TODO　完善DeleteMessage
+            DeleteMessage deleteMessage = (DeleteMessage) msg;
+            if(deleteMessage.isAllFlag()){
+                // 全删的
+            }
+            else{
+                // 只删自己的
+            }
         }
         else if(msg instanceof LargeInsertMessage){
             // Here should be the node which is specified in the LargeInsertMessage
@@ -189,21 +196,37 @@ public abstract class LinkLayer extends MessageQueueLayer{
                 }
             }
             else{
-                // todo 对于自己的large node 变大，我们还需要尽速发送DeleteRequestMessage 将ego-tree clear掉
                 if(smallFlag){
-                    // TODO send DeleteRequestMessage to the root
+                    // Target node  large -> small
                     if(this.getCommunicateLargeNodes().containsKey(changeId)){
-                        DeleteRequestMessage msgToLargeNode = new DeleteRequestMessage(this.ID, changeId, true, this.ID);
-                        this.sendToParent(changeId, msgToLargeNode);
+                        if(!this.largeFlag) {
+                            // actually this would not be a node of transition status
+                            // since if this node is a transition status node, it would not have a large CP
 
-                        DeleteRequestMessage msgToSDN = new DeleteRequestMessage(this.ID, changeId, false, this.ID);
-                        this.sendDirect(msgToSDN, Tools.getNodeByID(this.getSDNId()));
+                            // status changed node is the ego-tree's large node of this node
+                            // ego-tree-link
+                            DeleteRequestMessage msgToLargeNode = new DeleteRequestMessage(this.ID, changeId, true, this.ID);
+                            this.sendEgoTreeMessage(changeId, changeId, msgToLargeNode);
+
+                            // todo 下面这一段，或许可以删除！
+                            DeleteRequestMessage msgToSDN = new DeleteRequestMessage(this.ID, changeId, false, this.ID);
+                            this.sendDirect(msgToSDN, Tools.getNodeByID(this.getSDNId()));
+                        }
+                        else{
+                            // l-l link
+                            this.removeCommunicationPartner(changeId);
+                        }
                     }
-                    // tODO
-
+                    else{
+                        // not effected by the SCM.
+                        // do nothing here
+                    }
                 }
                 else{
-                    // TODO
+                    // Target node small -> large
+
+                    // no matter this node is small or large, remove CP ASAP
+                    this.removeCommunicationPartner(changeId);
                 }
             }
 

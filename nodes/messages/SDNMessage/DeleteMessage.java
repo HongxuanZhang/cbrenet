@@ -28,6 +28,17 @@ public class DeleteMessage extends Message {
         this.allFlag = allFlag;
     }
 
+    public int getDst() {
+        return dst;
+    }
+
+    public int getLargeId() {
+        return largeId;
+    }
+
+    public boolean isAllFlag() {
+        return allFlag;
+    }
 
     @Override
     public Message clone() {

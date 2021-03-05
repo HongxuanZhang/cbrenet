@@ -22,6 +22,24 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
     private LinkedHashMap<Integer, Integer> smallNodes;
     private LinkedHashMap<Integer, Integer> largeNodes;
 
+
+    // only use this when node is a large node of a ego-tree
+
+    private boolean waitAllDeleteRequestMessage = false;
+
+    public boolean isWaitAllDeleteRequestMessage() {
+        return waitAllDeleteRequestMessage;
+    }
+
+    public void setWaitAllDeleteRequestMessage(){
+        this.waitAllDeleteRequestMessage = true;
+    }
+
+    public void resetWaitAllDeleteRequestMessage(){
+        this.waitAllDeleteRequestMessage = false;
+    }
+
+    // DRM related part
     private HashMap<Integer, Boolean> egoTreeDeleteMap;
 
     public HashMap<Integer, Boolean> getEgoTreeDeleteMap() {
@@ -34,6 +52,7 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
     public void addEgoTreeNodeToDeleteMap(int smallNodeId){
         /**
          *@description Called it when receive LargeInsertMessage(inserted)
+         *              It is ok that if a node's id in the Map but not in the CP
          *@parameters  [smallNodeId]
          *@return  void
          *@author  Zhang Hongxuan
@@ -48,7 +67,39 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
         this.unPreparedDeleteNode.add(smallNodeId);
     }
 
+    public void removeEgoTreeNodeFromDeleteMap(int smallNodeId){
+        /**
+         *@description Call this method when the large node of ego-tree receive DRM
+         *@parameters  [smallNodeId]
+         *@return  void
+         *@author  Zhang Hongxuan
+         *@create time  2021/3/4
+         */
+        if(this.egoTreeDeleteMap.containsKey(smallNodeId)){
+            boolean ableToDelete = this.egoTreeDeleteMap.get(smallNodeId);
+            if(ableToDelete){
+                this.egoTreeDeleteMap.remove(smallNodeId);
+            }
+            else{
+                Tools.fatalError("In removeEgoTreeNodeFromDeleteMap, the " +
+                        "small node " + smallNodeId +" is not prepared to delete");
+            }
+        }
+        else{
+            Tools.fatalError("The small node id " + smallNodeId +" is not in the" +
+                    " removeEgoTreeNodeFromDeleteMap");
+        }
+    }
+
     public void nodeInEgoTreeArePreparedToDelete(int smallNodeId){
+        /**
+         *@description Call when LN receive DRM
+         *@parameters  [smallNodeId]
+         *@return  void
+         *@author  Zhang Hongxuan
+         *@create time  2021/3/4
+         */
+
         if(this.egoTreeDeleteMap.containsKey(smallNodeId)){
             this.egoTreeDeleteMap.put(smallNodeId, true);
             this.unPreparedDeleteNode.remove(smallNodeId);
@@ -63,6 +114,7 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
         return this.unPreparedDeleteNode.isEmpty() && !this.egoTreeDeleteMap.keySet().isEmpty();
     }
 
+    // DRM related part finished
 
     @Override
     public void init() {
@@ -90,7 +142,7 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
             this.largeNodes.remove(id);
         }
         else{
-            Tools.fatalError("Want to remove an non-existing communication partner " + id);
+            Tools.warning("Want to remove an non-existing communication partner " + id);
         }
     }
 

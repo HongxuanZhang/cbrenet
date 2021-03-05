@@ -5,6 +5,7 @@ import projects.cbrenet.nodes.messages.RoutingMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.DeleteMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.LinkMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.StatusChangedMessage;
+import projects.cbrenet.nodes.messages.controlMessage.DeleteEgoTreeRequestMessage;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteRequestMessage;
 import projects.cbrenet.nodes.messages.controlMessage.LargeInsertMessage;
 import sinalgo.configuration.WrongConfigurationException;
@@ -421,6 +422,8 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
                 }
                 else{
                     // not get destination
+
+                    // but effected by the rotation
                     if(rt.getNextHopFlag()){
                         // when nextHop flag is true, we need a special forward
                         rt.resetNextHop();
@@ -499,7 +502,18 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
 
                 if(this.ID == largeId){
                     // Means this node is the large node that receive the LargeInsertMessage from the SDN node
-                    this.sendEgoTreeMessage(this.ID, target, msg);
+                    if(insertMessage.isInserted()){
+                        // means the node has been inserted into the ego-tree
+
+                        this.addEgoTreeNodeToDeleteMap(target);
+                        // first , check whether it is small
+                        if(this.isNodeSmall(target)){
+                            this.addCommunicationPartner(target);
+                        }
+                    }
+                    else {
+                        this.sendEgoTreeMessage(this.ID, target, msg);
+                    }
                 }
                 else if(target == this.ID){
                     this.receiveMessage(msg);
@@ -518,16 +532,37 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
                 DeleteRequestMessage msgTmp = (DeleteRequestMessage) msg;
                 if(msgTmp.getDst() == this.ID){
                     if(!msgTmp.isEgo_tree()){
+                        // todo 这条路径是否有必要保留？？
+                        // sn 因为scm所以会从Ego-tree删除，但是CP也会同时删除，不需要这样一条DRM通知LN删除CP
                         // s_node -> SDN -> L_node
                         this.removeCommunicationPartner(msgTmp.getWantToDeleteId());
                         // Note that: 这个地方或许会被多次执行（即多次删除），因为StatusChangedMessage 也会对此进行修改
                     }
                     else{
                         // s_node -> ego-tree -> L_node
+                        // LN tell SDN the node is prepared to delete!
+                        int deleteId = msgTmp.getWantToDeleteId();
                         DeleteRequestMessage msgToSDN = new DeleteRequestMessage(this.ID, this.getSDNId(),
-                                true, msgTmp.getWantToDeleteId());
-                        // then send to SDN node
-                        this.sendDirect(msgToSDN, Tools.getNodeByID(this.getSDNId()));
+                                true, deleteId);
+
+                        this.nodeInEgoTreeArePreparedToDelete(deleteId);
+
+                        if(this.isWaitAllDeleteRequestMessage()){
+                            if(this.checkWhetherAllNodePrepareToDelete()){
+                                // All node in the ego tree are prepared to delete
+                                DeleteEgoTreeRequestMessage deleteEgoTreeMessage = new DeleteEgoTreeRequestMessage(this.ID,
+                                        new HashSet<Integer>(this.getEgoTreeDeleteMap().keySet()));
+                                this.send(deleteEgoTreeMessage, Tools.getNodeByID(this.getSDNId()));
+                            }
+                            else{
+                                // Continue waiting
+                            }
+                        }
+                        else{
+                            //  then send to SDN node
+                            this.sendDirect(msgToSDN, Tools.getNodeByID(this.getSDNId()));
+                        }
+
                     }
                 }
                 else{
@@ -558,6 +593,7 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
         }
 
         if(this.ID == largeId){
+            // if the sender is LN, it should transfer the rt msg directly to the root of the ego-tree
             this.send(msg, Tools.getNodeByID(this.rootNodeId));
             return;
         }
@@ -624,12 +660,7 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
          *@author  Zhang Hongxuan
          *@create time  2021/2/28
          */
-        if (dst == ID) {
-            this.receiveMessage(msg);
-            return;
-        }
-        RoutingMessage rt = new RoutingMessage(ID, dst, msg, largeId);
-        forwardMessage(largeId, rt);
+
     }
 
 
