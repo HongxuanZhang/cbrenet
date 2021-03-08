@@ -15,6 +15,8 @@ import sinalgo.tools.Tools;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Queue;
 
 public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer implements Comparable<CounterBasedBSTLayer>{
 
@@ -81,6 +83,33 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
     private HashMap<Integer, Integer> leftChildren;
     private HashMap<Integer, Integer> rightChildren;
 
+
+    // The insertMessageExecuteFlags use to direct what to do when receive a LIM.
+    private HashMap<Integer, Boolean> insertMessageExecuteFlags;
+
+    public boolean checkInsertMessageExecuteFlags(int largeId){
+        return this.insertMessageExecuteFlags.getOrDefault(largeId, false);
+    }
+
+    public void addInsertMessageExecuteFlags(int largeId){
+        /**
+         *@description Only use this method when LIM or LinkMessage received by a ego-tree node.
+         *@parameters  [largeId]
+         *@return  void
+         *@author  Zhang Hongxuan
+         *@create time  2021/3/8
+         */
+        this.insertMessageExecuteFlags.put(largeId, true);
+    }
+
+    // Only use for the node in the ego-tree. 目前仅用于建树过程
+    private Queue<RoutingMessage> insertMessageQueue;
+    // Why Routing Message ? We have to satisfy the need of forwarding in LIM.
+
+    private void addLargeInsertMessage(RoutingMessage message){
+        assert message.getPayLoad() instanceof LargeInsertMessage;
+        this.insertMessageQueue.add(message);
+    }
 
 
     private int getCounterBasedBSTLayer(int largeId, HashMap<Integer, Integer> map){
@@ -363,24 +392,31 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
             return true;
         } else {
             Tools.fatalError("Trying to send message through a non-existing connection with parent node");
+            return false;
         }
-        return false;
     }
 
-    public void sendToParent(int largeId, Message msg) {
+    public boolean sendToParent(int largeId, Message msg) {
         if(!sendToNeighbor(largeId,msg,this.parents)){
             if(this.isRoots.getOrDefault(largeId, false)){
                 this.send(msg, Tools.getNodeByID(largeId));
+                return true;
             }
+            else{
+                return false;
+            }
+        }
+        else{
+            return true;
         }
     }
 
-    public void sendToLeftChild(int largeId, Message msg) {
-        sendToNeighbor(largeId,msg,this.leftChildren);
+    public boolean sendToLeftChild(int largeId, Message msg) {
+        return sendToNeighbor(largeId,msg,this.leftChildren);
     }
 
-    public void sendToRightChild(int largeId, Message msg) {
-        sendToNeighbor(largeId, msg, this.rightChildren);
+    public boolean sendToRightChild(int largeId, Message msg) {
+        return sendToNeighbor(largeId, msg, this.rightChildren);
     }
 
     @Override
@@ -389,6 +425,11 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
         this.parents = new HashMap<Integer, Integer>();
         this.rightChildren = new HashMap<Integer, Integer>();
         this.leftChildren = new HashMap<Integer, Integer>();
+
+        // Insert Message Queue
+        this.insertMessageQueue = new LinkedList<RoutingMessage>();
+        this.insertMessageExecuteFlags = new HashMap<>();
+
     }
 
     @Override
@@ -396,6 +437,66 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
     public void preStep() {
         // nothing to do
     }
+
+
+
+    private boolean executeLargeInsertMessage(RoutingMessage routingMessage){
+        // Insert message is a special message which can not send directly to the true target
+        assert routingMessage.getPayLoad() instanceof LargeInsertMessage;
+
+
+        LargeInsertMessage insertMessage = (LargeInsertMessage) routingMessage.getPayLoad();
+        int largeId = insertMessage.getLargeId();
+
+
+
+        if(!this.checkInsertMessageExecuteFlags(largeId)){
+            Tools.warning("The node " + this.ID + " is not prepared to execute LIM");
+            this.insertMessageQueue.add(routingMessage);
+            return false;
+        }
+
+        int target = insertMessage.getTarget();
+        boolean forwardedFlag = true;
+        boolean leftFlag = false;
+
+        if(target < this.ID){
+            if(this.getLeftChild(largeId) != -1){
+                this.forwardMessage(largeId, routingMessage);
+                forwardedFlag = true;
+            }
+            else{
+                // InsertMessage has achieve the corresponding leaf of the ego-tree
+                forwardedFlag = false;
+                leftFlag = true;
+            }
+        }
+        else{
+            if(this.getRightChild(largeId) != -1){
+                this.forwardMessage(largeId, routingMessage);
+                forwardedFlag = true;
+            }
+            else{
+                // InsertMessage has achieve the corresponding leaf of the ego-tree
+                forwardedFlag = false;
+                leftFlag = false;
+            }
+        }
+        if(!forwardedFlag) {
+            // has reached the leaf, create link to the target
+            this.addConnectionTo(Tools.getNodeByID(target));
+            if (leftFlag) {
+                this.setLeftChild(largeId, target);
+            }
+            else{
+                this.setRightChild(largeId, target);
+            }
+            insertMessage.setLeafId(this.ID);
+            this.send(insertMessage, Tools.getNodeByID(target));
+        }
+        return true;
+    }
+
 
 
     /**
@@ -433,46 +534,7 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
                     else{
                         // not effected by rotation
                         if(payload instanceof LargeInsertMessage){
-                            // Insert message is a special message which can not send directly to the true target
-                            LargeInsertMessage insertMessage = (LargeInsertMessage) payload;
-                            int target = insertMessage.getTarget();
-                            boolean forwardedFlag = true;
-                            boolean leftFlag = false;
-
-                            if(target < this.ID){
-                                if(this.getLeftChild(largeId) != -1){
-                                    this.forwardMessage(largeId, rt);
-                                    forwardedFlag = true;
-                                }
-                                else{
-                                    // InsertMessage has achieve the corresponding leaf of the ego-tree
-                                   forwardedFlag = false;
-                                   leftFlag = true;
-                                }
-                            }
-                            else{
-                                if(this.getRightChild(largeId) != -1){
-                                    this.forwardMessage(largeId, rt);
-                                    forwardedFlag = true;
-                                }
-                                else{
-                                    // InsertMessage has achieve the corresponding leaf of the ego-tree
-                                    forwardedFlag = false;
-                                    leftFlag = false;
-                                }
-                            }
-                            if(!forwardedFlag) {
-                                // has reached the leaf, create link to the target
-                                this.addConnectionTo(Tools.getNodeByID(target));
-                                if (leftFlag) {
-                                    this.setLeftChild(largeId, target);
-                                }
-                                else{
-                                    this.setRightChild(largeId, target);
-                                }
-                                insertMessage.setLeafId(this.ID);
-                                this.send(insertMessage, Tools.getNodeByID(target));
-                            }
+                            this.executeLargeInsertMessage(rt);
                         }
                         else{
                             // not InsertMessage and not get destination
@@ -576,71 +638,10 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
     }
 
 
-    protected void forwardMessage(int largeId, RoutingMessage msg) {
-        /**
-         *@description this method only use to transfer message in the ego-tree of the large node,
-         * called when the node want to transfer a message
-         *@parameters  [largeId, msg]
-         *@return  void
-         *@author  Zhang Hongxuan
-         *@create time  2021/2/7
-         */
-        int destination = msg.getDestination();
-        if(this.ID == destination )
-        {
-            this.receiveMessage(msg.getPayLoad());
-            return;
-        }
-
-        if(this.ID == largeId){
-            // if the sender is LN, it should transfer the rt msg directly to the root of the ego-tree
-            this.send(msg, Tools.getNodeByID(this.rootNodeId));
-            return;
-        }
-
-        if(largeId != -1){
-            // which means need to transfer in the large id's tree
-            Message message = msg.getPayLoad();
-            if(message instanceof CbRenetMessage){
-                if(!((CbRenetMessage) message).isUpForward()){
-                    // if not upForward, the message would send to the child
-                    if (this.ID < destination) {
-                        sendToRightChild(largeId, msg);
-                    } else if (destination < ID) {
-                        sendToLeftChild(largeId, msg);
-                    }
-                }
-                else{
-                    sendToParent(largeId, msg);
-                }
-            }
-            else if(message instanceof LargeInsertMessage){
-                LargeInsertMessage insertMessageTmp = (LargeInsertMessage) message;
-                int target = insertMessageTmp.getTarget();
-                if(target > this.ID){
-                    this.sendToRightChild(largeId, message);
-                }
-                else{
-                    this.sendToLeftChild(largeId, message);
-                }
-            }
-            else if(message instanceof DeleteRequestMessage){
-                DeleteRequestMessage deleteRequestMessageTmp = (DeleteRequestMessage) message;
-                if(this.ID != deleteRequestMessageTmp.getDst()){
-                    sendToParent(largeId, message);
-                }
-            }
-            else{
-                Tools.fatalError("Some message in the RoutingMessage is " + message.getClass());
-            }
-        }
-        else{
-            send(msg, Tools.getNodeByID(destination));
-        }
-    }
+    protected abstract void forwardMessage(int largeId, RoutingMessage msg);
 
     protected void sendForwardMessage(int dst, Message msg) {
-        // TODO 这是cbent中的，因为似乎关系到Rotation Layer故在此保留
+        // TODO 这是cbent中的，因为似乎关系到Rotation Layer故在此保留 反正后面要改先留着后面再删除
         if (dst == ID) {
             this.receiveMessage(msg);
             return;
@@ -655,6 +656,7 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
         /**
          *@description The method only used to send a message in the ego-tree
          *  The method would generate a routing message to wrap up the msg
+         *
          *@parameters  [dst, msg]
          *@return  void
          *@author  Zhang Hongxuan
@@ -706,6 +708,27 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
 
     public HashMap<Integer, Integer> getRightChildren() {
         return rightChildren;
+    }
+
+
+    protected void doInPostRound(){
+
+        // execute the LIM in the queue
+
+        Queue<RoutingMessage> unexecutedQueue = new LinkedList<>();
+
+        while(!this.insertMessageQueue.isEmpty()){
+            RoutingMessage routingMessage = insertMessageQueue.poll();
+
+            if(! this.executeLargeInsertMessage(routingMessage)){
+                unexecutedQueue.add(routingMessage);
+            }
+
+        }
+        this.insertMessageQueue.addAll(unexecutedQueue);
+
+        // LIM part finished!
+
     }
 
 

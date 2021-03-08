@@ -33,8 +33,14 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
     }
 
 
+    protected void doInPostRound(){
+        super.doInPostRound();
+        this.sendMessageInQueue();
+    }
+
+
     // Send message which in the Queue
-    public void sendMessageInQueue(){
+    private void sendMessageInQueue(){
         /**
          *@description //todo call this in the EVERY postRound
          *@parameters  []
@@ -248,7 +254,6 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
     }
 
     @Override
-    // TODO 在这里加一个等待的队列
     protected void forwardMessage(int largeId, RoutingMessage msg) {
         /**
          *@description this method only use to transfer message in the ego-tree of the large node,
@@ -261,6 +266,7 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
         int destination = msg.getDestination();
         if(this.ID == destination )
         {
+            Tools.warning("A message received in forwardMessage : " + msg.getPayLoad().getClass() );
             this.receiveMessage(msg.getPayLoad());
             return;
         }
@@ -273,39 +279,67 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
 
         if(largeId != -1){
             // which means need to transfer in the large id's tree
+
+            boolean sendFlag = false;
+            // Note that every message can not send in this ture must store in the routingMessageQueue to
+            // send it in the next turn;
+
             Message message = msg.getPayLoad();
+
             if(message instanceof CbRenetMessage){
                 if(!((CbRenetMessage) message).isUpForward()){
                     // if not upForward, the message would send to the child
                     if (this.ID < destination) {
-                        sendToRightChild(largeId, msg);
+                        if(sendToRightChild(largeId, msg)){
+                            sendFlag = true;
+                        }
                     } else if (destination < ID) {
-                        sendToLeftChild(largeId, msg);
+                        if(sendToLeftChild(largeId, msg)){
+                            sendFlag = true;
+                        }
                     }
                 }
                 else{
-                    sendToParent(largeId, msg);
+                    if(sendToParent(largeId, msg)){
+                        sendFlag = true;
+                    }
                 }
             }
             else if(message instanceof LargeInsertMessage){
                 LargeInsertMessage insertMessageTmp = (LargeInsertMessage) message;
                 int target = insertMessageTmp.getTarget();
                 if(target > this.ID){
-                    this.sendToRightChild(largeId, message);
+                    if(this.sendToRightChild(largeId, message)){
+                        sendFlag = true;
+                    }
                 }
                 else{
-                    this.sendToLeftChild(largeId, message);
+                    if(this.sendToLeftChild(largeId, message)){
+                        sendFlag = true;
+                    }
                 }
+
             }
             else if(message instanceof DeleteRequestMessage){
                 DeleteRequestMessage deleteRequestMessageTmp = (DeleteRequestMessage) message;
                 if(this.ID != deleteRequestMessageTmp.getDst()){
-                    sendToParent(largeId, message);
+                    if(sendToParent(largeId, message)){
+                        sendFlag = true;
+                    }
                 }
             }
             else{
                 Tools.fatalError("Some message in the RoutingMessage is " + message.getClass());
             }
+
+
+            if(!sendFlag){
+                // can not send for some reason
+                Tools.warning("A routing message contains " + message.getClass() + " can not send for some reason " +
+                        "has been add into rMQ");
+                this.routingMessageQueue.add(msg);
+            }
+
         }
         else{
             send(msg, Tools.getNodeByID(destination));
