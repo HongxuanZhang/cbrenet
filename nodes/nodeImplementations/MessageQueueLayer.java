@@ -273,7 +273,17 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
 
         if(this.ID == largeId){
             // if the sender is LN, it should transfer the rt msg directly to the root of the ego-tree
-            this.send(msg, Tools.getNodeByID(this.getRootNodeId()));
+            int rootId = this.getRootNodeId();
+            if(rootId != -1){
+                if(this.outgoingConnections.contains(this, Tools.getNodeByID(rootId))){
+                    this.send(msg, Tools.getNodeByID(rootId));
+                    return;
+                }
+            }
+
+            Tools.warning("A routing message can not send from the LN to its root for some reason " +
+                        "has been add into rMQ");
+            this.routingMessageQueue.add(msg);
             return;
         }
 
@@ -342,6 +352,7 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
 
         }
         else{
+            Tools.warning("A routing message not go in the ego tree, but send to the destination!");
             send(msg, Tools.getNodeByID(destination));
         }
     }

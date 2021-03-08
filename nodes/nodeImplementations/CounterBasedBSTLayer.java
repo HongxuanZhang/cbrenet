@@ -3,6 +3,7 @@ package projects.cbrenet.nodes.nodeImplementations;
 import projects.cbrenet.nodes.messages.CbRenetMessage;
 import projects.cbrenet.nodes.messages.RoutingMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.DeleteMessage;
+import projects.cbrenet.nodes.messages.SDNMessage.EgoTreeMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.LinkMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.StatusChangedMessage;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteEgoTreeRequestMessage;
@@ -13,10 +14,7 @@ import sinalgo.nodes.messages.Inbox;
 import sinalgo.nodes.messages.Message;
 import sinalgo.tools.Tools;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.*;
 
 public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer implements Comparable<CounterBasedBSTLayer>{
 
@@ -556,6 +554,14 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
             }
             else if(msg instanceof StatusChangedMessage){
                 this.receiveMessage(msg);
+            }
+            else if(msg instanceof EgoTreeMessage){
+                EgoTreeMessage egoTreeMessage = (EgoTreeMessage) msg;
+
+                List<Integer> egoTreeList = egoTreeMessage.getEgoTreeNodes();
+
+                
+
             }
             else if(msg instanceof LargeInsertMessage){
                 LargeInsertMessage insertMessage = (LargeInsertMessage) msg;

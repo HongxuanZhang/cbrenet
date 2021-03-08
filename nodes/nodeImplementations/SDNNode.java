@@ -598,6 +598,8 @@ public class SDNNode extends Node {
         List<Integer> smallCpList = new ArrayList<>(small_cp);
         smallCpList.sort(Comparator.naturalOrder());
 
+        EgoTreeMessage egoTreeMessage = new EgoTreeMessage(smallCpList);
+
 
         int len = smallCpList.size();
         if(len == 0){
@@ -615,7 +617,11 @@ public class SDNNode extends Node {
 
         LinkMessage linkMessage = new LinkMessage(largeNodeId, true, largeNodeId, targets, relationships,
                 this.globalStatusId);
+
         this.sendDirect(linkMessage, Tools.getNodeByID(largeNodeId));
+
+        // Ego Tree Message , contains the node which SDN send linkMessage to.
+        this.sendDirect(egoTreeMessage, Tools.getNodeByID(largeNodeId));
 
         createEgoTree(smallCpList, largeNodeId);
 
