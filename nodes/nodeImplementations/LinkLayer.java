@@ -1,10 +1,7 @@
 package projects.cbrenet.nodes.nodeImplementations;
 
-import projects.cbrenet.nodes.messages.SDNMessage.DeleteMessage;
-import projects.cbrenet.nodes.messages.SDNMessage.LinkMessage;
-import projects.cbrenet.nodes.messages.SDNMessage.StatusChangedMessage;
+import projects.cbrenet.nodes.messages.SDNMessage.*;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteRequestMessage;
-import projects.cbrenet.nodes.messages.SDNMessage.LargeInsertMessage;
 import sinalgo.nodes.Node;
 import sinalgo.nodes.messages.Message;
 import sinalgo.tools.Tools;
@@ -21,7 +18,7 @@ import java.util.*;
 
 public abstract class LinkLayer extends MessageQueueLayer{
 
-    HashMap<Integer, PriorityQueue<LinkMessage>> unsatisfiedLinkMessage;
+    HashMap<Integer, PriorityQueue<StatusRelatedMessage>> unsatisfiedLinkMessage;
 
     // StatusChangedMessage必须按照顺序执行！ TODO　这可能是一个比较复杂度的系统了
 
@@ -92,82 +89,96 @@ public abstract class LinkLayer extends MessageQueueLayer{
     }
 
 
+    private void executeLargeInsertMessage(LargeInsertMessage insertMessage){
+        // Here should be the node which is specified in the LargeInsertMessage
+        
+        int parentId = insertMessage.getLeafId();
+        int largeNodeId = insertMessage.getLargeId();
+
+        boolean addLinkFlag = true;
+
+        if(this.largeFlag){
+            Tools.warning("When a largeInsertMessage received by a node, the node has been changed into a large " +
+                    "node.");
+            addLinkFlag = false;
+        }
+
+        if(this.isNodeSmall(largeNodeId)){
+            // This node has got the message that the Large node has been changed into small.
+            Tools.warning("The large node of the ego tree has been changed to small! The LargeInsertMessage " +
+                    "won't execute in the target node!!");
+            addLinkFlag = false;
+        }
+
+        if(!addLinkFlag){
+            Node parentNode = Tools.getNodeByID(parentId);
+            assert parentNode != null;
+
+            // Remove the link, this node don't want to be a part of ego-tree for some reason.
+            parentNode.outgoingConnections.remove(parentNode, this);
+            return;
+        }
+
+        // The node still want to be a node of the ego-tree
+        this.setParent(largeNodeId, parentId);
+        this.addConnectionTo(Tools.getNodeByID(parentId));
+
+        // add CP
+        this.addCommunicationPartner(largeNodeId);
+
+        // set inserted bit in the insertMessage
+        insertMessage.setInserted();
+
+        this.sendDirect(insertMessage, Tools.getNodeByID(this.getSDNId()));
+
+
+
+    }
+
+
     @Override
     public void receiveMessage(Message msg){
         super.receiveMessage(msg);
-        if(msg instanceof LinkMessage){
-            LinkMessage linkMessage = (LinkMessage) msg;
-            int globalStatusIdTmp = linkMessage.getUniqueStatusId();
-            // TODO 刚加入ego-tree的小结点变成了大结点
+        if(msg instanceof StatusRelatedMessage){
+            StatusRelatedMessage statusRelatedMessage = (StatusRelatedMessage) msg;
+            int globalStatusIdTmp = statusRelatedMessage.getUniqueStatusId();
             if(globalStatusIdTmp > this.getReceivedStatusChangedId()){
-                // indicate that the status has not been changed!
-                // TODO the LinkMessage may have to execute later
-                PriorityQueue<LinkMessage> unsatisfiedLinkMessagesTmp = unsatisfiedLinkMessage.getOrDefault(globalStatusIdTmp, null);
-                if (unsatisfiedLinkMessagesTmp == null) {
-                    unsatisfiedLinkMessagesTmp = new PriorityQueue<>();
+                PriorityQueue<StatusRelatedMessage> unsatisfiedMessages = this.unsatisfiedLinkMessage.
+                        getOrDefault(globalStatusIdTmp, null);
+                if(unsatisfiedMessages == null){
+                    unsatisfiedMessages = new PriorityQueue<>();
                 }
-                unsatisfiedLinkMessagesTmp.add(linkMessage);
-                unsatisfiedLinkMessage.replace(globalStatusIdTmp, unsatisfiedLinkMessagesTmp);
+                unsatisfiedMessages.add(statusRelatedMessage);
+                this.unsatisfiedLinkMessage.put(globalStatusIdTmp, unsatisfiedMessages);
             }
             else{
-                // This LinkMessage is satisfied to executed!
-                this.executeLinkMessage(linkMessage);
-            }
-        }
-        else if(msg instanceof DeleteMessage){
-            // TODO　完善DeleteMessage
-            DeleteMessage deleteMessage = (DeleteMessage) msg;
-            if(deleteMessage.isAllFlag()){
-                // 全删的
-            }
-            else{
-                // 只删自己的
-            }
-        }
-        else if(msg instanceof LargeInsertMessage){
-            // Here should be the node which is specified in the LargeInsertMessage
+                if(statusRelatedMessage instanceof LinkMessage){
+                    this.executeLinkMessage((LinkMessage) statusRelatedMessage);
+                }
+                else if(statusRelatedMessage instanceof DeleteMessage){
+                    // TODO　完善DeleteMessage
+                    DeleteMessage deleteMessage = (DeleteMessage) msg;
+                    if(deleteMessage.isAllFlag()){
+                        // 全删的
+                    }
+                    else{
+                        // 只删自己的
+                    }
+                }
+                else if(statusRelatedMessage instanceof LargeInsertMessage){
 
-            LargeInsertMessage insertMessage = (LargeInsertMessage) msg;
-            int parentId = insertMessage.getLeafId();
-            int largeNodeId = insertMessage.getLargeId();
+                }
+                else if(statusRelatedMessage instanceof EgoTreeMessage){
 
-            boolean addLinkFlag = true;
-
-            if(this.largeFlag){
-               Tools.warning("When a largeInsertMessage received by a node, the node has been changed into a large " +
-                       "node.");
-               addLinkFlag = false;
+                }
+                else{
+                    Tools.warning("The StatusRelatedMessage in LinkLayer is "+ statusRelatedMessage.getClass());
+                }
             }
 
-            if(this.isNodeSmall(largeNodeId)){
-                // This node has got the message that the Large node has been changed into small.
-                Tools.warning("The large node of the ego tree has been changed to small! The LargeInsertMessage " +
-                        "won't execute in the target node!!");
-                addLinkFlag = false;
+            else if(msg instanceof LargeInsertMessage){
+
             }
-
-            if(!addLinkFlag){
-                Node parentNode = Tools.getNodeByID(parentId);
-                assert parentNode != null;
-
-                // Remove the link, this node don't want to be a part of ego-tree for some reason.
-                parentNode.outgoingConnections.remove(parentNode, this);
-                return;
-            }
-
-            // The node still want to be a node of the ego-tree
-            this.setParent(largeNodeId, parentId);
-            this.addConnectionTo(Tools.getNodeByID(parentId));
-
-            // add CP
-            this.addCommunicationPartner(largeNodeId);
-
-            // set inserted bit in the insertMessage
-            insertMessage.setInserted();
-
-            this.sendDirect(insertMessage, Tools.getNodeByID(this.getSDNId()));
-
-
         }
         else if(msg instanceof StatusChangedMessage){
             StatusChangedMessage statusChangedMessage = (StatusChangedMessage) msg;

@@ -439,6 +439,15 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
 
 
     private boolean executeLargeInsertMessage(RoutingMessage routingMessage){
+        /**
+         *@description This method is used to forward routingMessage contains LIM, do not need to
+         *  put it in the LinkLayer. The target node of the LIM should execute LIM when globalStatusId
+         *  satisfied!
+         *@parameters  [routingMessage]
+         *@return  boolean
+         *@author  Zhang Hongxuan
+         *@create time  2021/3/9
+         */
         // Insert message is a special message which can not send directly to the true target
         assert routingMessage.getPayLoad() instanceof LargeInsertMessage;
 
@@ -556,6 +565,9 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
                 this.receiveMessage(msg);
             }
             else if(msg instanceof EgoTreeMessage){
+                this.receiveMessage(msg);
+
+                // TODO 移到 LinkLayer
                 EgoTreeMessage egoTreeMessage = (EgoTreeMessage) msg;
 
                 List<Integer> egoTreeList = egoTreeMessage.getEgoTreeNodes();
