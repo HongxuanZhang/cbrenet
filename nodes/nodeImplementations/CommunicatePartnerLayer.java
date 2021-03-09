@@ -10,6 +10,7 @@ import sinalgo.tools.Tools;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 
 public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
 
@@ -21,6 +22,37 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
     // todo 极低优先级 true access order
     private LinkedHashMap<Integer, Integer> smallNodes;
     private LinkedHashMap<Integer, Integer> largeNodes;
+
+
+    public void setSmallNodesCp(List<Integer> smallNodeIds){
+        /**
+         *@description This method only use during create-ego-tree,
+         *  when LN receive the EgoTreeMessage, since we can sure that at this time the small cp in
+         *  the LN is exactly the small cp in SDN
+         *  Actually smallCp & largeCp can be maintained by the SDN message, but this is a easy way.
+         *@parameters  [smallNodeIds]
+         *@return  void
+         *@author  Zhang Hongxuan
+         *@create time  2021/3/8
+         */
+        this.smallNodes.clear();
+        for(int id : smallNodeIds) {
+            // Some node in the Ego-Tree may not put in the smallCp, since it would be removed very soon.
+            if(this.isNodeSmall(id)){
+                smallNodes.put(id, id);
+            }
+
+            //TODO
+//            判断是必须判断的！ 否则问题只会更加严重！！！
+//
+//            解决这个问题的关键似乎只有一个，那就是globalStatusId!!!!
+//
+//
+//            如果当前就是大结点，但是SDN把他变小了，且SCM还没到这里怎么办呢？？？？？？？
+//
+//            现在诚进退失据，如果不在此做判断，存在可能携带变大内容的SCM先到，而后才ETM才到，导致变大了的node加进来。。。
+        }
+    }
 
 
     // only use this when node is a large node of a ego-tree
@@ -41,6 +73,13 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
 
     // DRM related part
     private HashMap<Integer, Boolean> egoTreeDeleteMap;
+
+    public void setEgoTreeDeleteMap(List<Integer> egoTreeNodeIds){
+        this.egoTreeDeleteMap = new HashMap<>();
+        for(int id : egoTreeNodeIds){
+            this.addEgoTreeNodeToDeleteMap(id);
+        }
+    }
 
     public HashMap<Integer, Boolean> getEgoTreeDeleteMap() {
         return egoTreeDeleteMap;

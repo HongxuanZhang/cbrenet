@@ -560,7 +560,9 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
 
                 List<Integer> egoTreeList = egoTreeMessage.getEgoTreeNodes();
 
-                
+                this.setEgoTreeDeleteMap(egoTreeList);
+
+                this.setSmallNodesCp(egoTreeList);
 
             }
             else if(msg instanceof LargeInsertMessage){
