@@ -3,7 +3,7 @@ package projects.cbrenet.nodes.nodeImplementations;
 import projects.cbrenet.nodes.messages.SDNMessage.*;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteEgoTreeRequestMessage;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteRequestMessage;
-import projects.cbrenet.nodes.messages.controlMessage.LargeInsertMessage;
+import projects.cbrenet.nodes.messages.SDNMessage.LargeInsertMessage;
 import projects.cbrenet.nodes.tableEntry.Request;
 import sinalgo.configuration.WrongConfigurationException;
 import sinalgo.gui.transformation.PositionTransformation;
@@ -270,12 +270,12 @@ public class SDNNode extends Node {
                                     LargeInsertMessage largeInsertMessage;
                                     if(!smallFlagForSrc){
                                         // src node is large, and dst node is small
-                                        largeInsertMessage = new LargeInsertMessage(dstId, srcId);
+                                        largeInsertMessage = new LargeInsertMessage(dstId, srcId, this.globalStatusId);
                                         sendDirect(largeInsertMessage, Tools.getNodeByID(srcId));
                                     }
                                     else{
                                         // dst node is large, and src node is small
-                                        largeInsertMessage = new LargeInsertMessage(srcId, dstId);
+                                        largeInsertMessage = new LargeInsertMessage(srcId, dstId, this.globalStatusId);
                                         sendDirect(largeInsertMessage, Tools.getNodeByID(dstId));
                                     }
                                     break;
@@ -300,7 +300,7 @@ public class SDNNode extends Node {
 
                     // send DeleteMessage not allFlag to the wantToDelete ego-tree node
                     //int dst, int largeId
-                    DeleteMessage deleteMessage = new DeleteMessage(wantToDeleteId, largeId);
+                    DeleteMessage deleteMessage = new DeleteMessage(wantToDeleteId, largeId, this.globalStatusId);
                     this.sendDirect(deleteMessage, Tools.getNodeByID(wantToDeleteId));
 
                 }
@@ -330,7 +330,8 @@ public class SDNNode extends Node {
                 
                 for(int wantToDeleteId : egoTreeNodeIds){
                     //int dst, boolean allFlag, int largeId
-                    DeleteMessage deleteMessage = new DeleteMessage(wantToDeleteId, true ,largeId);
+                    DeleteMessage deleteMessage = new DeleteMessage(wantToDeleteId, true ,largeId,
+                            this.globalStatusId);
                     this.sendDirect(deleteMessage, Tools.getNodeByID(wantToDeleteId));
                 }
             }
@@ -598,7 +599,7 @@ public class SDNNode extends Node {
         List<Integer> smallCpList = new ArrayList<>(small_cp);
         smallCpList.sort(Comparator.naturalOrder());
 
-        EgoTreeMessage egoTreeMessage = new EgoTreeMessage(smallCpList);
+        EgoTreeMessage egoTreeMessage = new EgoTreeMessage(smallCpList, this.globalStatusId);
 
 
         int len = smallCpList.size();

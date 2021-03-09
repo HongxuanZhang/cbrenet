@@ -9,20 +9,22 @@ import sinalgo.nodes.messages.Message;
  *
  * */
 
-public class DeleteMessage extends Message {
+public class DeleteMessage extends StatusRelatedMessage {
 
     private final int dst;
     private final int largeId;
 
     private final boolean allFlag;
 
-    public DeleteMessage(int dst, int largeId){
+    public DeleteMessage(int dst, int largeId, int uniqueStatusId){
+        super(uniqueStatusId);
         this.dst = dst;
         this.largeId = largeId;
         this.allFlag = false;
     }
 
-    public DeleteMessage(int dst, boolean allFlag, int largeId){
+    public DeleteMessage(int dst, boolean allFlag, int largeId, int uniqueStatusId){
+        super(uniqueStatusId);
         this.dst = dst;
         this.largeId = largeId;
         this.allFlag = allFlag;

@@ -10,10 +10,7 @@ import java.util.ArrayList;
  *
  * */
 
-public class LinkMessage extends Message {
-
-    final private int uniqueStatusId;
-
+public class LinkMessage extends StatusRelatedMessage {
 
     private int largeId;
     final private int dst;
@@ -41,11 +38,10 @@ public class LinkMessage extends Message {
          *@author  Zhang Hongxuan
          *@create time  2021/2/28
          */
+        super(uniqueStatusId);
         this.dst = dst;
         this.insertFlag = insertFlag;
         this.targets = targets;
-
-        this.uniqueStatusId = uniqueStatusId;
 
         this.largeId = -1;
         this.relationships = null;
@@ -59,11 +55,11 @@ public class LinkMessage extends Message {
          *@author  Zhang Hongxuan
          *@create time  2021/2/22
          */
+        super(uniqueStatusId);
         this.dst = dst;
         this.insertFlag = insertFlag;
         this.targets = targets;
 
-        this.uniqueStatusId = uniqueStatusId;
 
         this.largeId = largeId;
         this.relationships = relationships;

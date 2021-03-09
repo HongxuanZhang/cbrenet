@@ -8,7 +8,7 @@ import projects.cbrenet.nodes.messages.SDNMessage.LinkMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.StatusChangedMessage;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteEgoTreeRequestMessage;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteRequestMessage;
-import projects.cbrenet.nodes.messages.controlMessage.LargeInsertMessage;
+import projects.cbrenet.nodes.messages.SDNMessage.LargeInsertMessage;
 import sinalgo.configuration.WrongConfigurationException;
 import sinalgo.nodes.messages.Inbox;
 import sinalgo.nodes.messages.Message;

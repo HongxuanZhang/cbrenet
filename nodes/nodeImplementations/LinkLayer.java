@@ -4,7 +4,7 @@ import projects.cbrenet.nodes.messages.SDNMessage.DeleteMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.LinkMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.StatusChangedMessage;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteRequestMessage;
-import projects.cbrenet.nodes.messages.controlMessage.LargeInsertMessage;
+import projects.cbrenet.nodes.messages.SDNMessage.LargeInsertMessage;
 import sinalgo.nodes.Node;
 import sinalgo.nodes.messages.Message;
 import sinalgo.tools.Tools;

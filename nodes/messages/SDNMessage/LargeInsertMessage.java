@@ -1,4 +1,4 @@
-package projects.cbrenet.nodes.messages.controlMessage;
+package projects.cbrenet.nodes.messages.SDNMessage;
 
 import sinalgo.nodes.messages.Message;
 
@@ -13,7 +13,7 @@ import sinalgo.nodes.messages.Message;
  * And the leaf id would be the parent of the target
  * */
 
-public class LargeInsertMessage extends Message {
+public class LargeInsertMessage extends StatusRelatedMessage {
 
     final private int target;
     final private int largeId;
@@ -23,7 +23,8 @@ public class LargeInsertMessage extends Message {
     private boolean inserted = false; // set inserted when this message is received by the target
 
 
-    public LargeInsertMessage(int target, int largeID){
+    public LargeInsertMessage(int target, int largeID, int uniqueStatusId){
+        super(uniqueStatusId);
         this.largeId = largeID;
         this.target = target;
     }

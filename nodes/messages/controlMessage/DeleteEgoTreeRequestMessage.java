@@ -5,6 +5,13 @@ import sinalgo.nodes.messages.Message;
 import java.util.HashSet;
 import java.util.List;
 
+
+/*
+* This message is used to send the delete ego tree message from LN to SDN
+* When SDN receive this message, it would send DeleteMessage to all node in the ego-tree.
+* */
+
+
 public class DeleteEgoTreeRequestMessage extends Message {
 
     private final int largeId;

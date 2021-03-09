@@ -9,11 +9,12 @@ import java.util.List;
 
 // only use: SDN -> LN
 
-public class EgoTreeMessage extends Message {
+public class EgoTreeMessage extends StatusRelatedMessage {
 
     private List<Integer> egoTreeNodes;
 
-    public EgoTreeMessage(List<Integer> egoTreeNodes){
+    public EgoTreeMessage(List<Integer> egoTreeNodes,int uniqueStatusId){
+        super(uniqueStatusId);
         this.egoTreeNodes = egoTreeNodes;
     }
 

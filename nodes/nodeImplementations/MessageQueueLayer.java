@@ -2,9 +2,8 @@ package projects.cbrenet.nodes.nodeImplementations;
 
 import projects.cbrenet.nodes.messages.CbRenetMessage;
 import projects.cbrenet.nodes.messages.RoutingMessage;
-import projects.cbrenet.nodes.messages.SDNMessage.RequestMessage;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteRequestMessage;
-import projects.cbrenet.nodes.messages.controlMessage.LargeInsertMessage;
+import projects.cbrenet.nodes.messages.SDNMessage.LargeInsertMessage;
 import projects.cbrenet.nodes.tableEntry.Request;
 import sinalgo.nodes.messages.Message;
 import sinalgo.runtime.Global;
