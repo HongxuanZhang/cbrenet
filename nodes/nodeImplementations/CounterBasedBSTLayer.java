@@ -567,14 +567,7 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
             else if(msg instanceof EgoTreeMessage){
                 this.receiveMessage(msg);
 
-                // TODO 移到 LinkLayer
-                EgoTreeMessage egoTreeMessage = (EgoTreeMessage) msg;
 
-                List<Integer> egoTreeList = egoTreeMessage.getEgoTreeNodes();
-
-                this.setEgoTreeDeleteMap(egoTreeList);
-
-                this.setSmallNodesCp(egoTreeList);
 
             }
             else if(msg instanceof LargeInsertMessage){

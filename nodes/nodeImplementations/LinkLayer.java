@@ -91,7 +91,7 @@ public abstract class LinkLayer extends MessageQueueLayer{
 
     private void executeLargeInsertMessage(LargeInsertMessage insertMessage){
         // Here should be the node which is specified in the LargeInsertMessage
-        
+
         int parentId = insertMessage.getLeafId();
         int largeNodeId = insertMessage.getLargeId();
 
@@ -136,6 +136,46 @@ public abstract class LinkLayer extends MessageQueueLayer{
     }
 
 
+    private void executeEgoTreeMessage(EgoTreeMessage egoTreeMessage){
+        List<Integer> egoTreeList = egoTreeMessage.getEgoTreeNodes();
+
+        this.setEgoTreeDeleteMap(egoTreeList);
+
+        this.setSmallNodesCp(egoTreeList);
+    }
+
+
+    private void executeDeleteMessage(DeleteMessage deleteMessage){
+        // TODO　完善DeleteMessage
+        if(deleteMessage.isAllFlag()){
+            // 全删的
+        }
+        else{
+            // 只删自己的
+        }
+    }
+
+
+    private void executeStatusRelatedMessage(StatusRelatedMessage statusRelatedMessage){
+        if(statusRelatedMessage instanceof LinkMessage){
+            this.executeLinkMessage((LinkMessage) statusRelatedMessage);
+        }
+        else if(statusRelatedMessage instanceof DeleteMessage){
+            // ToDo 这还不够，在执行DeleteMessage的时候，必须保障当前Node没有未发出的结点！
+            this.executeDeleteMessage((DeleteMessage) statusRelatedMessage);
+        }
+        else if(statusRelatedMessage instanceof LargeInsertMessage){
+            this.executeLargeInsertMessage((LargeInsertMessage) statusRelatedMessage);
+        }
+        else if(statusRelatedMessage instanceof EgoTreeMessage){
+            this.executeEgoTreeMessage((EgoTreeMessage) statusRelatedMessage);
+        }
+        else{
+            Tools.warning("The StatusRelatedMessage in LinkLayer is "+ statusRelatedMessage.getClass());
+        }
+    }
+
+
     @Override
     public void receiveMessage(Message msg){
         super.receiveMessage(msg);
@@ -152,32 +192,7 @@ public abstract class LinkLayer extends MessageQueueLayer{
                 this.unsatisfiedLinkMessage.put(globalStatusIdTmp, unsatisfiedMessages);
             }
             else{
-                if(statusRelatedMessage instanceof LinkMessage){
-                    this.executeLinkMessage((LinkMessage) statusRelatedMessage);
-                }
-                else if(statusRelatedMessage instanceof DeleteMessage){
-                    // TODO　完善DeleteMessage
-                    DeleteMessage deleteMessage = (DeleteMessage) msg;
-                    if(deleteMessage.isAllFlag()){
-                        // 全删的
-                    }
-                    else{
-                        // 只删自己的
-                    }
-                }
-                else if(statusRelatedMessage instanceof LargeInsertMessage){
-
-                }
-                else if(statusRelatedMessage instanceof EgoTreeMessage){
-
-                }
-                else{
-                    Tools.warning("The StatusRelatedMessage in LinkLayer is "+ statusRelatedMessage.getClass());
-                }
-            }
-
-            else if(msg instanceof LargeInsertMessage){
-
+                this.executeStatusRelatedMessage(statusRelatedMessage);
             }
         }
         else if(msg instanceof StatusChangedMessage){
@@ -252,10 +267,10 @@ public abstract class LinkLayer extends MessageQueueLayer{
                     if(statusId > this.getReceivedStatusChangedId()){
                         break;
                     }
-                    PriorityQueue<LinkMessage> linkMessages = this.unsatisfiedLinkMessage.get(statusId);
-                    while(!linkMessages.isEmpty()){
-                        LinkMessage linkMessageTmp = linkMessages.poll(); // 直接出队列
-                        this.executeLinkMessage(linkMessageTmp);
+                    PriorityQueue<StatusRelatedMessage> statusRelatedMessages = this.unsatisfiedLinkMessage.get(statusId);
+                    while(!statusRelatedMessages.isEmpty()){
+                        StatusRelatedMessage statusRelatedMessage = statusRelatedMessages.poll(); // 直接出队列
+                        this.executeStatusRelatedMessage(statusRelatedMessage);
                     }
                 }
             }
