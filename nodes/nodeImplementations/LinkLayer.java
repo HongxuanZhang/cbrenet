@@ -22,8 +22,6 @@ public abstract class LinkLayer extends MessageQueueLayer{
 
     // StatusChangedMessage必须按照顺序执行！ TODO　这可能是一个比较复杂度的系统了
 
-
-
     private int receivedStatusChangedId = 0; // record the statusId has been received
 
     public void init(){
@@ -65,16 +63,14 @@ public abstract class LinkLayer extends MessageQueueLayer{
                 }
             }
             else{
+                // ToDo 完善LinkMessage 中对 remove link 的需要
                 if(largeId == -1){
                     this.removeSingleLinkTo(Tools.getNodeByID(id));
                 }
                 else{
-                    // todo 小结点向大结点传信息的的过程中，如果遇到大结点变小怎么办呢？
                     char relation = linkMessage.getRelationships().get(idx);
                     switch (relation){
                         case 'p':
-                            // TODO 这里我们要选择一下建立链接的方式，如果我们只允许从父亲结点建立
-                            // TODO 双向链接， 这里则不必要
                             break;
                         case 'l':
                             this.removeBidirectionalLinkToLeftChild(largeId, id);
@@ -95,6 +91,8 @@ public abstract class LinkLayer extends MessageQueueLayer{
         int parentId = insertMessage.getLeafId();
         int largeNodeId = insertMessage.getLargeId();
 
+        boolean leftFlag = insertMessage.isLeftFlag();
+
         boolean addLinkFlag = true;
 
         if(this.largeFlag){
@@ -105,17 +103,21 @@ public abstract class LinkLayer extends MessageQueueLayer{
 
         if(this.isNodeSmall(largeNodeId)){
             // This node has got the message that the Large node has been changed into small.
+
+            // No Message is sending to this node, so no need to send DRM
+
             Tools.warning("The large node of the ego tree has been changed to small! The LargeInsertMessage " +
                     "won't execute in the target node!!");
             addLinkFlag = false;
         }
 
         if(!addLinkFlag){
-            Node parentNode = Tools.getNodeByID(parentId);
+            CounterBasedBSTLayer parentNode = (CounterBasedBSTLayer) Tools.getNodeByID(parentId);
             assert parentNode != null;
 
             // Remove the link, this node don't want to be a part of ego-tree for some reason.
             parentNode.outgoingConnections.remove(parentNode, this);
+            parentNode.
             return;
         }
 
@@ -256,9 +258,7 @@ public abstract class LinkLayer extends MessageQueueLayer{
                 }
             }
 
-            // execute the satisfied link message
-
-            //todo 除了LinkMessage,别的也可能存在这种情况啊
+            // execute the satisfied StatusRelatedMessage message
 
             if(this.unsatisfiedLinkMessage.keySet().size() != 0){
                 ArrayList<Integer> statusIdList = new ArrayList<Integer>(unsatisfiedLinkMessage.keySet());
@@ -383,7 +383,6 @@ public abstract class LinkLayer extends MessageQueueLayer{
         else{
             Tools.fatalError("Get a null small nodes in the Link layer of removeNodeFromEgoTree");
         }
-
 
     }
 

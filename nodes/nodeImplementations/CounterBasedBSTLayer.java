@@ -456,7 +456,6 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
         int largeId = insertMessage.getLargeId();
 
 
-
         if(!this.checkInsertMessageExecuteFlags(largeId)){
             Tools.warning("The node " + this.ID + " is not prepared to execute LIM");
             this.insertMessageQueue.add(routingMessage);
@@ -494,9 +493,11 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
             this.addConnectionTo(Tools.getNodeByID(target));
             if (leftFlag) {
                 this.setLeftChild(largeId, target);
+                insertMessage.setLeftFlag(true);
             }
             else{
                 this.setRightChild(largeId, target);
+                insertMessage.setLeftFlag(false);
             }
             insertMessage.setLeafId(this.ID);
             this.send(insertMessage, Tools.getNodeByID(target));

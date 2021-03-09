@@ -22,11 +22,20 @@ public class LargeInsertMessage extends StatusRelatedMessage {
 
     private boolean inserted = false; // set inserted when this message is received by the target
 
+    private boolean leftFlag = false; // set by the parent , indicate that whether the target node is leftChild
 
     public LargeInsertMessage(int target, int largeID, int uniqueStatusId){
         super(uniqueStatusId);
         this.largeId = largeID;
         this.target = target;
+    }
+
+    public void setLeftFlag(boolean leftFlag) {
+        this.leftFlag = leftFlag;
+    }
+
+    public boolean isLeftFlag() {
+        return leftFlag;
     }
 
     public int getTarget() {
