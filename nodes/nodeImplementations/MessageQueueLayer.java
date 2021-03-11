@@ -22,6 +22,17 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
 
     private Queue<RoutingMessage> routingMessageQueue;
 
+    public void addInRoutingMessageQueue(RoutingMessage routingMessage){
+        /**
+         *@description called it when forwardMessage return false;
+         *@parameters  [routingMessage]
+         *@return  void
+         *@author  Zhang Hongxuan
+         *@create time  2021/3/11
+         */
+        this.routingMessageQueue.add(routingMessage);
+    }
+
     private Queue<Message> messageQueue; // used by CbRenetMessage or other that do not need Ego tree
 
     @Override
@@ -87,10 +98,9 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
             int dst = message.getDestination();
             int largeId = message.getLargeId();
             if(this.checkCommunicateSatisfaction(this.ID, dst)){
-                this.forwardMessage(largeId, message);
-            }
-            else{
-                routingMessageQueueTmp.add(message);
+                if(!this.forwardMessage(largeId, message)){
+                    routingMessageQueueTmp.add(message);
+                }
             }
         }
 
@@ -237,7 +247,10 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
         //  check 是否满足发送
         // TODO 这里说不定可以不用再检测，看情况吧
         if(this.checkCommunicateSatisfaction(this.ID, dst)){
-            this.forwardMessage(largeId, routingMessage);
+
+            if(!this.forwardMessage(largeId, routingMessage)){
+                this.routingMessageQueue.add(routingMessage);
+            }
 
             // When DRM sent, the corresponding CP should be removed! No message would be sent after this!
             if(msg instanceof DeleteRequestMessage){
@@ -245,7 +258,6 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
                 int largeCp = tmpMsg.getDst();
                 this.removeCommunicationPartner(largeCp);
             }
-
         }
         else{
             this.routingMessageQueue.add(routingMessage);
@@ -253,7 +265,7 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
     }
 
     @Override
-    protected void forwardMessage(int largeId, RoutingMessage msg) {
+    protected boolean forwardMessage(int largeId, RoutingMessage msg) {
         /**
          *@description this method only use to transfer message in the ego-tree of the large node,
          * called when the node want to transfer a message
@@ -267,7 +279,7 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
         {
             Tools.warning("A message received in forwardMessage : " + msg.getPayLoad().getClass() );
             this.receiveMessage(msg.getPayLoad());
-            return;
+            return true;
         }
 
         if(this.ID == largeId){
@@ -276,22 +288,51 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
             if(rootId != -1){
                 if(this.outgoingConnections.contains(this, Tools.getNodeByID(rootId))){
                     this.send(msg, Tools.getNodeByID(rootId));
-                    return;
+                    return true;
                 }
             }
 
             Tools.warning("A routing message can not send from the LN to its root for some reason " +
                         "has been add into rMQ");
-            this.routingMessageQueue.add(msg);
-            return;
+            return false;
         }
 
         if(largeId != -1){
             // which means need to transfer in the large id's tree
 
+            // Very Important!!
             boolean sendFlag = false;
             // Note that every message can not send in this ture must store in the routingMessageQueue to
             // send it in the next turn;
+
+
+            if(msg.getNextHopFlag()){
+                // when nextHop flag is true, we need a special forward
+
+                int currentParentId = this.getParents().getOrDefault(largeId, -1);
+                if(currentParentId != -1){
+                    // 上面这里最好不要用到，因为会导致灾难性的后果。旋转后，还请阻塞一下！！
+                    // 不要用！！ 也没必要用，阻塞住即可！ 阻塞一个round就行了！
+
+                    if(currentParentId == msg.getNextHop()){
+                        msg.resetNextHop();
+                        this.sendToParent(largeId,msg);
+                        return true;
+                    }
+                    else{
+                        Tools.warning("We have to send a message according to the next hop, but the parent" +
+                                " still seems wrong! NextHop ID is not same as the parent ID!");
+                        return false;
+                    }
+                }
+                else{
+                    Tools.warning("We have to send a message according to the next hop, but the current parent" +
+                            "ID still seems wrong!");
+                    return false;
+                }
+            }
+
+
 
             Message message = msg.getPayLoad();
 
@@ -346,13 +387,13 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
                 // can not send for some reason
                 Tools.warning("A routing message contains " + message.getClass() + " can not send for some reason " +
                         "has been add into rMQ");
-                this.routingMessageQueue.add(msg);
             }
-
+            return sendFlag;
         }
         else{
             Tools.warning("A routing message not go in the ego tree, but send to the destination!");
             send(msg, Tools.getNodeByID(destination));
+            return true;
         }
     }
 

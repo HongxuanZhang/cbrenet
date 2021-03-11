@@ -32,9 +32,24 @@ import sinalgo.tools.Tools;
  **/
 public abstract class ClusterLayer extends CounterBasedNetLayer {
 
+    //ToDo 删掉这里面的单树所用的东西
+
     // this priority queue store all request cluster message received
     private PriorityQueue<RequestClusterMessage> queueClusterRequest;
     private HashMap<Integer, PriorityQueue<RequestClusterMessage>> queueClusterRequests;
+
+    // this queue keeps all acks received due to a request cluster operation
+    private Queue<AckClusterMessage> queueAckCluster;
+    private HashMap<Integer, Queue<AckClusterMessage>> queueAckClusters;
+
+
+
+//    private boolean isClusterUp;
+//    private boolean isClusterDown;
+    private HashMap<Integer, Boolean> isClusterUps;
+    private HashMap<Integer, Boolean> isClusterDowns;
+
+
 
     private void addQueueClusterRequests(int largeId, RequestClusterMessage msg){
         if(this.queueClusterRequests.containsKey(largeId)){
@@ -50,9 +65,6 @@ public abstract class ClusterLayer extends CounterBasedNetLayer {
         }
     }
 
-    // this queue keeps all acks received due to a request cluster operation
-    private Queue<AckClusterMessage> queueAckCluster;
-    private HashMap<Integer, Queue<AckClusterMessage>> queueAckClusters;
 
     private void addQueueAckClusters(int largeId, AckClusterMessage msg){
         if(this.queueAckClusters.containsKey(largeId)){
@@ -68,11 +80,8 @@ public abstract class ClusterLayer extends CounterBasedNetLayer {
         }
     }
 
-//    private boolean isClusterUp;
-//    private boolean isClusterDown;
 
-    private HashMap<Integer, Boolean> isClusterUps;
-    private HashMap<Integer, Boolean> isClusterDowns;
+
 
     @Override
     public void init() {
@@ -89,6 +98,8 @@ public abstract class ClusterLayer extends CounterBasedNetLayer {
         this.isClusterUps = new HashMap<>();
     }
 
+
+
     public void clearClusterRequestQueue() {
         this.queueClusterRequest.clear();
         this.queueClusterRequests.clear();
@@ -101,7 +112,7 @@ public abstract class ClusterLayer extends CounterBasedNetLayer {
 
     /**
      * This method send a cluster request and put the request into the buffer of
-     * current node. The positon means how many times the message should be routed.
+     * current node. The position means how many times the message should be routed.
      * 
      * @param src
      * @param dst

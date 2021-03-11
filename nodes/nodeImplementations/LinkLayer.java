@@ -117,6 +117,8 @@ public abstract class LinkLayer extends MessageQueueLayer{
 
             // Remove the link, this node don't want to be a part of ego-tree for some reason.
             parentNode.outgoingConnections.remove(parentNode, this);
+
+            // TODO 设置好的ParentNode也要改一下呀
             parentNode.
             return;
         }

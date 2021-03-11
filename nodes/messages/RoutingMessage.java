@@ -18,7 +18,7 @@ public class RoutingMessage extends NetworkMessage {
     // these two properties are used to prevent the wrong route as the consequence of the semi-splay
     private int nextHop = -1;
     private boolean nextHopFlag = false;
-
+    // Think about what would happen if multiple rotations occurs....
 
 
     public void setNextHop(int id){
