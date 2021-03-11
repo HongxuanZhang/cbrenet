@@ -664,18 +664,7 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
     }
 
 
-    public void sendEgoTreeMessage(int largeId, int dst, Message msg) {
-        /**
-         *@description The method only used to send a message in the ego-tree
-         *  The method would generate a routing message to wrap up the msg
-         *
-         *@parameters  [dst, msg]
-         *@return  void
-         *@author  Zhang Hongxuan
-         *@create time  2021/2/28
-         */
-
-    }
+    public abstract void sendEgoTreeMessage(int largeId, int dst, Message msg) ;
 
 
 
