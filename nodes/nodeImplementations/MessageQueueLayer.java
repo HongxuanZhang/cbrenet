@@ -14,7 +14,7 @@ import java.util.Queue;
 import java.util.Random;
 
 /**
- * Only used in the ego-tree. */
+ * Only used to deal with the message */
 
 public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
 
@@ -66,19 +66,34 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
         Queue<Message> messageQueueTmp = new LinkedList<>();
         while(!this.messageQueue.isEmpty()){
             Message message = this.messageQueue.poll();
-            if(this.checkCommunicateSatisfaction(message)){
-                if(message instanceof CbRenetMessage){
-                    int dst = ((CbRenetMessage)message).getDst();
-                    this.send(message, Tools.getNodeByID(dst));
-                }
-                else{
-                    Tools.fatalError("Message class MISSING! Add " + message.getClass() + " into MessageQueueLayer" +
-                            " sendMessageInMessageQueue" );
-                }
+
+            // if a node has message to send but can not pass CP test,
+            // Then there may be bug in the code
+
+//            if(this.checkCommunicateSatisfaction(message)){
+//                if(message instanceof CbRenetMessage){
+//                    int dst = ((CbRenetMessage)message).getDst();
+//                    this.send(message, Tools.getNodeByID(dst));
+//                }
+//                else{
+//                    Tools.fatalError("Message class MISSING! Add " + message.getClass() + " into MessageQueueLayer" +
+//                            " sendMessageInMessageQueue" );
+//                }
+//            }
+//            else{
+//                messageQueueTmp.add(message);
+//            }
+
+            // remove CP test here.
+            if(message instanceof CbRenetMessage){
+                int dst = ((CbRenetMessage)message).getDst();
+                this.send(message, Tools.getNodeByID(dst));
             }
             else{
-                messageQueueTmp.add(message);
+                Tools.fatalError("Message class MISSING! Add " + message.getClass() + " into MessageQueueLayer" +
+                        " sendMessageInMessageQueue" );
             }
+
         }
         this.messageQueue.addAll(messageQueueTmp);
     }
@@ -97,10 +112,8 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
             RoutingMessage message = this.routingMessageQueue.poll();
             int dst = message.getDestination();
             int largeId = message.getLargeId();
-            if(this.checkCommunicateSatisfaction(this.ID, dst)){
-                if(!this.forwardMessage(largeId, message)){
-                    routingMessageQueueTmp.add(message);
-                }
+            if(!this.forwardMessage(largeId, message)){
+                routingMessageQueueTmp.add(message);
             }
         }
 
@@ -147,7 +160,7 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
 
             // Very Important!!
             boolean sendFlag = false;
-            // Note that every message can not send in this ture must store in the routingMessageQueue to
+            // Note that every message can not send in this turn must store in the routingMessageQueue to
             // send it in the next turn;
 
 
@@ -244,38 +257,6 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
 
 
 
-    public boolean checkCommunicateSatisfaction(int src, int dst){
-        if(src != this.ID) {
-            Tools.fatalError("This method must be called in a wrong way, the parameter src must equal to the ID of the " +
-                    "node");
-            return false;
-        }
-        else return this.getCommunicateSmallNodes().containsKey(dst) || this.getCommunicateLargeNodes().containsKey(dst);
-    }
-
-    public boolean checkCommunicateSatisfaction(Request request){
-        int src = request.srcId;
-        int dst = request.dstId;
-        return checkCommunicateSatisfaction(src,dst);
-    }
-
-    public boolean checkCommunicateSatisfaction(Message message) {
-        int src;
-        int dst;
-        if(message instanceof CbRenetMessage){
-            CbRenetMessage messageTmp = (CbRenetMessage) message;
-            src = messageTmp.getSrc();
-            dst = messageTmp.getDst();
-        }
-        else{
-            Tools.fatalError("Message class MISSING! Add " + message.getClass() + " into MessageQueueLayer" );
-            src = -100; // Whatever, make sure check won't return true;
-            dst = -100;
-        }
-        return checkCommunicateSatisfaction(src,dst);
-    }
-
-
 
     // getter
     public Queue<RoutingMessage> getRoutingMessageQueue(){
@@ -285,5 +266,6 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
     public Queue<Message> getMessageQueue(){
         return this.messageQueue;
     }
+
 
 }

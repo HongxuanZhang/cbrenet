@@ -5,6 +5,7 @@ import projects.cbrenet.nodes.messages.CbRenetMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.RPCSdnMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.RequestMessage;
 import sinalgo.configuration.Configuration;
+import sinalgo.nodes.messages.Message;
 import sinalgo.tools.Tools;
 
 import java.util.HashMap;
@@ -272,6 +273,38 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
             this.largeFlag = true;
             this.clearLargeIds();
         }
+    }
+
+
+    public boolean checkCommunicateSatisfaction(int src, int dst){
+        if(src != this.ID) {
+            Tools.fatalError("This method must be called in a wrong way, the parameter src must equal to the ID of the " +
+                    "node");
+            return false;
+        }
+        else return this.getCommunicateSmallNodes().containsKey(dst) || this.getCommunicateLargeNodes().containsKey(dst);
+    }
+
+    public boolean checkCommunicateSatisfaction(Request request){
+        int src = request.srcId;
+        int dst = request.dstId;
+        return checkCommunicateSatisfaction(src,dst);
+    }
+
+    public boolean checkCommunicateSatisfaction(Message message) {
+        int src;
+        int dst;
+        if(message instanceof CbRenetMessage){
+            CbRenetMessage messageTmp = (CbRenetMessage) message;
+            src = messageTmp.getSrc();
+            dst = messageTmp.getDst();
+        }
+        else{
+            Tools.fatalError("Message class MISSING! Add " + message.getClass() + " into MessageQueueLayer" );
+            src = -100; // Whatever, make sure check won't return true;
+            dst = -100;
+        }
+        return checkCommunicateSatisfaction(src,dst);
     }
 
 
