@@ -140,7 +140,22 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
         return this.getCounterBasedBSTLayer(largeId, this.rightChildren);
     }
 
+    public void setParent(int largeId ,int parent) {
+        this.parents.put(largeId, parent);
+    }
 
+    public void setLeftChild(int largeId,int leftChild) {
+        this.leftChildren.put(largeId, leftChild);
+    }
+
+    public void setRightChild(int largeId, int rightChild) {
+        this.rightChildren.put(largeId, rightChild);
+    }
+
+
+
+
+    // leaf part, check whether have l or r child
     public boolean isLeaf(int largeId) {
         // judge whether it is a leaf under the tree of largeId
         return !(this.hasLeftChild(largeId) || this.hasRightChild(largeId));
@@ -162,12 +177,14 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
         }
         return right != -1;
     }
+    // leaf part finish
 
 
+    // Todo 或许可以把这一部分移到 LinkLayer中
     private void changeOneOfLinkTo(int largeId, int id, char relation){
         /**
          *@description only add the link in one side, this method should be called when receive
-         *  SDN message
+         *  SDN's LinkMessage
          *@parameters  [id]
          *@return  void
          *@author  Zhang Hongxuan
@@ -187,17 +204,7 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
         }
     }
 
-    public void setParent(int largeId ,int parent) {
-        this.parents.put(largeId, parent);
-    }
 
-    public void setLeftChild(int largeId,int leftChild) {
-        this.leftChildren.put(largeId, leftChild);
-    }
-
-    public void setRightChild(int largeId, int rightChild) {
-        this.rightChildren.put(largeId, rightChild);
-    }
 
     public boolean removeRightChild(int largeId){
         /**
@@ -377,6 +384,8 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
         this.removeBidirectionalLinkTo(this.leftChildren.getOrDefault(largeId,-1));
     }
 
+
+    // send message part
     private boolean sendToNeighbor(int largeId, Message msg, HashMap<Integer, Integer> neighbors){
         CounterBasedBSTLayer neighbor;
         int neighborId = neighbors.getOrDefault(largeId,-1);
@@ -418,6 +427,8 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
     public boolean sendToRightChild(int largeId, Message msg) {
         return sendToNeighbor(largeId, msg, this.rightChildren);
     }
+    // send message part finish
+
 
     @Override
     public void init() {
@@ -430,12 +441,8 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
         this.insertMessageQueue = new LinkedList<RoutingMessage>();
         this.insertMessageExecuteFlags = new HashMap<>();
 
-    }
 
-    @Override
-    // todo this method should not in here
-    public void preStep() {
-        // nothing to do
+
     }
 
 
@@ -650,8 +657,6 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
     }
 
 
-    protected abstract boolean forwardMessage(int largeId, RoutingMessage msg);
-
     protected void sendForwardMessage(int dst, Message msg) {
         // TODO 这是cbent中的，因为似乎关系到Rotation Layer故在此保留 反正后面要改先留着后面再删除
         if (dst == ID) {
@@ -664,18 +669,19 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
     }
 
 
+
+    // abstract method
     public abstract void sendEgoTreeMessage(int largeId, int dst, Message msg) ;
 
+    protected abstract boolean forwardMessage(int largeId, RoutingMessage msg);
+
+    // use this to give message received to other layers.
+    public abstract void receiveMessage(Message msg);
+
+    // abstract method part finish
 
 
-    /**
-     * This function is called for each message received
-     *
-     * @param msg
-     */
-    public void receiveMessage(Message msg) {
-
-    }
+    //  override method in the Node
 
     /**
      * if the function return false the message will not be forward to next node
@@ -699,17 +705,7 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
         return ID - o.ID;
     }
 
-    public HashMap<Integer, Integer> getParents() {
-        return parents;
-    }
 
-    public HashMap<Integer, Integer> getLeftChildren() {
-        return leftChildren;
-    }
-
-    public HashMap<Integer, Integer> getRightChildren() {
-        return rightChildren;
-    }
 
 
     protected void doInPostRound(){

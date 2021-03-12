@@ -167,7 +167,7 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
             if(msg.getNextHopFlag()){
                 // when nextHop flag is true, we need a special forward
 
-                int currentParentId = this.getParents().getOrDefault(largeId, -1);
+                int currentParentId = this.getParent(largeId);
                 if(currentParentId != -1){
                     // 上面这里最好不要用到，因为会导致灾难性的后果。旋转后，还请阻塞一下！！
                     // 不要用！！ 也没必要用，阻塞住即可！ 阻塞一个round就行了！
