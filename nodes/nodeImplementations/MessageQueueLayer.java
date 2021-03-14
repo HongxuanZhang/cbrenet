@@ -4,14 +4,11 @@ import projects.cbrenet.nodes.messages.CbRenetMessage;
 import projects.cbrenet.nodes.messages.RoutingMessage;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteRequestMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.LargeInsertMessage;
-import projects.cbrenet.nodes.tableEntry.Request;
 import sinalgo.nodes.messages.Message;
-import sinalgo.runtime.Global;
 import sinalgo.tools.Tools;
 
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.Random;
 
 /**
  * Only used to deal with the message */
@@ -122,30 +119,31 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
     }
 
 
+    // Todo 从ForwardMessage中删除LargeId.
     @Override
-    protected boolean forwardMessage(int largeId, RoutingMessage msg) {
+    protected boolean forwardMessage(int largeId, RoutingMessage routingMessage) {
         /**
          *@description this method only use to transfer message in the ego-tree of the large node,
          * called when the node want to transfer a message
-         *@parameters  [largeId, msg]
+         *@parameters  [largeId, routingMessage]
          *@return  void
          *@author  Zhang Hongxuan
          *@create time  2021/2/7
          */
-        int destination = msg.getDestination();
+        int destination = routingMessage.getDestination();
         if(this.ID == destination )
         {
-            Tools.warning("A message received in forwardMessage : " + msg.getPayLoad().getClass() );
-            this.receiveMessage(msg.getPayLoad());
+            Tools.warning("A message received in forwardMessage : " + routingMessage.getPayLoad().getClass() );
+            this.receiveMessage(routingMessage.getPayLoad());
             return true;
         }
 
         if(this.ID == largeId){
-            // if the sender is LN, it should transfer the rt msg directly to the root of the ego-tree
+            // if the sender is LN, it should transfer the rt routingMessage directly to the root of the ego-tree
             int rootId = this.getRootNodeId();
             if(rootId != -1){
                 if(this.outgoingConnections.contains(this, Tools.getNodeByID(rootId))){
-                    this.send(msg, Tools.getNodeByID(rootId));
+                    this.send(routingMessage, Tools.getNodeByID(rootId));
                     return true;
                 }
             }
@@ -164,7 +162,7 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
             // send it in the next turn;
 
 
-            if(msg.getNextHopFlag()){
+            if(routingMessage.getSpecialHopFlag()){
                 // when nextHop flag is true, we need a special forward
 
                 int currentParentId = this.getParent(largeId);
@@ -172,10 +170,9 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
                     // 上面这里最好不要用到，因为会导致灾难性的后果。旋转后，还请阻塞一下！！
                     // 不要用！！ 也没必要用，阻塞住即可！ 阻塞一个round就行了！
 
-                    if(currentParentId == msg.getNextHop()){
-                        msg.resetNextHop();
-                        this.sendToParent(largeId,msg);
-                        return true;
+                    if(currentParentId == routingMessage.getSpecialHop()){
+                        routingMessage.resetSpecialHop();
+                        return this.sendToParent(largeId, routingMessage);
                     }
                     else{
                         Tools.warning("We have to send a message according to the next hop, but the parent" +
@@ -192,23 +189,23 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
 
 
 
-            Message message = msg.getPayLoad();
+            Message message = routingMessage.getPayLoad();
 
             if(message instanceof CbRenetMessage){
                 if(!((CbRenetMessage) message).isUpForward()){
                     // if not upForward, the message would send to the child
                     if (this.ID < destination) {
-                        if(sendToRightChild(largeId, msg)){
+                        if(sendToRightChild(largeId, routingMessage)){
                             sendFlag = true;
                         }
                     } else if (destination < ID) {
-                        if(sendToLeftChild(largeId, msg)){
+                        if(sendToLeftChild(largeId, routingMessage)){
                             sendFlag = true;
                         }
                     }
                 }
                 else{
-                    if(sendToParent(largeId, msg)){
+                    if(sendToParent(largeId, routingMessage)){
                         sendFlag = true;
                     }
                 }
@@ -217,12 +214,12 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
                 LargeInsertMessage insertMessageTmp = (LargeInsertMessage) message;
                 int target = insertMessageTmp.getTarget();
                 if(target > this.ID){
-                    if(this.sendToRightChild(largeId, message)){
+                    if(this.sendToRightChild(largeId, routingMessage)){
                         sendFlag = true;
                     }
                 }
                 else{
-                    if(this.sendToLeftChild(largeId, message)){
+                    if(this.sendToLeftChild(largeId, routingMessage)){
                         sendFlag = true;
                     }
                 }
@@ -231,7 +228,7 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
             else if(message instanceof DeleteRequestMessage){
                 DeleteRequestMessage deleteRequestMessageTmp = (DeleteRequestMessage) message;
                 if(this.ID != deleteRequestMessageTmp.getDst()){
-                    if(sendToParent(largeId, message)){
+                    if(sendToParent(largeId, routingMessage)){
                         sendFlag = true;
                     }
                 }
@@ -250,7 +247,7 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
         }
         else{
             Tools.warning("A routing message not go in the ego tree, but send to the destination!");
-            send(msg, Tools.getNodeByID(destination));
+            send(routingMessage, Tools.getNodeByID(destination));
             return true;
         }
     }

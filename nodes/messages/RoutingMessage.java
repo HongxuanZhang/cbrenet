@@ -10,34 +10,44 @@ import sinalgo.tools.Tools;
  */
 public class RoutingMessage extends NetworkMessage {
 
+    private int nextHop; // Auxiliary Node need to know which node is helped.
+    // nextHop field must set beforeForward!
+
+    public int getNextHop() {
+        return nextHop;
+    }
+
+    public void setNextHop(int nextHop) {
+        this.nextHop = nextHop;
+    }
 
     private int largeId = -1;
     private boolean upForward = false;
 
 
     // these two properties are used to prevent the wrong route as the consequence of the semi-splay
-    private int nextHop = -1;
-    private boolean nextHopFlag = false;
+    private int specialHop = -1;
+    private boolean specialHopFlag = false;
     // Think about what would happen if multiple rotations occurs....
 
 
-    public void setNextHop(int id){
+    public void setSpecialHop(int id){
         if(id<0){
             Tools.fatalError("The next hop id of routing message can not be less than 0!");
         }
-        this.nextHop = id;
-        this.nextHopFlag = true;
+        this.specialHop = id;
+        this.specialHopFlag = true;
     }
 
-    public boolean getNextHopFlag(){
-        return this.nextHopFlag;
+    public boolean getSpecialHopFlag(){
+        return this.specialHopFlag;
     }
 
-    public int getNextHop(){
-        return this.nextHop;
+    public int getSpecialHop(){
+        return this.specialHop;
     }
 
-    public void resetNextHop(){
+    public void resetSpecialHop(){
         /**
          *@description This method should be used when the node finish handling the hop.
          *@parameters  []
@@ -45,8 +55,8 @@ public class RoutingMessage extends NetworkMessage {
          *@author  Zhang Hongxuan
          *@create time  2021/2/20
          */
-        this.nextHopFlag = false;
-        this.nextHop = -1;
+        this.specialHopFlag = false;
+        this.specialHop = -1;
     }
 
     private Message payload;
@@ -65,12 +75,23 @@ public class RoutingMessage extends NetworkMessage {
         this.upForward = upForward;
     }
 
+    public void beforeForward(int nextHop){
+        /**
+         *@description  The auxiliary node need to know the current helped id
+         *@parameters  [nextHop]
+         *@return  void
+         *@author  Zhang Hongxuan
+         *@create time  2021/3/14
+         */
+        this.setNextHop(nextHop);
+    }
+
     public int getLargeId() {
         return largeId;
     }
 
-    public boolean isNextHopFlag() {
-        return nextHopFlag;
+    public boolean isSpecialHopFlag() {
+        return specialHopFlag;
     }
 
     public Message getPayload() {

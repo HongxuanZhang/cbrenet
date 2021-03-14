@@ -386,7 +386,7 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
 
 
     // send message part
-    private boolean sendToNeighbor(int largeId, Message msg, HashMap<Integer, Integer> neighbors){
+    private boolean sendToNeighbor(int largeId, RoutingMessage msg, HashMap<Integer, Integer> neighbors){
         CounterBasedBSTLayer neighbor;
         int neighborId = neighbors.getOrDefault(largeId,-1);
         if(neighborId == -1){
@@ -403,7 +403,7 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
         }
     }
 
-    public boolean sendToParent(int largeId, Message msg) {
+    public boolean sendToParent(int largeId, RoutingMessage msg) {
         if(!sendToNeighbor(largeId,msg,this.parents)){
             // do not have a parent, which means the node may be a root node of the ego-tree(largeId);
             if(this.isRoots.getOrDefault(largeId, false)){
@@ -420,11 +420,11 @@ public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer imple
         }
     }
 
-    public boolean sendToLeftChild(int largeId, Message msg) {
+    public boolean sendToLeftChild(int largeId, RoutingMessage msg) {
         return sendToNeighbor(largeId,msg,this.leftChildren);
     }
 
-    public boolean sendToRightChild(int largeId, Message msg) {
+    public boolean sendToRightChild(int largeId, RoutingMessage msg) {
         return sendToNeighbor(largeId, msg, this.rightChildren);
     }
     // send message part finish

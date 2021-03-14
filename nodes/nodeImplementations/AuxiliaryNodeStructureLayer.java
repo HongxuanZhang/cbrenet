@@ -1,15 +1,22 @@
 package projects.cbrenet.nodes.nodeImplementations;
 
+import projects.cbrenet.nodes.messages.RoutingMessage;
 import sinalgo.nodes.Node;
 import sinalgo.tools.Tools;
 
 import java.util.HashMap;
+import java.util.Queue;
 
 public abstract class AuxiliaryNodeStructureLayer extends Node {
 
-    public HashMap<Integer, HashMap<Integer, HelpIdEntry>> routeTable;
+    private HashMap<Integer, HashMap<Integer, HelpIdEntry>> routeTable;
     // Note that the key is helpedId, and the inner key is largeId.
     //  helpedId 15,   LN 3,    p, l, r  ;
+
+    private HashMap<Integer, Queue<RoutingMessage>> routingMessageQueue;
+    // Organized by the Helped Id.
+
+
 
     private class HelpIdEntry {
         int parent;
@@ -22,9 +29,67 @@ public abstract class AuxiliaryNodeStructureLayer extends Node {
             this.rightChild = rightChild;
         }
 
+        boolean sendFlagOfParent = true;
+        boolean sendFlagOfLeftChild = true;
+        boolean sendFlagOfRightChild = true;
+
+        public boolean getSendFlag(int id){
+            if(id == this.parent){
+                return this.sendFlagOfParent;
+            }
+            else if(id == this.leftChild){
+                return this.sendFlagOfLeftChild;
+            }
+            else if(id == this.rightChild){
+                return this.sendFlagOfRightChild;
+            }
+            else{
+                return false;
+            }
+        }
+
+
+
     }
 
+    public boolean sendTo(int targetID, RoutingMessage routingMessage){
+        /**
+         *@description Used to send routing message in helped ego-tree.
+         *@parameters  [targetID, routingMessage]
+         *@return  boolean
+         *@author  Zhang Hongxuan
+         *@create time  2021/3/14
+         */
 
+        int largeId = routingMessage.getLargeId();
+        int helpedId = routingMessage.getNextHop(); // still unchanged!!!
+        if(this.outgoingConnections.contains(this, Tools.getNodeByID(targetID))){
+            HelpIdEntry entry = this.getCorrespondingEntry(helpedId, largeId);
+            if(entry != null){
+                boolean sendFlag = entry.getSendFlag(targetID);
+                if(sendFlag){
+                    routingMessage.setNextHop(targetID); // when the node is sure that the message would be sent, change it !
+                    this.send(routingMessage,Tools.getNodeByID(targetID));
+                    return true;
+                }
+                else{
+                    Tools.warning("Can not send a message since the send Flag " +
+                            "is False: " + helpedId +" " + largeId);
+                    return false;
+                }
+            }
+            else{
+                Tools.warning("Want to send a Message to " + targetID + ", but the corresponding entry in auxiliary node" +
+                        " is null");
+                return false;
+            }
+        }
+        else{
+            Tools.fatalError("Want to send a Message to " + targetID + ", but the" +
+                    " corresponding link not exist" + helpedId + " by auxiliary node.");
+            return false;
+        }
+    }
 
     public void addHelpIdEntry(int helpedId, int largeId, int parent, int leftChild, int rightChild){
         assert leftChild != -1 && rightChild != -1;
@@ -43,7 +108,7 @@ public abstract class AuxiliaryNodeStructureLayer extends Node {
     public void removeHelpIdEntry(int helpedId, int largeId){
         /**
          *@description Call this method when the node is satisfied to truly delete from the
-         *             Ego-Tree(largeId)
+         *             Ego-Tree(largeId) (In Complete Delete Phase)
          *             Or when the whole tree is deleted!
          *@parameters  [helpedId, largeId]
          *@return  void
@@ -68,32 +133,42 @@ public abstract class AuxiliaryNodeStructureLayer extends Node {
     }
 
     public int getLeftChildOf(int helpedId, int largeId){
-        return this.getChild(true, helpedId, largeId);
-    }
-
-    public int getRightChildOf(int helpedId, int largeId){
-        return this.getChild(false, helpedId, largeId);
-    }
-
-
-    private int getChild(boolean leftChild, int helpedId, int largeId){
-        if(this.routeTable.containsKey(helpedId)){
-            HashMap<Integer, HelpIdEntry> entryHashMap = this.routeTable.get(helpedId);
-            if(entryHashMap.containsKey(largeId)){
-                HelpIdEntry helpIdEntry = entryHashMap.get(largeId);
-                if(leftChild){
-                    return helpIdEntry.leftChild;
-                }
-                else{
-                    return helpIdEntry.rightChild;
-                }
-            }
-            else{
-                return -1;
-            }
+        HelpIdEntry entry = this.getCorrespondingEntry(helpedId, largeId);
+        if(entry != null){
+            return entry.leftChild;
         }
         else{
             return -1;
+        }
+    }
+
+    public int getRightChildOf(int helpedId, int largeId){
+        HelpIdEntry entry = this.getCorrespondingEntry(helpedId, largeId);
+        if(entry != null){
+            return entry.rightChild;
+        }
+        else{
+            return -1;
+        }
+    }
+
+    public int getParentOf(int helpedId, int largeId){
+        HelpIdEntry entry = this.getCorrespondingEntry(helpedId, largeId);
+        if(entry != null){
+            return entry.parent;
+        }
+        else{
+            return -1;
+        }
+    }
+
+    public HelpIdEntry getCorrespondingEntry(int helpedId, int largeId){
+        if(this.routeTable.containsKey(helpedId)){
+            HashMap<Integer, HelpIdEntry> entryHashMap = this.routeTable.get(helpedId);
+            return entryHashMap.getOrDefault(largeId, null);
+        }
+        else{
+            return null;
         }
     }
 
