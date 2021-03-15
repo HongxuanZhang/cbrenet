@@ -20,8 +20,6 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTStructureLayer
 
     // basic field part
 
-    // only used in the large node. root node id is the id of the node which connect to the large node directly!
-    private int rootNodeId = -1;
 
     // only use in the root node of Ego-Tree(large node): largeParent is the largeNode of the ego-tree
     private HashSet<Integer> largeParent;
@@ -43,13 +41,6 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTStructureLayer
     public void addLargeParent(int largeParent) {
         this.isRoots.put(largeParent, true);
         this.largeParent.add(largeParent);
-    }
-
-    public int getRootNodeId() {
-        return rootNodeId;
-    }
-    public void setRootNodeId(int rootNodeId) {
-        this.rootNodeId = rootNodeId;
     }
 
 
@@ -344,47 +335,11 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTStructureLayer
 
 
     // send message part
-    private boolean sendToNeighbor(int largeId, RoutingMessage msg, HashMap<Integer, Integer> neighbors){
-        CounterBasedBSTLayer neighbor;
-        int neighborId = neighbors.getOrDefault(largeId,-1);
-        if(neighborId == -1){
-            Tools.warning("Trying to send message to a non-existing node");
-            return false;
-        }
-        neighbor =(CounterBasedBSTLayer)Tools.getNodeByID(neighborId);
-        if (this.outgoingConnections.contains(this, neighbor)) {
-            send(msg, neighbor);
-            return true;
-        } else {
-            Tools.fatalError("Trying to send message through a non-existing connection with parent node");
-            return false;
-        }
-    }
+    public abstract boolean sendToParent(int largeId, RoutingMessage msg);
 
-    public boolean sendToParent(int largeId, RoutingMessage msg) {
-        if(!sendToNeighbor(largeId,msg,this.parents)){
-            // do not have a parent, which means the node may be a root node of the ego-tree(largeId);
-            if(this.isRoots.getOrDefault(largeId, false)){
-                this.send(msg, Tools.getNodeByID(largeId));
-                return true;
-            }
-            else{
-                // still can not send to the LN of the ego-Tree(largeId);
-                return false;
-            }
-        }
-        else{
-            return true;
-        }
-    }
+    public abstract boolean sendToLeftChild(int largeId, RoutingMessage msg);
 
-    public boolean sendToLeftChild(int largeId, RoutingMessage msg) {
-        return sendToNeighbor(largeId,msg,this.leftChildren);
-    }
-
-    public boolean sendToRightChild(int largeId, RoutingMessage msg) {
-        return sendToNeighbor(largeId, msg, this.rightChildren);
-    }
+    public abstract boolean sendToRightChild(int largeId, RoutingMessage msg);
     // send message part finish
 
 
@@ -432,7 +387,7 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTStructureLayer
 
         if(target < this.ID){
             if(this.getLeftChild(largeId) != -1){
-                if(!this.forwardMessage(largeId, routingMessage)){
+                if(!this.forwardMessage(routingMessage)){
                     ((MessageQueueLayer)this).addInRoutingMessageQueue(routingMessage);
                 }
                 forwardedFlag = true;
@@ -445,7 +400,7 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTStructureLayer
         }
         else{
             if(this.getRightChild(largeId) != -1){
-                if(!this.forwardMessage(largeId, routingMessage)){
+                if(!this.forwardMessage(routingMessage)){
                     ((MessageQueueLayer)this).addInRoutingMessageQueue(routingMessage);
                 }
                 forwardedFlag = true;
@@ -549,7 +504,7 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTStructureLayer
                     else{
                         // not InsertMessage and not get destination
                         // only need to forward
-                        if(!this.forwardMessage(largeId, rt)){
+                        if(!this.forwardMessage(rt)){
                             ((MessageQueueLayer)this).addInRoutingMessageQueue(rt);
                         }
                     }
@@ -614,13 +569,13 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTStructureLayer
 
     protected void sendForwardMessage(int dst, Message msg) {
         // TODO 这是cbent中的，因为似乎关系到Rotation Layer故在此保留 反正后面要改先留着后面再删除
-        if (dst == ID) {
+        if (dst == this.ID) {
             this.receiveMessage(msg);
             return;
         }
         int largeId = -1; // todo 我们要在这里， 得到largeId
-        RoutingMessage rt = new RoutingMessage(ID, dst, msg, largeId);
-        forwardMessage(largeId, rt);
+        RoutingMessage rt = new RoutingMessage(this.ID, dst, msg, largeId, );
+        forwardMessage(rt);
     }
 
 
@@ -628,7 +583,7 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTStructureLayer
     // abstract method
     public abstract void sendEgoTreeMessage(int largeId, int dst, Message msg) ;
 
-    protected abstract boolean forwardMessage(int largeId, RoutingMessage msg);
+    protected abstract boolean forwardMessage(RoutingMessage msg);
 
     // use this to give message received to other layers.
     public abstract void receiveMessage(Message msg);

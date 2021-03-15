@@ -15,7 +15,37 @@ import java.util.HashMap;
 
 public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLayer{
 
+    // only used in the large node. root node id is the id of the node which connect to the large node directly!
+    // Even we have SendEntry, we still need this field as the link to the Ego-Tree(LN).
+    private int rootNodeId = -1;
+    // rootNodeId can be used as SendID actually, since LN do not need a egoTreeID.
+
+    private boolean rootNodeSendFlag = true;
+
+    // root node id & send Flag getter & setter
+    public void setRootNodeSendFlag(boolean rootNodeSendFlag) {
+        this.rootNodeSendFlag = rootNodeSendFlag;
+    }
+
+    public boolean isRootNodeSendFlag() {
+        return rootNodeSendFlag;
+    }
+
+    public int getRootNodeId() {
+        return this.rootNodeId;
+    }
+
+    public void setRootNodeId(int rootNodeId) {
+        this.rootNodeId = rootNodeId;
+    }
+
+
+
+
     HashMap<Integer, SendEntry> routeTable;  // 指示着当前的结点在 Ego-Tree(largeId)中的情况
+
+
+
 
     private SendEntry getSendEntryOf(int largeId){
         return this.routeTable.getOrDefault(largeId,null);
@@ -41,6 +71,7 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
     public boolean sendTo(int egoTreeTargetID, RoutingMessage routingMessage){
         /**
          *@description  调用这个method的时候，只需要提供routingMessage 要去的 egoTreeId 即可
+         *              Ego-Tree 的根结点请提供rootID
          *@parameters  [egoTreeTargetID, routingMessage]
          *              Here must be egoTreeTargetID, since the auxiliary node use this to forward message!
          *@return  boolean
@@ -55,6 +86,46 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
         }
 
         int largeId = routingMessage.getLargeId();
+
+        if(this.ID == largeId){
+            // Which indicate that this node is the node that send the rt message, it need
+            // a special forwarding mechanism
+
+            int rootID = this.getRootNodeId();
+
+            if(rootID < 0){
+                Tools.warning("LN" + this.ID + " need to send a forwarding message, " +
+                        "but the rootNodeId is wrong:" + rootID );
+                return false;
+            }
+
+            if(rootID != egoTreeTargetID){
+                Tools.fatalError("LN" + this.ID + " need to send a forwarding message, " +
+                        "but the rootNodeId is not equal to the egoTreeId provided by the node " + rootID + " &" +
+                        " " + egoTreeTargetID );
+                return false;
+            }
+
+            if(this.outgoingConnections.contains(this, Tools.getNodeByID(rootID))){
+                boolean sendFlag = this.rootNodeSendFlag;
+                if(sendFlag){
+                    routingMessage.setNextHop(rootID); // when the node is sure that the message would be sent, change it !
+                    this.send(routingMessage,Tools.getNodeByID(rootID));
+                    return true;
+                }
+                else{
+                    Tools.warning("Can not send a message since the send Flag " +
+                            "is False: from " + this.ID +" to the root node in ego-tree : " + largeId);
+                    return false;
+                }
+            }
+            else{
+                Tools.warning("Node " + this.ID +" want to send a Message to " + rootID + ", but the" +
+                        " corresponding link not exist by auxiliary node.");
+                return false;
+            }
+        }
+
         SendEntry entry = this.getSendEntryOf(largeId);
 
 
@@ -91,7 +162,15 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
 
 
     // Getter & Setter
+
     private int getNeighbor(int largeId, char relation){
+        /**
+         *@description This method only get egoTreeID, remember that use egoTreeID to get SendID!!
+         *@parameters  [largeId, relation]
+         *@return  int
+         *@author  Zhang Hongxuan
+         *@create time  2021/3/15
+         */
         SendEntry entry = this.getSendEntryOf(largeId);
         if(entry != null){
             switch (relation){

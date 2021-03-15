@@ -88,6 +88,7 @@ public abstract class MessageSendLayer extends MessageQueueLayer{
         /**
          *@description The method only used to send a message in the ego-tree
          *          *  The method would generate a routing message to wrap up the msg
+         *             Not only send the Request Message , but also other message can be sent
          *
          *          IMPORTANT!!! DO NOT use it to forward message
          *
@@ -110,10 +111,6 @@ public abstract class MessageSendLayer extends MessageQueueLayer{
         }
         boolean upForward = false;
 
-        // 下面的写法是标准的错误写法，因为node的大小根本不能用于判断对方，必须考虑到过渡态的存在！！！！
-//        if(!isNodeSmall(dst)){
-//            upForward = true;
-//        }
 
         if(msg instanceof DeleteRequestMessage)
         {
@@ -144,14 +141,8 @@ public abstract class MessageSendLayer extends MessageQueueLayer{
 
         RoutingMessage routingMessage = new RoutingMessage(this.ID, dst, msg, largeId, upForward);
 
-        //  check 是否满足发送，但是满足发送为什么要 check CP呢？？？ CP已经在它变成Message的时候check过了啊
-        // TODO 这里说不定可以不用再检测，看情况吧
-        if(this.checkCommunicateSatisfaction(this.ID, dst)){
 
-            if(!this.forwardMessage(largeId, routingMessage)){
-                this.getRoutingMessageQueue().add(routingMessage);
-            }
-
+        if(this.forwardMessage(routingMessage)){
             // When DRM sent, the corresponding CP should be removed! No message would be sent after this!
             if(msg instanceof DeleteRequestMessage){
                 DeleteRequestMessage tmpMsg = (DeleteRequestMessage) msg;
@@ -162,6 +153,7 @@ public abstract class MessageSendLayer extends MessageQueueLayer{
         else{
             this.getRoutingMessageQueue().add(routingMessage);
         }
+
     }
 
 

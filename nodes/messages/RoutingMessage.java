@@ -62,12 +62,6 @@ public class RoutingMessage extends NetworkMessage {
     private Message payload;
 
 
-    // 大概率用不到
-    public RoutingMessage(int source, int destination, Message payload) {
-        super(source, destination);
-        this.payload = payload;
-    }
-
     public RoutingMessage(int source, int destination, Message payload, int largeId, boolean upForward) {
         super(source, destination);
         this.payload = payload;

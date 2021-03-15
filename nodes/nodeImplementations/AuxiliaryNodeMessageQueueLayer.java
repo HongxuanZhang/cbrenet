@@ -87,8 +87,7 @@ public abstract class AuxiliaryNodeMessageQueueLayer extends AuxiliaryNodeStruct
 
                     if(currentParentId == routingMessage.getSpecialHop()){
                         routingMessage.resetSpecialHop();
-                        this.sendTo(currentParentId, routingMessage);
-                        return true;
+                        return this.sendTo(currentParentId, routingMessage);
                     }
                     else{
                         Tools.warning("We have to send a message according to the next hop, but the parent" +
