@@ -14,6 +14,8 @@ public abstract class AuxiliaryNodeStructureLayer extends Node {
     //  helpedId 15,   LN 3,    p, l, r  ;
 
     private class HelpIdEntry {
+
+        // todo 这里可能还不够，可能也需要改动，看在CBBST 中的情况
         int parent;
         int leftChild;
         int rightChild;
@@ -27,6 +29,8 @@ public abstract class AuxiliaryNodeStructureLayer extends Node {
         boolean sendFlagOfParent = true;
         boolean sendFlagOfLeftChild = true;
         boolean sendFlagOfRightChild = true;
+
+
 
         public boolean getSendFlag(int id){
             if(id == this.parent){
@@ -43,6 +47,21 @@ public abstract class AuxiliaryNodeStructureLayer extends Node {
             }
         }
 
+
+        // Getter & Setter
+
+
+        public void setSendFlagOfParent(boolean sendFlagOfParent) {
+            this.sendFlagOfParent = sendFlagOfParent;
+        }
+
+        public void setSendFlagOfLeftChild(boolean sendFlagOfLeftChild) {
+            this.sendFlagOfLeftChild = sendFlagOfLeftChild;
+        }
+
+        public void setSendFlagOfRightChild(boolean sendFlagOfRightChild) {
+            this.sendFlagOfRightChild = sendFlagOfRightChild;
+        }
 
 
     }

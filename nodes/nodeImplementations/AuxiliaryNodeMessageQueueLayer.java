@@ -53,7 +53,7 @@ public abstract class AuxiliaryNodeMessageQueueLayer extends AuxiliaryNodeStruct
         msgQueueTmp.add(routingMessage);
         this.routingMessageQueues.put(helpedID, msgQueueTmp);
     }
-    
+
 
     public boolean forwardMessage(RoutingMessage routingMessage) {
         /**
