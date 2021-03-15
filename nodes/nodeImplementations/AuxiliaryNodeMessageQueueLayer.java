@@ -12,8 +12,6 @@ import java.util.*;
 public abstract class AuxiliaryNodeMessageQueueLayer extends AuxiliaryNodeStructureLayer {
 
 
-
-    // 就用这个吧。。。。尽管按照 helpId, largeID做似乎更合适。。
     private HashMap<Integer, Queue<RoutingMessage>> routingMessageQueues;
     // Organized by the Helped Id.
 
@@ -22,7 +20,7 @@ public abstract class AuxiliaryNodeMessageQueueLayer extends AuxiliaryNodeStruct
 
         // clear queue part
 
-        // todo 是否需要增加有关相关entry中的queue空不空的部分？？
+        // todo 是否需要增加有关相关entry中的queue空不空的部分, 用以删除所用？？
         Set<Integer> idKeys = this.routingMessageQueues.keySet();
         for(int id : idKeys){
             Queue<RoutingMessage> routingMessageQueue = this.routingMessageQueues.get(id);

@@ -182,7 +182,6 @@ public abstract class LinkLayer extends MessageQueueLayer{
 
     @Override
     public void receiveMessage(Message msg){
-        super.receiveMessage(msg);
         if(msg instanceof StatusRelatedMessage){
             StatusRelatedMessage statusRelatedMessage = (StatusRelatedMessage) msg;
             int globalStatusIdTmp = statusRelatedMessage.getUniqueStatusId();

@@ -60,15 +60,6 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTStructureLayer
 
 
 
-    // The first one is largeId, and the second one is corresponding p || lc || rc
-    private HashMap<Integer, Integer> parents;
-    private HashMap<Integer, Integer> leftChildren;
-    private HashMap<Integer, Integer> rightChildren;
-
-
-
-
-
     // LIM execution part
     public boolean checkInsertMessageExecuteFlags(int largeId){
         return this.insertMessageExecuteFlags.getOrDefault(largeId, false);
@@ -105,27 +96,29 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTStructureLayer
 
     // todo
     // leaf part, check whether have l or r child
-    public boolean isLeaf(int largeId) {
-        // judge whether it is a leaf under the tree of largeId
-        return !(this.hasLeftChild(largeId) || this.hasRightChild(largeId));
-    }
 
-    public boolean hasLeftChild(int largeId) {
-        // we may have to change them since some large nodes may exist in the ego-tree
-        int left = -1;
-        if(!this.largeFlag){
-            left = this.leftChildren.getOrDefault(largeId, null);
-        }
-        return left != -1;
-    }
+//    public boolean isLeaf(int largeId) {
+//        // judge whether it is a leaf under the tree of largeId
+//        return !(this.hasLeftChild(largeId) || this.hasRightChild(largeId));
+//    }
+//
+//    public boolean hasLeftChild(int largeId) {
+//        // we may have to change them since some large nodes may exist in the ego-tree
+//        int left = -1;
+//        if(!this.largeFlag){
+//            left = this.leftChildren.getOrDefault(largeId, null);
+//        }
+//        return left != -1;
+//    }
+//
+//    public boolean hasRightChild(int largeId) {
+//        int right = -1;
+//        if(!this.largeFlag){
+//            right = this.rightChildren.getOrDefault(largeId, null);
+//        }
+//        return right != -1;
+//    }
 
-    public boolean hasRightChild(int largeId) {
-        int right = -1;
-        if(!this.largeFlag){
-            right = this.rightChildren.getOrDefault(largeId, null);
-        }
-        return right != -1;
-    }
     // leaf part finish
 
 
@@ -320,19 +313,6 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTStructureLayer
         this.addBidirectionalLinkToLeftChild(largeId,newNodeId);
     }
 
-    public void removeAllNeighbors(int largeId){
-        /**
-         *@description used by clear ego-tree
-         *@parameters  [largeId]
-         *@return  void
-         *@author  Zhang Hongxuan
-         *@create time  2021/2/20
-         */
-        this.removeBidirectionalLinkTo(this.parents.getOrDefault(largeId, -1));
-        this.removeBidirectionalLinkTo(this.rightChildren.getOrDefault(largeId,-1));
-        this.removeBidirectionalLinkTo(this.leftChildren.getOrDefault(largeId,-1));
-    }
-
 
     // send message part
     public abstract boolean sendToParent(int largeId, RoutingMessage msg);
@@ -345,9 +325,6 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTStructureLayer
 
     @Override
     public void init() {
-        this.parents = new HashMap<Integer, Integer>();
-        this.rightChildren = new HashMap<Integer, Integer>();
-        this.leftChildren = new HashMap<Integer, Integer>();
 
         // Insert Message Queue
         this.insertMessageQueue = new LinkedList<RoutingMessage>();
