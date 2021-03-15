@@ -140,7 +140,7 @@ public abstract class AuxiliaryNodeMessageQueueLayer extends AuxiliaryNodeStruct
                 }
                 else{
                     int leftChild = this.getLeftChildOf(helpedId, largeId);
-                    if(sendTo(leftChild, routingMessage)){
+                    if(this.sendTo(leftChild, routingMessage)){
                         sendFlag = true;
                     }
                 }
@@ -150,7 +150,7 @@ public abstract class AuxiliaryNodeMessageQueueLayer extends AuxiliaryNodeStruct
                 DeleteRequestMessage deleteRequestMessageTmp = (DeleteRequestMessage) message;
                 if(this.ID != deleteRequestMessageTmp.getDst()){
                     int parentId = this.getParentOf(helpedId, largeId);
-                    if(sendTo(parentId, routingMessage)){
+                    if(this.sendTo(parentId, routingMessage)){
                         sendFlag = true;
                     }
                 }

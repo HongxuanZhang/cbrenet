@@ -18,25 +18,33 @@ import java.util.*;
 
 public abstract class CounterBasedBSTLayer extends CounterBasedBSTStructureLayer implements Comparable<CounterBasedBSTLayer>{
 
-    //maintains the number of operations performed over this node
-    private long counter;
-
-    public long getCounter() {
-        return this.counter;
-    }
-
-    public void incrementCounter() {
-        this.counter++;
-    }
-
-    public void clearCounter() {
-        this.counter = 0;
-    }
-
-
+    // basic field part
 
     // only used in the large node. root node id is the id of the node which connect to the large node directly!
     private int rootNodeId = -1;
+
+    // only use in the root node of Ego-Tree(large node): largeParent is the largeNode of the ego-tree
+    private HashSet<Integer> largeParent;
+
+    // only used in the small nodes and the small node that changing into large.
+    private HashMap<Integer, Boolean> isRoots; // indicate whether the node is the root of ego tree under the large Node
+
+    // The insertMessageExecuteFlags use to direct what to do when receive a LIM.
+    private HashMap<Integer, Boolean> insertMessageExecuteFlags;
+
+
+
+
+
+    // Getter & Setter
+    public HashSet<Integer> getLargeParent() {
+        return largeParent;
+    }
+    public void addLargeParent(int largeParent) {
+        this.isRoots.put(largeParent, true);
+        this.largeParent.add(largeParent);
+    }
+
     public int getRootNodeId() {
         return rootNodeId;
     }
@@ -45,35 +53,20 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTStructureLayer
     }
 
 
-
-    // only use in the root node: largeParent is the largeNode of the ego-tree
-    private HashSet<Integer> largeParent;
-
-    public HashSet<Integer> getLargeParent() {
-        return largeParent;
-    }
-
-    public void addLargeParent(int largeParent) {
-        this.isRoots.put(largeParent, true);
-        this.largeParent.add(largeParent);
-    }
-
-
-
-    // only used in the small nodes and the small node that changing into large.
-    private HashMap<Integer, Boolean> isRoots; // indicate whether the node is the root of ego tree under the large Node
-
     public boolean isRoot(int largeId) {
         return this.isRoots.getOrDefault(largeId, false);
     }
-
     public void setRoot(int largeId, boolean isRoot) {
         this.isRoots.put(largeId, isRoot);
     }
 
+    // call unsetRoot in make Large
     public void unsetRoot() {
         this.isRoots = new HashMap<>();
     }
+
+
+
 
 
     // The first one is largeId, and the second one is corresponding p || lc || rc
@@ -82,9 +75,10 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTStructureLayer
     private HashMap<Integer, Integer> rightChildren;
 
 
-    // The insertMessageExecuteFlags use to direct what to do when receive a LIM.
-    private HashMap<Integer, Boolean> insertMessageExecuteFlags;
 
+
+
+    // LIM execution part
     public boolean checkInsertMessageExecuteFlags(int largeId){
         return this.insertMessageExecuteFlags.getOrDefault(largeId, false);
     }
@@ -97,64 +91,28 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTStructureLayer
          *@author  Zhang Hongxuan
          *@create time  2021/3/8
          */
+        // Why True?
+        // Check the method checkInsertMessageExecuteFlags, the default value is false.
+        // When a node inserted into a tree completely (both p and children), execute this method!
         this.insertMessageExecuteFlags.put(largeId, true);
     }
 
-    // Only use for the node in the ego-tree. 目前仅用于建树过程
-    private Queue<RoutingMessage> insertMessageQueue;
+    // Only use for the node in the ego-tree. Only use for LIM
     // Why Routing Message ? We have to satisfy the need of forwarding in LIM.
+    private Queue<RoutingMessage> insertMessageQueue;
 
+    // use this method when LIM can not execute
     private void addLargeInsertMessage(RoutingMessage message){
         assert message.getPayLoad() instanceof LargeInsertMessage;
         this.insertMessageQueue.add(message);
     }
-
-
-    private int getCounterBasedBSTLayer(int largeId, HashMap<Integer, Integer> map){
-        /**
-         *@description only use for the get parent or children of a node in the BST tree according to the large ID of
-         * the node
-         *@parameters  largeId: the ID of the large Node of the tree,
-         *             map: where to get the result
-         *@return  projects.cbrenet.nodes.nodeImplementations.CbRenetBinarySearchTreeLayer
-         *@author  Zhang Hongxuan
-         *@create time  2021/1/26
-         */
-        if(!this.largeFlag){
-            return map.getOrDefault(largeId, -1);
-        }
-        else{
-            return -1;
-        }
-    }
-
-    public int getParent(int largeId) {
-        return this.getCounterBasedBSTLayer(largeId, this.parents);
-    }
-
-    public int getLeftChild(int largeId) {
-        return this.getCounterBasedBSTLayer(largeId, this.leftChildren);
-    }
-
-    public int getRightChild(int largeId) {
-        return this.getCounterBasedBSTLayer(largeId, this.rightChildren);
-    }
-
-    public void setParent(int largeId ,int parent) {
-        this.parents.put(largeId, parent);
-    }
-
-    public void setLeftChild(int largeId,int leftChild) {
-        this.leftChildren.put(largeId, leftChild);
-    }
-
-    public void setRightChild(int largeId, int rightChild) {
-        this.rightChildren.put(largeId, rightChild);
-    }
+    // LIM part finished!
 
 
 
 
+
+    // todo
     // leaf part, check whether have l or r child
     public boolean isLeaf(int largeId) {
         // judge whether it is a leaf under the tree of largeId
@@ -432,7 +390,6 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTStructureLayer
 
     @Override
     public void init() {
-        this.counter = 0;
         this.parents = new HashMap<Integer, Integer>();
         this.rightChildren = new HashMap<Integer, Integer>();
         this.leftChildren = new HashMap<Integer, Integer>();
@@ -440,8 +397,6 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTStructureLayer
         // Insert Message Queue
         this.insertMessageQueue = new LinkedList<RoutingMessage>();
         this.insertMessageExecuteFlags = new HashMap<>();
-
-
 
     }
 
@@ -467,7 +422,7 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTStructureLayer
 
         if(!this.checkInsertMessageExecuteFlags(largeId)){
             Tools.warning("The node " + this.ID + " is not prepared to execute LIM");
-            this.insertMessageQueue.add(routingMessage);
+            this.addLargeInsertMessage(routingMessage);
             return false;
         }
 

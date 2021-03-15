@@ -2,14 +2,34 @@ package projects.cbrenet.nodes.routeEntry;
 
 public class SendEntry {
 
+    boolean egoTreeRoot; // when this is true, then the parent is the LN of the Ego-Tree
+    public boolean isEgoTreeRoot() {
+        return egoTreeRoot;
+    }
+    public void setEgoTreeRoot(boolean egoTreeRoot) {
+        this.egoTreeRoot = egoTreeRoot;
+    }
+
+
     int egoTreeIdOfParent;
-    int sendIdOfParent;  // Used for Forward Message 这个true Id 确实用得着嘛。。
+    int sendIdOfParent;  // Used for Forward Message
 
     int egoTreeIdOfLeftChild;
     int sendIdOfLeftChild;
 
     int egoTreeIdOfRightChild;
     int sendIdOfRightChild;
+
+    boolean rotationAbleFlag;
+    public boolean isRotationAbleFlag() {
+        return rotationAbleFlag;
+    }
+    public void setRotationAbleFlag(boolean rotationAbleFlag) {
+        this.rotationAbleFlag = rotationAbleFlag;
+    }
+    // TODO
+    // 旋转位
+
 
     public SendEntry(int egoTreeIdOfParent, int egoTreeIdOfLeftChild, int egoTreeIdOfRightChild){
         this.egoTreeIdOfParent = egoTreeIdOfParent;
@@ -19,6 +39,9 @@ public class SendEntry {
         this.sendIdOfParent = egoTreeIdOfParent;
         this.sendIdOfLeftChild = egoTreeIdOfLeftChild;
         this.sendIdOfRightChild = egoTreeIdOfRightChild;
+
+        egoTreeRoot = false;
+        rotationAbleFlag = true;
     }
 
 

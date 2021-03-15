@@ -161,6 +161,7 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
             // Note that every message can not send in this turn must store in the routingMessageQueue to
             // send it in the next turn;
 
+            // Todo 适配 sendTo  IMPORTANT !!!!!
 
             if(routingMessage.getSpecialHopFlag()){
                 // when nextHop flag is true, we need a special forward

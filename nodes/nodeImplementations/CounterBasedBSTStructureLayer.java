@@ -11,12 +11,19 @@ import sinalgo.tools.Tools;
 
 import java.util.HashMap;
 
+/* Use SendEntry to provide a routeTable and sendTo method */
+
 public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLayer{
 
     HashMap<Integer, SendEntry> routeTable;  // 指示着当前的结点在 Ego-Tree(largeId)中的情况
 
     private SendEntry getSendEntryOf(int largeId){
         return this.routeTable.getOrDefault(largeId,null);
+    }
+
+    public void addSendEntry(int largeId, int parent, int leftChild, int rightChild){
+        SendEntry entry = new SendEntry(parent, leftChild, rightChild);
+        this.routeTable.put(largeId, entry);
     }
 
     // May use it in cluster layer or rotation layer
@@ -31,10 +38,9 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
     }
 
 
-
     public boolean sendTo(int egoTreeTargetID, RoutingMessage routingMessage){
         /**
-         *@description
+         *@description  调用这个method的时候，只需要提供routingMessage 要去的 egoTreeId 即可
          *@parameters  [egoTreeTargetID, routingMessage]
          *              Here must be egoTreeTargetID, since the auxiliary node use this to forward message!
          *@return  boolean
@@ -50,6 +56,8 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
 
         int largeId = routingMessage.getLargeId();
         SendEntry entry = this.getSendEntryOf(largeId);
+
+
         if(entry != null){
             int targetID = entry.getSendIdOf(egoTreeTargetID);
             if(this.outgoingConnections.contains(this, Tools.getNodeByID(targetID))){
@@ -79,5 +87,100 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
 
     }
 
+
+
+
+    // Getter & Setter
+    private int getNeighbor(int largeId, char relation){
+        SendEntry entry = this.getSendEntryOf(largeId);
+        if(entry != null){
+            switch (relation){
+                case 'p':
+                    return entry.getEgoTreeIdOfParent();
+                case 'l':
+                    return entry.getEgoTreeIdOfLeftChild();
+                case 'r':
+                    return entry.getEgoTreeIdOfRightChild();
+                default:
+                    return -1;
+            }
+        }
+        else{
+            return -1;
+        }
+    }
+
+    private void setNeighbor(int largeId, char relation, int nodeId, boolean egoTreeFlag){
+        /**
+         *@description
+         *@parameters  [largeId, relation, nodeId, egoTreeFlag]
+         *          // nodeId : value
+         *          // egoTreeFlag : indicate that whether the node id is egoTreeID or sendID
+         *          // T : egoTreeID
+         *          // F : sendID
+         *@return  void
+         *@author  Zhang Hongxuan
+         *@create time  2021/3/15
+         */
+        SendEntry entry = this.getSendEntryOf(largeId);
+        if(entry != null){
+            if(egoTreeFlag){
+                switch (relation){
+                    case 'p':
+                        entry.setEgoTreeIdOfParent(nodeId);
+                        break;
+                    case 'l':
+                        entry.setEgoTreeIdOfLeftChild(nodeId);
+                        break;
+                    case 'r':
+                        entry.setEgoTreeIdOfRightChild(nodeId);
+                        break;
+                    default:
+                        break;
+                }
+            }
+            else{
+                switch (relation){
+                    case 'p':
+                        entry.setSendIdOfParent(nodeId);
+                        break;
+                    case 'l':
+                        entry.setSendIdOfLeftChild(nodeId);
+                        break;
+                    case 'r':
+                        entry.setSendIdOfRightChild(nodeId);
+                        break;
+                    default:
+                        break;
+                }
+            }
+            this.routeTable.put(largeId, entry);
+        }
+    }
+
+    // These three methods only set egoTreeId
+    public void setParent(int largeId ,int parent) {
+        this.setNeighbor(largeId, 'p',parent, true);
+    }
+
+    public void setLeftChild(int largeId,int leftChild) {
+        this.setNeighbor(largeId, 'l',leftChild, true);
+    }
+
+    public void setRightChild(int largeId, int rightChild) {
+        this.setNeighbor(largeId, 'r',rightChild, true);
+    }
+
+    public int getParent(int largeId) {
+        return this.getNeighbor(largeId,'p');
+    }
+
+    public int getLeftChild(int largeId) {
+        return this.getNeighbor(largeId,'l');
+    }
+
+    public int getRightChild(int largeId) {
+        return this.getNeighbor(largeId, 'r');
+    }
 
 }
