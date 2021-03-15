@@ -7,10 +7,55 @@ import projects.cbrenet.nodes.messages.controlMessage.DeleteRequestMessage;
 import sinalgo.nodes.messages.Message;
 import sinalgo.tools.Tools;
 
+import java.util.*;
+
 public abstract class AuxiliaryNodeMessageQueueLayer extends AuxiliaryNodeStructureLayer {
 
 
-    protected boolean forwardMessage(RoutingMessage routingMessage) {
+
+    // 就用这个吧。。。。尽管按照 helpId, largeID做似乎更合适。。
+    private HashMap<Integer, Queue<RoutingMessage>> routingMessageQueues;
+    // Organized by the Helped Id.
+
+
+    protected void doInPostRound(){
+
+        // clear queue part
+
+        // todo 是否需要增加有关相关entry中的queue空不空的部分？？
+        Set<Integer> idKeys = this.routingMessageQueues.keySet();
+        for(int id : idKeys){
+            Queue<RoutingMessage> routingMessageQueue = this.routingMessageQueues.get(id);
+            Queue<RoutingMessage> sendFailedQueue = new LinkedList<>();
+            while(!routingMessageQueue.isEmpty()){
+                RoutingMessage msgTmp = routingMessageQueue.poll();
+                if(!this.forwardMessage(msgTmp)){
+                    sendFailedQueue.add(msgTmp);
+                }
+            }
+            routingMessageQueue.addAll(sendFailedQueue);
+            routingMessageQueues.put(id, routingMessageQueue);
+        }
+
+
+    }
+
+
+    public Queue<RoutingMessage> getRoutingMessageQueueOf(int helpedID){
+        return this.routingMessageQueues.getOrDefault(helpedID, null);
+    }
+
+    public void addRoutingMessageToQueue(int helpedID, RoutingMessage routingMessage){
+        Queue<RoutingMessage> msgQueueTmp = this.getRoutingMessageQueueOf(helpedID);
+        if(msgQueueTmp == null){
+            msgQueueTmp = new LinkedList<>();
+        }
+        msgQueueTmp.add(routingMessage);
+        this.routingMessageQueues.put(helpedID, msgQueueTmp);
+    }
+    
+
+    public boolean forwardMessage(RoutingMessage routingMessage) {
         /**
          *@description The auxiliary node use this to transfer message
          *@parameters  [largeId, msg]

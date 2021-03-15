@@ -13,11 +13,6 @@ public abstract class AuxiliaryNodeStructureLayer extends Node {
     // Note that the key is helpedId, and the inner key is largeId.
     //  helpedId 15,   LN 3,    p, l, r  ;
 
-    private HashMap<Integer, Queue<RoutingMessage>> routingMessageQueue;
-    // Organized by the Helped Id.
-
-
-
     private class HelpIdEntry {
         int parent;
         int leftChild;
@@ -55,6 +50,7 @@ public abstract class AuxiliaryNodeStructureLayer extends Node {
     public boolean sendTo(int targetID, RoutingMessage routingMessage){
         /**
          *@description Used to send routing message in helped ego-tree.
+         *             This method also set nextHop bit in the RoutingMessage!
          *@parameters  [targetID, routingMessage]
          *@return  boolean
          *@author  Zhang Hongxuan
