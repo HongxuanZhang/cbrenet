@@ -16,7 +16,7 @@ import sinalgo.tools.Tools;
 
 import java.util.*;
 
-public abstract class CounterBasedBSTLayer extends CommunicatePartnerLayer implements Comparable<CounterBasedBSTLayer>{
+public abstract class CounterBasedBSTLayer extends CounterBasedBSTStructureLayer implements Comparable<CounterBasedBSTLayer>{
 
     //maintains the number of operations performed over this node
     private long counter;

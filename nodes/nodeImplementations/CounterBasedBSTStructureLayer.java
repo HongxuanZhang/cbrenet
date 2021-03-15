@@ -6,108 +6,12 @@ package projects.cbrenet.nodes.nodeImplementations;
 * In this layer, I will rebuild the data structure of the CBBST in the ego-tree. */
 
 import projects.cbrenet.nodes.messages.RoutingMessage;
+import projects.cbrenet.nodes.routeEntry.SendEntry;
+import sinalgo.tools.Tools;
 
 import java.util.HashMap;
 
 public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLayer{
-
-
-    private class SendEntry{
-        int egoTreeIdOfParent;
-        int trueIdOfParent;  // Used for Forward Message 这个true Id 确实用得着嘛。。
-
-        int egoTreeIdOfLeftChild;
-        int trueIdOfLeftChild;
-
-        int egoTreeIdOfRightChild;
-        int trueIdOfRightChild;
-
-        public SendEntry(int egoTreeIdOfParent, int egoTreeIdOfLeftChild, int egoTreeIdOfRightChild){
-            this.egoTreeIdOfParent = egoTreeIdOfParent;
-            this.egoTreeIdOfLeftChild = egoTreeIdOfLeftChild;
-            this.egoTreeIdOfRightChild = egoTreeIdOfRightChild;
-
-            this.trueIdOfParent = -10;
-            this.trueIdOfLeftChild = -8;
-            this.trueIdOfRightChild = -7;
-
-        }
-
-        boolean sendFlagOfParent = true;
-        boolean sendFlagOfLeftChild = true;
-        boolean sendFlagOfRightChild = true;
-
-        public boolean getSendFlag(int id){
-            if(id == this.egoTreeIdOfParent || id == this.trueIdOfParent){
-                return this.sendFlagOfParent;
-            }
-            else if(id == this.egoTreeIdOfLeftChild || id == this.trueIdOfLeftChild){
-                return this.sendFlagOfLeftChild;
-            }
-            else if(id == this.egoTreeIdOfRightChild || id ==this.trueIdOfRightChild){
-                return this.sendFlagOfRightChild;
-            }
-            else{
-                return false;
-            }
-        }
-
-
-        public char getRelationShipTo(int id){
-            if(id == this.egoTreeIdOfParent || id == this.trueIdOfParent){
-                return 'p';
-            }
-            else if(id == this.egoTreeIdOfLeftChild || id == this.trueIdOfLeftChild){
-                return 'l';
-            }
-            else if(id == this.egoTreeIdOfRightChild || id ==this.trueIdOfRightChild){
-                return 'r';
-            }
-            else{
-                return 'w'; // means wrong
-            }
-        }
-
-
-        // Getter & Setter
-        public void setTrueIdOfParent(int trueIdOfParent) {
-            this.trueIdOfParent = trueIdOfParent;
-        }
-
-        public void setTrueIdOfLeftChild(int trueIdOfLeftChild) {
-            this.trueIdOfLeftChild = trueIdOfLeftChild;
-        }
-
-        public void setTrueIdOfRightChild(int trueIdOfRightChild) {
-            this.trueIdOfRightChild = trueIdOfRightChild;
-        }
-
-        public void setEgoTreeIdOfParent(int egoTreeIdOfParent) {
-            this.egoTreeIdOfParent = egoTreeIdOfParent;
-        }
-
-        public void setEgoTreeIdOfLeftChild(int egoTreeIdOfLeftChild) {
-            this.egoTreeIdOfLeftChild = egoTreeIdOfLeftChild;
-        }
-
-        public void setEgoTreeIdOfRightChild(int egoTreeIdOfRightChild) {
-            this.egoTreeIdOfRightChild = egoTreeIdOfRightChild;
-        }
-
-        public void setSendFlagOfParent(boolean sendFlagOfParent) {
-            this.sendFlagOfParent = sendFlagOfParent;
-        }
-
-        public void setSendFlagOfLeftChild(boolean sendFlagOfLeftChild) {
-            this.sendFlagOfLeftChild = sendFlagOfLeftChild;
-        }
-
-        public void setSendFlagOfRightChild(boolean sendFlagOfRightChild) {
-            this.sendFlagOfRightChild = sendFlagOfRightChild;
-        }
-
-    };
-
 
     HashMap<Integer, SendEntry> routeTable;  // 指示着当前的结点在 Ego-Tree(largeId)中的情况
 
@@ -115,6 +19,7 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
         return this.routeTable.getOrDefault(largeId,null);
     }
 
+    // May use it in cluster layer or rotation layer
     public char getRelationShipTo(int largeId, int targetId){
         SendEntry entry = this.getSendEntryOf(largeId);
         if(entry == null){
@@ -123,9 +28,56 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
         else{
             return entry.getRelationShipTo(targetId);
         }
-
     }
 
+
+
+    public boolean sendTo(int egoTreeTargetID, RoutingMessage routingMessage){
+        /**
+         *@description
+         *@parameters  [egoTreeTargetID, routingMessage]
+         *              Here must be egoTreeTargetID, since the auxiliary node use this to forward message!
+         *@return  boolean
+         *@author  Zhang Hongxuan
+         *@create time  2021/3/15
+         */
+
+        if(egoTreeTargetID < 0){
+            Tools.fatalError("In sendTo method of CBBST node" + this.ID
+                    + ", the egoTreeTargetID < 0 !");
+            return false;
+        }
+
+        int largeId = routingMessage.getLargeId();
+        SendEntry entry = this.getSendEntryOf(largeId);
+        if(entry != null){
+            int targetID = entry.getSendIdOf(egoTreeTargetID);
+            if(this.outgoingConnections.contains(this, Tools.getNodeByID(targetID))){
+                boolean sendFlag = entry.getSendFlag(egoTreeTargetID);
+                if(sendFlag){
+                    routingMessage.setNextHop(egoTreeTargetID); // when the node is sure that the message would be sent, change it !
+                    this.send(routingMessage,Tools.getNodeByID(targetID));
+                    return true;
+                }
+                else{
+                    Tools.warning("Can not send a message since the send Flag " +
+                            "is False: from " + this.ID +" to " + targetID + " in " + largeId);
+                    return false;
+                }
+            }
+            else{
+                Tools.fatalError("Node " + this.ID +" want to send a Message to " + targetID + ", but the" +
+                        " corresponding link not exist by auxiliary node.");
+                return false;
+            }
+        }
+        else{
+            Tools.warning("Node " + this.ID +" want to send a Message to " + egoTreeTargetID + ", but the corresponding entry in CBBST node" +
+                    " is null");
+            return false;
+        }
+
+    }
 
 
 }
