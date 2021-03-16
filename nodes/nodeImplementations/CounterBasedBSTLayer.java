@@ -16,7 +16,7 @@ import sinalgo.tools.Tools;
 
 import java.util.*;
 
-public abstract class CounterBasedBSTLayer extends CounterBasedBSTStructureLayer implements Comparable<CounterBasedBSTLayer>{
+public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer implements Comparable<CounterBasedBSTLayer>{
 
     // basic field part
 
@@ -147,35 +147,6 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTStructureLayer
     }
 
 
-
-    public boolean removeRightChild(int largeId){
-        /**
-         *@description if the rightChildren do not contain key large Id, means it may be has been removed
-         *@parameters  [largeId]
-         *@return  boolean
-         *@author  Zhang Hongxuan
-         *@create time  2021/2/26
-         */
-        if(!this.rightChildren.containsKey(largeId)){
-            // indicate that the child has been removed somehow
-            return false;
-        }
-        this.rightChildren.remove(largeId);
-        return true;
-    }
-
-    public boolean removeLeftChild(int largeId){
-        if(!this.leftChildren.containsKey(largeId)){
-            return false;
-        }
-        this.leftChildren.remove(largeId);
-        return true;
-    }
-
-    public void removeParent(int largeId){
-        this.parents.remove(largeId);
-    }
-
     private boolean isConnectedTo(CounterBasedBSTLayer node) {
         return this.outgoingConnections.contains(this, node) && node.outgoingConnections
                 .contains(node, this);
@@ -231,64 +202,67 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTStructureLayer
         }
     }
 
-    // Add Link Part Finished!
-
-
-    /* Todo 下面这两个函数，需要小心多次调用以及误删的问题！*/
-    public void removeBidirectionalLinkToLeftChild(int largeId, int id){
-        CounterBasedBSTLayer node = (CounterBasedBSTLayer) Tools.getNodeByID(id);
-        if(!this.removeLeftChild(largeId)){
-            return;
-        }
-        this.removeBidirectionalLinkTo(id);
-        if (node != null) {
-            node.removeParent(largeId);
-        }
-    }
-
-
-    public void removeBidirectionalLinkToRightChild(int largeId, int id){
-        CounterBasedBSTLayer node = (CounterBasedBSTLayer) Tools.getNodeByID(id);
-        // NOTE that this check can not replaced by the link connected!
-        if(!this.removeRightChild(largeId)){
-            return;
-        }
-        this.removeBidirectionalLinkTo(id);
-        if (node != null) {
-            node.removeParent(largeId);
-        }
-    }
-
-
-    /**
-     * Remove a link to a node that is not null.
-     *
-     */
-    private void removeBidirectionalLinkTo(int nodeId) {
-        /**
-         *@description This method remove bidirectional edge!!!
-         *             And LinkMessage only remove one side of the edge
-         *@parameters  [nodeId]
-         *@return  void
-         *@author  Zhang Hongxuan
-         *@create time  2021/2/20
-         */
-        // make sure only the parent remove the link
-        if(nodeId == -1){
-            return;
-        }
-        CounterBasedBSTLayer node = (CounterBasedBSTLayer) Tools.getNodeByID(nodeId);
-        if(node == null){
-            return;
-        }
-        if (this.isConnectedTo(node)) {
-            this.outgoingConnections.remove(this, node);
-            node.outgoingConnections.remove(node, this);
-        }
-        else {
-            Tools.fatalError("Trying to remove a non-existing connection to node " + ID);
-        }
-    }
+//
+//    // Add Link Part Finished!
+//
+//
+//
+//
+//
+//    public void removeBidirectionalLinkToLeftChild(int largeId, int id){
+//        CounterBasedBSTLayer node = (CounterBasedBSTLayer) Tools.getNodeByID(id);
+//        if(!this.removeLeftChildInRouteTable(largeId)){
+//            return;
+//        }
+//        this.removeBidirectionalLinkTo(id);
+//        if (node != null) {
+//            node.removeParentInRouteTable(largeId);
+//        }
+//    }
+//
+//
+//    public void removeBidirectionalLinkToRightChild(int largeId, int id){
+//        CounterBasedBSTLayer node = (CounterBasedBSTLayer) Tools.getNodeByID(id);
+//        // NOTE that this check can not replaced by the link connected!
+//        if(!this.removeRightChildInRouteTable(largeId)){
+//            return;
+//        }
+//        this.removeBidirectionalLinkTo(id);
+//        if (node != null) {
+//            node.removeParentInRouteTable(largeId);
+//        }
+//    }
+//
+//
+//    /**
+//     * Remove a link to a node that is not null.
+//     *
+//     */
+//    private void removeBidirectionalLinkTo(int nodeId) {
+//        /**
+//         *@description This method remove bidirectional edge!!!
+//         *             And LinkMessage only remove one side of the edge
+//         *@parameters  [nodeId]
+//         *@return  void
+//         *@author  Zhang Hongxuan
+//         *@create time  2021/2/20
+//         */
+//        // make sure only the parent remove the link
+//        if(nodeId == -1){
+//            return;
+//        }
+//        CounterBasedBSTLayer node = (CounterBasedBSTLayer) Tools.getNodeByID(nodeId);
+//        if(node == null){
+//            return;
+//        }
+//        if (this.isConnectedTo(node)) {
+//            this.outgoingConnections.remove(this, node);
+//            node.outgoingConnections.remove(node, this);
+//        }
+//        else {
+//            Tools.fatalError("Trying to remove a non-existing connection to node " + ID);
+//        }
+//    }
 
 
     /**
