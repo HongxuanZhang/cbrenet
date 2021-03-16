@@ -4,6 +4,7 @@ import projects.cbrenet.nodes.messages.CbRenetMessage;
 import projects.cbrenet.nodes.messages.RoutingMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.LargeInsertMessage;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteRequestMessage;
+import projects.cbrenet.nodes.routeEntry.AuxiliarySendEntry;
 import sinalgo.nodes.messages.Message;
 import sinalgo.tools.Tools;
 
@@ -12,44 +13,60 @@ import java.util.*;
 public abstract class AuxiliaryNodeMessageQueueLayer extends AuxiliaryNodeStructureLayer {
 
 
-    private HashMap<Integer, Queue<RoutingMessage>> routingMessageQueues;
-    // Organized by the Helped Id.
-
-
     protected void doInPostRound(){
 
-        // clear queue part
+        // clear queue part and delete condition check
+        HashMap<Integer, HashMap<Integer, AuxiliarySendEntry>> routeTableTmp = this.getRouteTable();
 
-        // todo 是否需要增加有关相关entry中的queue空不空的部分, 用以删除所用？？
-        Set<Integer> idKeys = this.routingMessageQueues.keySet();
-        for(int id : idKeys){
-            Queue<RoutingMessage> routingMessageQueue = this.routingMessageQueues.get(id);
-            Queue<RoutingMessage> sendFailedQueue = new LinkedList<>();
-            while(!routingMessageQueue.isEmpty()){
-                RoutingMessage msgTmp = routingMessageQueue.poll();
-                if(!this.forwardMessage(msgTmp)){
-                    sendFailedQueue.add(msgTmp);
+        Set<Integer> helpedIds = routeTableTmp.keySet();
+
+        for(int helpedId : helpedIds){
+            HashMap<Integer, AuxiliarySendEntry> sendEntryHashMap = routeTableTmp.getOrDefault(helpedId, null);
+            if(sendEntryHashMap != null){
+                Set<Integer> largeIds = sendEntryHashMap.keySet();
+                for(int largeId : largeIds){
+                    AuxiliarySendEntry entry = this.getCorrespondingEntry(helpedId, largeId);
+
+                    // 这里可能会有bug,,但是Java的数据结构这么做似乎没有问题。
+                    Queue<RoutingMessage> routingMessageQueue = entry.getRoutingMessageQueue();
+                    Queue<RoutingMessage> sendFailedQueue = new LinkedList<>();
+                    while(!routingMessageQueue.isEmpty()){
+                        RoutingMessage msgTmp = routingMessageQueue.poll();
+                        if(!this.forwardMessage(msgTmp)){
+                            sendFailedQueue.add(msgTmp);
+                        }
+                    }
+                    routingMessageQueue.addAll(sendFailedQueue);
+                    if(entry.getRoutingMessageQueue().isEmpty()){
+                        if(!routingMessageQueue.isEmpty()){
+                            Tools.fatalError("In ANMQLayer, the queue in the entry is not equal to the queue " +
+                                    "routingMessageQueue");
+                        }
+                        entry.setQueueEmpty(true);
+                    }
+
+                    // Check whether satisfy the delete condition
+                    int egoIdOfLeft = entry.getEgoTreeIdOfLeftChild();
+                    int egoIdOfRight = entry.getEgoTreeIdOfRightChild();
+                    entry.setDeleteConditionSatisfied(this.checkDeleteCondition(egoIdOfLeft,egoIdOfRight));
+                    // Part finished!
+
                 }
             }
-            routingMessageQueue.addAll(sendFailedQueue);
-            routingMessageQueues.put(id, routingMessageQueue);
+            else{
+                Tools.fatalError("");
+            }
         }
+        // clear queue part and delete condition check
 
 
     }
 
-
-    public Queue<RoutingMessage> getRoutingMessageQueueOf(int helpedID){
-        return this.routingMessageQueues.getOrDefault(helpedID, null);
-    }
 
     public void addRoutingMessageToQueue(int helpedID, RoutingMessage routingMessage){
-        Queue<RoutingMessage> msgQueueTmp = this.getRoutingMessageQueueOf(helpedID);
-        if(msgQueueTmp == null){
-            msgQueueTmp = new LinkedList<>();
-        }
-        msgQueueTmp.add(routingMessage);
-        this.routingMessageQueues.put(helpedID, msgQueueTmp);
+        int largeId = routingMessage.getLargeId();
+        AuxiliarySendEntry entry = this.getCorrespondingEntry(helpedID, largeId);
+        entry.addMessageIntoRoutingMessageQueue(routingMessage);
     }
 
 

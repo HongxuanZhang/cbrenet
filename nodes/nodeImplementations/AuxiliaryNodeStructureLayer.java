@@ -1,6 +1,7 @@
 package projects.cbrenet.nodes.nodeImplementations;
 
 import projects.cbrenet.nodes.messages.RoutingMessage;
+import projects.cbrenet.nodes.routeEntry.AuxiliarySendEntry;
 import sinalgo.nodes.Node;
 import sinalgo.tools.Tools;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
@@ -8,9 +9,13 @@ import java.util.HashMap;
 
 public abstract class AuxiliaryNodeStructureLayer extends Node {
 
-    private HashMap<Integer, HashMap<Integer, SendEntry>> routeTable;
+    private HashMap<Integer, HashMap<Integer, AuxiliarySendEntry>> routeTable;
     // Note that the key is helpedId, and the inner key is largeId.
     //  helpedId 15,   LN 3,    p, l, r  ;
+
+    public HashMap<Integer, HashMap<Integer, AuxiliarySendEntry>> getRouteTable(){
+        return this.routeTable;
+    }
 
 
     public boolean sendTo(int egoTreeTargetID, RoutingMessage routingMessage){
@@ -33,7 +38,7 @@ public abstract class AuxiliaryNodeStructureLayer extends Node {
         int largeId = routingMessage.getLargeId();
         int helpedId = routingMessage.getNextHop(); // still unchanged!!!
 
-        SendEntry entry = this.getCorrespondingEntry(helpedId, largeId);
+        AuxiliarySendEntry entry = this.getCorrespondingEntry(helpedId, largeId);
 
         if(entry != null){
 
@@ -69,13 +74,13 @@ public abstract class AuxiliaryNodeStructureLayer extends Node {
         assert leftChild != -1 && rightChild != -1;
         // if one of them are -1, means the node can be delete!
         if(this.routeTable.containsKey(helpedId)){
-            HashMap<Integer, SendEntry> entriesTmp = this.routeTable.get(helpedId);
+            HashMap<Integer, AuxiliarySendEntry> entriesTmp = this.routeTable.get(helpedId);
             if(entriesTmp.containsKey(largeId)){
                 Tools.fatalError("The Auxiliary node can not help a node in the same ego-tree, please" +
                         "check why not the LargeInsertMessage insert the corresponding node into the Ego-Tree");
                 return;
             }
-            entriesTmp.put(largeId, new SendEntry(parent, leftChild, rightChild));
+            entriesTmp.put(largeId, new AuxiliarySendEntry(parent, leftChild, rightChild));
         }
     }
 
@@ -90,7 +95,7 @@ public abstract class AuxiliaryNodeStructureLayer extends Node {
          *@create time  2021/3/11
          */
         if(this.routeTable.containsKey(helpedId)){
-            HashMap<Integer, SendEntry> entriesTmp = this.routeTable.get(helpedId);
+            HashMap<Integer, AuxiliarySendEntry> entriesTmp = this.routeTable.get(helpedId);
             if(entriesTmp.containsKey(largeId)){
                 entriesTmp.remove(largeId);
                 this.routeTable.replace(helpedId, entriesTmp);
@@ -107,7 +112,7 @@ public abstract class AuxiliaryNodeStructureLayer extends Node {
     }
 
     public int getLeftChildOf(int helpedId, int largeId){
-        SendEntry entry = this.getCorrespondingEntry(helpedId, largeId);
+        AuxiliarySendEntry entry = this.getCorrespondingEntry(helpedId, largeId);
         if(entry != null){
             return entry.getEgoTreeIdOfLeftChild();
         }
@@ -117,7 +122,7 @@ public abstract class AuxiliaryNodeStructureLayer extends Node {
     }
 
     public int getRightChildOf(int helpedId, int largeId){
-        SendEntry entry = this.getCorrespondingEntry(helpedId, largeId);
+        AuxiliarySendEntry entry = this.getCorrespondingEntry(helpedId, largeId);
         if(entry != null){
             return entry.getEgoTreeIdOfRightChild();
         }
@@ -127,7 +132,7 @@ public abstract class AuxiliaryNodeStructureLayer extends Node {
     }
 
     public int getParentOf(int helpedId, int largeId){
-        SendEntry entry = this.getCorrespondingEntry(helpedId, largeId);
+        AuxiliarySendEntry entry = this.getCorrespondingEntry(helpedId, largeId);
         if(entry != null){
             return entry.getEgoTreeIdOfParent();
         }
@@ -136,9 +141,9 @@ public abstract class AuxiliaryNodeStructureLayer extends Node {
         }
     }
 
-    public SendEntry getCorrespondingEntry(int helpedId, int largeId){
+    public AuxiliarySendEntry getCorrespondingEntry(int helpedId, int largeId){
         if(this.routeTable.containsKey(helpedId)){
-            HashMap<Integer, SendEntry> entryHashMap = this.routeTable.get(helpedId);
+            HashMap<Integer, AuxiliarySendEntry> entryHashMap = this.routeTable.get(helpedId);
             return entryHashMap.getOrDefault(largeId, null);
         }
         else{
@@ -146,7 +151,9 @@ public abstract class AuxiliaryNodeStructureLayer extends Node {
         }
     }
 
-
+    public boolean checkDeleteCondition(int leftEgoId, int rightEgoId){
+        return (leftEgoId<0 || rightEgoId < 0);
+    }
 
 
 

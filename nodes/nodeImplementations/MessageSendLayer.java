@@ -151,7 +151,7 @@ public abstract class MessageSendLayer extends MessageQueueLayer{
             }
         }
         else{
-            this.getRoutingMessageQueue().add(routingMessage);
+            this.addInRoutingMessageQueue(routingMessage);
         }
 
     }

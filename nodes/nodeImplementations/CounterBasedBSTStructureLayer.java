@@ -47,7 +47,7 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
 
 
 
-    private SendEntry getSendEntryOf(int largeId){
+    public SendEntry getSendEntryOf(int largeId){
         return this.routeTable.getOrDefault(largeId,null);
     }
 

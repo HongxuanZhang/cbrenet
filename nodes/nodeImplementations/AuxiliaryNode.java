@@ -2,6 +2,8 @@ package projects.cbrenet.nodes.nodeImplementations;
 
 import projects.cbrenet.nodes.messages.AuxiliaryNodeMessage.AuxiliaryRequestMessage;
 import projects.cbrenet.nodes.messages.RoutingMessage;
+import projects.cbrenet.nodes.messages.SDNMessage.LargeInsertMessage;
+import projects.cbrenet.nodes.routeEntry.SendEntry;
 import sinalgo.configuration.WrongConfigurationException;
 import sinalgo.nodes.Node;
 import sinalgo.nodes.messages.Inbox;
@@ -31,6 +33,19 @@ public class AuxiliaryNode extends AuxiliaryNodeMessageQueueLayer{
 
             if(msg instanceof RoutingMessage){
                 RoutingMessage routingMessage = (RoutingMessage) msg;
+                Message payload = routingMessage.getPayload();
+                if(payload instanceof LargeInsertMessage){
+                    // check whether this need to make the node return.
+                    int largeId = routingMessage.getLargeId();
+                    int helpedId = ((LargeInsertMessage) payload).getTarget();
+                    SendEntry entry = this.getCorrespondingEntry(helpedId, largeId);
+                    if(entry != null){
+                        // make the corresponding node return;
+
+                        continue; // no need to forward.
+                    }
+                }
+
                 if(!this.forwardMessage( routingMessage )){
                     this.addRoutingMessageToQueue(routingMessage.getNextHop(), routingMessage);
                 }

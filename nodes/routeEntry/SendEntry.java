@@ -1,5 +1,10 @@
 package projects.cbrenet.nodes.routeEntry;
 
+import projects.cbrenet.nodes.messages.RoutingMessage;
+
+import java.util.LinkedList;
+import java.util.Queue;
+
 public class SendEntry {
 
     boolean egoTreeRoot; // when this is true, then the parent is the LN of the Ego-Tree
@@ -20,6 +25,9 @@ public class SendEntry {
     int egoTreeIdOfRightChild;
     int sendIdOfRightChild;
 
+
+    // TODO
+    // 旋转位
     boolean rotationAbleFlag;
     public boolean isRotationAbleFlag() {
         return rotationAbleFlag;
@@ -27,8 +35,30 @@ public class SendEntry {
     public void setRotationAbleFlag(boolean rotationAbleFlag) {
         this.rotationAbleFlag = rotationAbleFlag;
     }
-    // TODO
-    // 旋转位
+
+
+    // Queue
+    Queue<RoutingMessage> routingMessageQueue;
+
+    public Queue<RoutingMessage> getRoutingMessageQueue() {
+        return routingMessageQueue;
+    }
+    public void addMessageIntoRoutingMessageQueue(RoutingMessage routingMessage){
+        this.routingMessageQueue.add(routingMessage);
+    }
+    public void addAllMessageIntoRoutingMessageQueue(Queue<RoutingMessage> routingMessageQueue){
+        this.routingMessageQueue.addAll(routingMessageQueue);
+    }
+
+    private boolean queueEmpty = true;
+    public boolean isQueueEmpty() {
+        return queueEmpty;
+    }
+    public void setQueueEmpty(boolean queueEmpty) {
+        this.queueEmpty = queueEmpty;
+    }
+    // Queue Part.
+
 
 
     public SendEntry(int egoTreeIdOfParent, int egoTreeIdOfLeftChild, int egoTreeIdOfRightChild){
@@ -40,15 +70,23 @@ public class SendEntry {
         this.sendIdOfLeftChild = egoTreeIdOfLeftChild;
         this.sendIdOfRightChild = egoTreeIdOfRightChild;
 
-        egoTreeRoot = false;
-        rotationAbleFlag = true;
+        this.egoTreeRoot = false;
+        this.rotationAbleFlag = true;
+
+        this.sendFlagOfParent = true;
+        this.sendFlagOfLeftChild = true;
+        this.sendFlagOfRightChild = true;
+
+        this.routingMessageQueue = new LinkedList<>();
+
+
     }
 
 
 
-    boolean sendFlagOfParent = true;
-    boolean sendFlagOfLeftChild = true;
-    boolean sendFlagOfRightChild = true;
+    boolean sendFlagOfParent;
+    boolean sendFlagOfLeftChild;
+    boolean sendFlagOfRightChild;
 
     public int getSendIdOf(int egoTreeId){
         char relation = this.getRelationShipTo(egoTreeId);

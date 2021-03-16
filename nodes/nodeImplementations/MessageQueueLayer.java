@@ -4,21 +4,20 @@ import projects.cbrenet.nodes.messages.CbRenetMessage;
 import projects.cbrenet.nodes.messages.RoutingMessage;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteRequestMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.LargeInsertMessage;
+import projects.cbrenet.nodes.routeEntry.SendEntry;
 import sinalgo.nodes.messages.Message;
 import sinalgo.tools.Tools;
 
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.Set;
 
 /**
  * Only used to deal with the message */
 
 public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
 
-    private Queue<RoutingMessage> routingMessageQueue; // Only used for RoutingMessage in the Ego-Tree
-
     private Queue<Message> messageQueue; // used by CbRenetMessage or other that do not need Ego tree
-
 
     public void addInRoutingMessageQueue(RoutingMessage routingMessage){
         /**
@@ -28,14 +27,21 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
          *@author  Zhang Hongxuan
          *@create time  2021/3/11
          */
-        this.routingMessageQueue.add(routingMessage);
+        int largeId = routingMessage.getLargeId();
+        SendEntry entry = this.getSendEntryOf(largeId);
+        if(entry == null){
+            Tools.fatalError("Something terrible happened! Want to add Routing message into the queue but " +
+                    "the corresponding entry is NULL!!!");
+            return;
+        }
+        entry.addMessageIntoRoutingMessageQueue(routingMessage);
     }
 
 
     @Override
     public void init(){
         super.init();
-        routingMessageQueue = new LinkedList<>();
+
         messageQueue = new LinkedList<>();
     }
 
@@ -55,36 +61,24 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
          *@author  Zhang Hongxuan
          *@create time  2021/3/1
          */
-        this.sendMessageInMessageQueue();
-        this.sendMessageInWaitingRoutingQueue();
+        this.sendMessageWaitingInMessageQueue();
+        this.sendMessageWaitingInRoutingQueue();
     }
 
-    private void sendMessageInMessageQueue(){
+    private void sendMessageWaitingInMessageQueue(){
         Queue<Message> messageQueueTmp = new LinkedList<>();
         while(!this.messageQueue.isEmpty()){
             Message message = this.messageQueue.poll();
 
-            // if a node has message to send but can not pass CP test,
-            // Then there may be bug in the code
-
-//            if(this.checkCommunicateSatisfaction(message)){
-//                if(message instanceof CbRenetMessage){
-//                    int dst = ((CbRenetMessage)message).getDst();
-//                    this.send(message, Tools.getNodeByID(dst));
-//                }
-//                else{
-//                    Tools.fatalError("Message class MISSING! Add " + message.getClass() + " into MessageQueueLayer" +
-//                            " sendMessageInMessageQueue" );
-//                }
-//            }
-//            else{
-//                messageQueueTmp.add(message);
-//            }
-
             // remove CP test here.
             if(message instanceof CbRenetMessage){
                 int dst = ((CbRenetMessage)message).getDst();
-                this.send(message, Tools.getNodeByID(dst));
+                if(this.outgoingConnections.contains(this, Tools.getNodeByID(dst))){
+                    this.send(message, Tools.getNodeByID(dst));
+                }
+                else{
+                    messageQueueTmp.add(message);
+                }
             }
             else{
                 Tools.fatalError("Message class MISSING! Add " + message.getClass() + " into MessageQueueLayer" +
@@ -95,7 +89,7 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
         this.messageQueue.addAll(messageQueueTmp);
     }
 
-    private void sendMessageInWaitingRoutingQueue(){
+    private void sendMessageWaitingInRoutingQueue(){
         /**
          *@description
          *@parameters  []
@@ -103,18 +97,29 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
          *@author  Zhang Hongxuan
          *@create time  2021/3/1
          */
-        Queue<RoutingMessage> routingMessageQueueTmp = new LinkedList<>();
-        while(!routingMessageQueue.isEmpty())
-        {
-            RoutingMessage routingMessage = this.routingMessageQueue.poll();
-            int dst = routingMessage.getDestination();
-            int largeId = routingMessage.getLargeId();
-            if(!this.forwardMessage(routingMessage)){
-                routingMessageQueueTmp.add(routingMessage);
+
+        Set<Integer> largeIds = this.routeTable.keySet();
+
+        for(int largeId : largeIds){
+
+            SendEntry correspondingEntry = this.getSendEntryOf(largeId);
+            Queue<RoutingMessage> routingMessageQueue = correspondingEntry.getRoutingMessageQueue();
+
+            Queue<RoutingMessage> routingMessageQueueTmp = new LinkedList<>();
+            while(!routingMessageQueue.isEmpty())
+            {
+                RoutingMessage routingMessage = routingMessageQueue.poll();
+                assert routingMessage != null;
+                if(!this.forwardMessage(routingMessage)){
+                    routingMessageQueueTmp.add(routingMessage);
+                }
             }
+            routingMessageQueue.addAll(routingMessageQueueTmp);
+
+
         }
 
-        routingMessageQueue.addAll(routingMessageQueueTmp);
+
 
     }
 
@@ -256,10 +261,6 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
 
 
     // getter
-    public Queue<RoutingMessage> getRoutingMessageQueue(){
-        return this.routingMessageQueue;
-    }
-
     public Queue<Message> getMessageQueue(){
         return this.messageQueue;
     }
