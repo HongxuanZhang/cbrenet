@@ -6,8 +6,12 @@ import sinalgo.nodes.Node;
 import sinalgo.tools.Tools;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Queue;
 
 public abstract class AuxiliaryNodeStructureLayer extends Node {
+
+    public Queue<RoutingMessage> cycleRoutingMessage = new LinkedList<>();
 
     private HashMap<Integer, HashMap<Integer, AuxiliarySendEntry>> routeTable;
     // Note that the key is helpedId, and the inner key is largeId.
@@ -43,6 +47,21 @@ public abstract class AuxiliaryNodeStructureLayer extends Node {
         if(entry != null){
 
             int targetID = entry.getSendIdOf(egoTreeTargetID);
+
+            if(targetID == this.ID){
+                boolean sendFlag = entry.getSendFlag(egoTreeTargetID);
+                if(sendFlag){
+                    routingMessage.setNextHop(egoTreeTargetID); // when the node is sure that the message would be sent, change it !
+                    this.cycleRoutingMessage.add(routingMessage);
+                    return true;
+                }
+                else{
+                    Tools.warning("Can not send a message since the send Flag " +
+                            "is False: " + helpedId +" " + largeId);
+                    return false;
+                }
+            }
+
 
             if(this.outgoingConnections.contains(this, Tools.getNodeByID(targetID))){
                 boolean sendFlag = entry.getSendFlag(egoTreeTargetID);

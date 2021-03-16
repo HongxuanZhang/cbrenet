@@ -206,6 +206,33 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
         }
     }
 
+    public void addCommunicationPartner(int id, boolean largePartner){
+        boolean idLargeFlag = !this.isNodeSmall(id);
+        if(idLargeFlag != largePartner){
+            Tools.fatalError("In " + this.ID + " CP Layer, " +
+                    "the status of " + id + " the node know is different to the expected status");
+
+        }
+
+        if(largePartner){
+            if(!this.largeNodes.containsKey(id)) {
+                this.largeNodes.put(id, id);
+            }
+            else{
+                Tools.warning("Want to add exist cp "+ id +" in to " + this.ID +"'s co");
+            }
+        }
+        else{
+            if(!this.smallNodes.containsKey(id)){
+                this.smallNodes.put(id, id);
+            }
+            else{
+                Tools.warning("Want to add exist cp "+ id +" in to " + this.ID +"'s co");
+            }
+        }
+
+    }
+
     public void clearPartners(boolean changeToSmall)
     {
         /**

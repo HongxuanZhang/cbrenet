@@ -122,31 +122,6 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
     // leaf part finish
 
 
-    // Todo 或许可以把这一部分移到 LinkLayer中
-    private void changeOneOfLinkTo(int largeId, int id, char relation){
-        /**
-         *@description only add the link in one side, this method should be called when receive
-         *  SDN's LinkMessage
-         *@parameters  [id]
-         *@return  void
-         *@author  Zhang Hongxuan
-         *@create time  2021/2/20
-         */
-        this.addConnectionTo(Tools.getNodeByID(id));
-        switch (relation){
-            case 'p':
-                this.setParent(largeId, id);
-                break;
-            case 'l':
-                this.setLeftChild(largeId, id);
-                break;
-            case 'r':
-                this.setRightChild(largeId, id);
-                break;
-        }
-    }
-
-
     private boolean isConnectedTo(CounterBasedBSTLayer node) {
         return this.outgoingConnections.contains(this, node) && node.outgoingConnections
                 .contains(node, this);
@@ -168,27 +143,27 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
     /**
      * Set the link to node and update reference to left child
      */
-    public void addBidirectionalLinkToLeftChild(int largeId, int id) {
-        // update current left child and create edge
-        CounterBasedBSTLayer node = (CounterBasedBSTLayer) Tools.getNodeByID(id);
-        this.addBidirectionalLinkTo(node);
-        this.setLeftChild(largeId,id);
-        if (node != null) {
-            node.setParent(largeId, this.ID);
-        }
-    }
-
-    /**
-     * Set the link to node and update reference to right child
-     */
-    public void addBidirectionalLinkToRightChild(int largeId, int id) {
-        CounterBasedBSTLayer node = (CounterBasedBSTLayer) Tools.getNodeByID(id);
-        this.addBidirectionalLinkTo(node);
-        this.setRightChild(largeId, id);
-        if (node != null) {
-            node.setParent(largeId, this.ID);
-        }
-    }
+//    public void addBidirectionalLinkToLeftChild(int largeId, int id) {
+//        // update current left child and create edge
+//        CounterBasedBSTLayer node = (CounterBasedBSTLayer) Tools.getNodeByID(id);
+//        this.addBidirectionalLinkTo(node);
+//        this.setLeftChild(largeId,id);
+//        if (node != null) {
+//            node.setParent(largeId, this.ID);
+//        }
+//    }
+//
+//    /**
+//     * Set the link to node and update reference to right child
+//     */
+//    public void addBidirectionalLinkToRightChild(int largeId, int id) {
+//        CounterBasedBSTLayer node = (CounterBasedBSTLayer) Tools.getNodeByID(id);
+//        this.addBidirectionalLinkTo(node);
+//        this.setRightChild(largeId, id);
+//        if (node != null) {
+//            node.setParent(largeId, this.ID);
+//        }
+//    }
 
     public void addBidirectionalLinkToRootNode(int largeId, int id){
         CounterBasedBSTLayer node = (CounterBasedBSTLayer) Tools.getNodeByID(id);

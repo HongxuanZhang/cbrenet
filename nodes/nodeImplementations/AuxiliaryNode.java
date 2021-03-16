@@ -21,7 +21,22 @@ import sinalgo.nodes.messages.Message;
 public class AuxiliaryNode extends AuxiliaryNodeMessageQueueLayer{
 
 
-
+    private void executeRoutingMessage(RoutingMessage routingMessage){
+        Message payload = routingMessage.getPayload();
+        if(payload instanceof LargeInsertMessage){
+            // check whether this need to make the node return.
+            int largeId = routingMessage.getLargeId();
+            int helpedId = ((LargeInsertMessage) payload).getTarget();
+            SendEntry entry = this.getCorrespondingEntry(helpedId, largeId);
+            if(entry != null){
+                // todo make the corresponding node return;
+                return; // no need to forward.
+            }
+        }
+        if(!this.forwardMessage( routingMessage )){
+            this.addRoutingMessageToQueue(routingMessage.getNextHop(), routingMessage);
+        }
+    }
 
     @Override
     public void handleMessages(Inbox inbox) {
@@ -33,22 +48,9 @@ public class AuxiliaryNode extends AuxiliaryNodeMessageQueueLayer{
 
             if(msg instanceof RoutingMessage){
                 RoutingMessage routingMessage = (RoutingMessage) msg;
-                Message payload = routingMessage.getPayload();
-                if(payload instanceof LargeInsertMessage){
-                    // check whether this need to make the node return.
-                    int largeId = routingMessage.getLargeId();
-                    int helpedId = ((LargeInsertMessage) payload).getTarget();
-                    SendEntry entry = this.getCorrespondingEntry(helpedId, largeId);
-                    if(entry != null){
-                        // make the corresponding node return;
 
-                        continue; // no need to forward.
-                    }
-                }
+                this.executeRoutingMessage(routingMessage);
 
-                if(!this.forwardMessage( routingMessage )){
-                    this.addRoutingMessageToQueue(routingMessage.getNextHop(), routingMessage);
-                }
             }
             else if(msg instanceof AuxiliaryRequestMessage){
 
@@ -57,6 +59,13 @@ public class AuxiliaryNode extends AuxiliaryNodeMessageQueueLayer{
 
             }
 
+        }
+
+        while(!this.cycleRoutingMessage.isEmpty()){
+            // A routing message could cycle multiple times here.
+            // Could make a routing message pass through a lot of nodes
+            RoutingMessage routingMessage = this.cycleRoutingMessage.poll();
+            this.executeRoutingMessage(routingMessage);
         }
 
     }

@@ -37,6 +37,7 @@ public abstract class LinkLayer extends MessageQueueLayer{
         for(int idx=0;idx<len;idx++){
             int id = targets.get(idx);
             if(id < 0){
+                // SDN do not want to use this bit
                 continue;
             }
             if(linkMessage.isInsertFlag()) {
@@ -45,20 +46,23 @@ public abstract class LinkLayer extends MessageQueueLayer{
                 }
                 else{
                     // create ego-tree
+                    // To make the simulation so close to the reality as we could, only
+                    // allow the node to create unidirectional link
                     char relation = linkMessage.getRelationships().get(idx);
                     switch (relation){
                         case 'p':
-                            // TODO 这里我们要选择一下建立链接的方式，如果我们只允许从父亲结点建立
-                            // TODO 双向链接， 这里则不必要
+                            this.addLinkToParent(largeId,id);
+                            this.addCommunicationPartner(largeId,true);
                             break;
                         case 'l':
-                            this.addBidirectionalLinkToLeftChild(largeId, id);
+                            this.addLinkToLeftChild(largeId, id);
                             break;
                         case 'r':
-                            this.addBidirectionalLinkToRightChild(largeId, id);
+                            this.addLinkToRightChild(largeId, id);
                             break;
                         case 't':
                             this.addBidirectionalLinkToRootNode(largeId, id);
+                            break;
                     }
                 }
             }
@@ -71,12 +75,13 @@ public abstract class LinkLayer extends MessageQueueLayer{
                     char relation = linkMessage.getRelationships().get(idx);
                     switch (relation){
                         case 'p':
+                            this.removeLinkToParent(largeId);
                             break;
                         case 'l':
-                            this.removeBidirectionalLinkToLeftChild(largeId, id);
+                            this.removeLinkToLeftChild(largeId);
                             break;
                         case 'r':
-                            this.removeBidirectionalLinkToRightChild(largeId, id);
+                            this.removeLinkToRightChild(largeId);
                             break;
                     }
                 }

@@ -9,11 +9,23 @@ import sinalgo.nodes.Node;
 import sinalgo.tools.Tools;
 
 public abstract class CounterBasedBSTLinkLayer extends CounterBasedBSTStructureLayer{
-     
+
     // change link p l r, 这里就要考虑Auxiliary Node的问题了
     // 调用这个函数的时候，基本上也就是Delete过程或者Rotation过程了
 
     // may mainly used in rotation
+
+    public boolean changeLeftChildTo(int largeId, int egoTreeId, int trueId){
+        return this.changeLinkTo(largeId, egoTreeId, trueId, 'l');
+    }
+    public boolean changeRightChildTo(int largeId, int egoTreeId, int trueId){
+        return this.changeLinkTo(largeId, egoTreeId, trueId, 'r');
+    }
+    public boolean changeParentTo(int largeId, int egoTreeId, int trueId){
+        return this.changeLinkTo(largeId, egoTreeId, trueId, 'p');
+    }
+
+
     public boolean changeLeftChildTo(int largeId, int egoTreeId){
 
         // 原来的思路是先remove再add
@@ -111,87 +123,11 @@ public abstract class CounterBasedBSTLinkLayer extends CounterBasedBSTStructureL
 
     }
 
-    public boolean changeLeftChildTo(int largeId, int egoTreeId, int trueId){
-        return this.changeLinkTo(largeId, egoTreeId, trueId, 'l');
-    }
-    public boolean changeRightChildTo(int largeId, int egoTreeId, int trueId){
-        return this.changeLinkTo(largeId, egoTreeId, trueId, 'r');
-    }
-    public boolean changeParentTo(int largeId, int egoTreeId, int trueId){
-        return this.changeLinkTo(largeId, egoTreeId, trueId, 'p');
-    }
-
 
 
     // add link p l r
     // These part's code only used to add link, and only in ego-tree.
     // DO NOT use it to create link to auxiliary node!
-
-    private boolean addNeighborInRouteTable(int largeId, char relation, int id){
-        assert (relation =='p' || relation=='r' || relation == 'l') ;
-
-        SendEntry entryTmp = this.getSendEntryOf(largeId);
-        if(entryTmp == null){
-            this.addSendEntry(largeId, -1,-1,-1);
-        }
-        entryTmp = this.getSendEntryOf(largeId);
-
-        assert entryTmp != null;
-
-        switch (relation){
-            case 'p':
-                entryTmp.setEgoTreeIdOfParent(id);
-                entryTmp.setSendIdOfParent(id);
-                break;
-            case 'l':
-                entryTmp.setEgoTreeIdOfLeftChild(id);
-                entryTmp.setSendIdOfLeftChild(id);
-                break;
-            case 'r':
-                entryTmp.setEgoTreeIdOfRightChild(id);
-                entryTmp.setSendIdOfRightChild(id);
-                break;
-            default:
-                break;
-        }
-
-        return true;
-    }
-
-    // todo 视情况更改为private
-    public boolean addParentInRouteTable(int largeId, int id){
-        return this.addNeighborInRouteTable(largeId,'p', id);
-    }
-
-    public boolean addRightChildInRouteTable(int largeId, int id){
-        return this.addNeighborInRouteTable(largeId,'r', id);
-    }
-
-    public boolean addLeftChildInRouteTable(int largeId, int id){
-        return this.addNeighborInRouteTable(largeId, 'l',id);
-    }
-
-    private boolean addLinkTo(int nodeId){
-        /**
-         *@description  Add a link from this node to the id node, in the ego-tree(largeId). Do
-         *              NOT use this to add link to a node not belong to Ego-Tree.
-         *@parameters  [id]
-         *@return  boolean
-         *@author  Zhang Hongxuan
-         *@create time  2021/3/16
-         */
-        if(nodeId < 0){
-            return false;
-        }
-        Node node = Tools.getNodeByID(nodeId);
-        if(node == null){
-            Tools.fatalError("SDN want to create a link between " + this.ID + " and " + nodeId + " , but" +
-                    " the corresponding node is NULL!!!!");
-            return false;
-        }
-        this.addConnectionTo(node);
-        return true;
-    }
 
     public boolean addLinkToLeftChild(int largeId, int egoTreeId){
         if(this.addLeftChildInRouteTable(largeId, egoTreeId)){
@@ -225,6 +161,73 @@ public abstract class CounterBasedBSTLinkLayer extends CounterBasedBSTStructureL
             return false;
         }
     }
+
+
+    private boolean addNeighborInRouteTable(int largeId, char relation, int id){
+        assert (relation =='p' || relation=='r' || relation == 'l') ;
+
+        SendEntry entryTmp = this.getSendEntryOf(largeId);
+        if(entryTmp == null){
+            this.addSendEntry(largeId, -1,-1,-1);
+        }
+        entryTmp = this.getSendEntryOf(largeId);
+
+        assert entryTmp != null;
+
+        switch (relation){
+            case 'p':
+                entryTmp.setEgoTreeIdOfParent(id);
+                entryTmp.setSendIdOfParent(id);
+                break;
+            case 'l':
+                entryTmp.setEgoTreeIdOfLeftChild(id);
+                entryTmp.setSendIdOfLeftChild(id);
+                break;
+            case 'r':
+                entryTmp.setEgoTreeIdOfRightChild(id);
+                entryTmp.setSendIdOfRightChild(id);
+                break;
+            default:
+                break;
+        }
+
+        return true;
+    }
+
+    private boolean addParentInRouteTable(int largeId, int id){
+        return this.addNeighborInRouteTable(largeId,'p', id);
+    }
+
+    private boolean addRightChildInRouteTable(int largeId, int id){
+        return this.addNeighborInRouteTable(largeId,'r', id);
+    }
+
+    private boolean addLeftChildInRouteTable(int largeId, int id){
+        return this.addNeighborInRouteTable(largeId, 'l',id);
+    }
+
+    private boolean addLinkTo(int nodeId){
+        /**
+         *@description  Add a link from this node to the id node, in the ego-tree(largeId). Do
+         *              NOT use this to add link to a node not belong to Ego-Tree.
+         *@parameters  [id]
+         *@return  boolean
+         *@author  Zhang Hongxuan
+         *@create time  2021/3/16
+         */
+        if(nodeId < 0){
+            return false;
+        }
+        Node node = Tools.getNodeByID(nodeId);
+        if(node == null){
+            Tools.fatalError("SDN want to create a link between " + this.ID + " and " + nodeId + " , but" +
+                    " the corresponding node is NULL!!!!");
+            return false;
+        }
+        this.addConnectionTo(node);
+        return true;
+    }
+
 
 
     // remove link p l r
@@ -273,6 +276,7 @@ public abstract class CounterBasedBSTLinkLayer extends CounterBasedBSTStructureL
     public boolean removeLeftChildInRouteTable(int largeId){
         return this.removeNeighborInRouteTable(largeId, 'l');
     }
+
 
 
     private boolean removeNeighborInRouteTable(int largeId, char relation){

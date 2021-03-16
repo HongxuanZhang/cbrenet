@@ -459,7 +459,6 @@ public class SDNNode extends Node {
             if(!srcCorrespondingCpSet.contains(dstId)  || !dstCorrespondingCpSet.contains(srcId)){
                 Tools.fatalError("The node send a wantToRemove request but " + srcId + " and " + dstId + " are " +
                         "not partners!");
-                // Todo actually we need to make sure that the node send the message correctly based on the edge connection.
                 return false;
             }
         }
