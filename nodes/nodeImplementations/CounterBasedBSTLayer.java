@@ -265,28 +265,6 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
 //    }
 
 
-    /**
-     * // todo called by the RPC layer, 这里蕴涵着一个问题，子节点的parent没有改变！
-    * Change link to left child, update reference to left child but do not update old left child
-     * parent reference. The next node to set old left child as child will update its parent.
-     */
-    public void changeLeftChildTo(int largeId, int newNodeId) {
-        // remove the previous connection
-        this.removeBidirectionalLinkTo(this.leftChildren.getOrDefault(largeId, -1));
-        // update current left child and create edge
-        this.addBidirectionalLinkToLeftChild(largeId,newNodeId);
-    }
-
-    /**
-     * Change link to right child, update reference to right child but do not update old right child
-     * parent reference. The next node to set old left child as child will update its parent.
-     */
-    public void changeRightChildTo(int largeId, int newNodeId) {
-        this.removeBidirectionalLinkTo(this.rightChildren.getOrDefault(largeId, -1));
-        // update current left child and create edge
-        this.addBidirectionalLinkToLeftChild(largeId,newNodeId);
-    }
-
 
     // send message part
     public abstract boolean sendToParent(int largeId, RoutingMessage msg);
