@@ -15,6 +15,7 @@ public abstract class CounterBasedBSTLinkLayer extends CounterBasedBSTStructureL
 
     // may mainly used in rotation
 
+    // delete 的时候如果用到AN，就调用这个method
     public boolean changeLeftChildTo(int largeId, int egoTreeId, int trueId){
         return this.changeLinkTo(largeId, egoTreeId, trueId, 'l');
     }
@@ -63,7 +64,6 @@ public abstract class CounterBasedBSTLinkLayer extends CounterBasedBSTStructureL
             Tools.fatalError("In change Send ID of CBBSTLinkLayer, the entry got is null!!!");
             return false;
         }
-
         switch (relation){
             case 'p':
                 entryTmp.setSendIdOfParent(id);
@@ -77,7 +77,6 @@ public abstract class CounterBasedBSTLinkLayer extends CounterBasedBSTStructureL
             default:
                 break;
         }
-
         return true;
     }
 
@@ -110,6 +109,24 @@ public abstract class CounterBasedBSTLinkLayer extends CounterBasedBSTStructureL
                 if(node != null){
                     if(this.changeSendIdInRouteTable(largeId, relation, trueId)){
                         this.addConnectionTo(node);
+
+                        SendEntry sendEntry = this.getSendEntryOf(largeId);
+
+                        switch (relation){
+                            case 'p':
+                                sendEntry.setEgoTreeIdOfParent(egoTreeId);
+                                break;
+                            case 'l':
+                                sendEntry.setEgoTreeIdOfLeftChild(egoTreeId);
+                                break;
+                            case 'r':
+                                sendEntry.setEgoTreeIdOfRightChild(egoTreeId);
+                                break;
+                            default:
+                                break;
+                        }
+
+
                         return true;
                     }
                 }
