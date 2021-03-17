@@ -6,6 +6,7 @@ package projects.cbrenet.nodes.nodeImplementations;
 * In this layer, I will rebuild the data structure of the CBBST in the ego-tree. */
 
 import projects.cbrenet.nodes.messages.RoutingMessage;
+import projects.cbrenet.nodes.nodeImplementations.forwardSendHelper.EntryGetter;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
 import sinalgo.tools.Tools;
 
@@ -13,7 +14,7 @@ import java.util.HashMap;
 
 /* Use SendEntry to provide a routeTable and sendTo method */
 
-public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLayer{
+public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLayer implements EntryGetter {
 
     // only used in the large node. root node id is the id of the node which connect to the large node directly!
     // Even we have SendEntry, we still need this field as the link to the Ego-Tree(LN).
@@ -250,15 +251,15 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
         this.setNeighbor(largeId, 'r',rightChild, true);
     }
 
-    public int getParent(int largeId) {
+    public int getParentOf(int helpedId, int largeId) {
         return this.getNeighbor(largeId,'p');
     }
 
-    public int getLeftChild(int largeId) {
+    public int getLeftChildOf(int helpedId, int largeId) {
         return this.getNeighbor(largeId,'l');
     }
 
-    public int getRightChild(int largeId) {
+    public int getRightChildOf(int helpedId, int largeId) {
         return this.getNeighbor(largeId, 'r');
     }
 

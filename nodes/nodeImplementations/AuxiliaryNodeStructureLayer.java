@@ -1,6 +1,7 @@
 package projects.cbrenet.nodes.nodeImplementations;
 
 import projects.cbrenet.nodes.messages.RoutingMessage;
+import projects.cbrenet.nodes.nodeImplementations.forwardSendHelper.EntryGetter;
 import projects.cbrenet.nodes.routeEntry.AuxiliarySendEntry;
 import sinalgo.nodes.Node;
 import sinalgo.tools.Tools;
@@ -9,7 +10,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
 
-public abstract class AuxiliaryNodeStructureLayer extends Node {
+public abstract class AuxiliaryNodeStructureLayer extends Node implements EntryGetter {
 
     public Queue<RoutingMessage> cycleRoutingMessage = new LinkedList<>();
 
@@ -88,6 +89,9 @@ public abstract class AuxiliaryNodeStructureLayer extends Node {
             return false;
         }
     }
+
+
+
 
     public void addSendEntry(int helpedId, int largeId, int parent, int leftChild, int rightChild){
         assert leftChild != -1 && rightChild != -1;

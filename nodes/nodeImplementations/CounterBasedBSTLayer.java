@@ -290,7 +290,8 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
         boolean leftFlag = false;
 
         if(target < this.ID){
-            if(this.getLeftChild(largeId) != -1){
+            // helpedId is useless, just used to fulfill the need of the interface
+            if(this.getLeftChildOf(-1, largeId) != -1){
                 if(!this.forwardMessage(routingMessage)){
                     ((MessageQueueLayer)this).addInRoutingMessageQueue(routingMessage);
                 }
@@ -303,7 +304,7 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
             }
         }
         else{
-            if(this.getRightChild(largeId) != -1){
+            if(this.getRightChildOf(-1,largeId) != -1){
                 if(!this.forwardMessage(routingMessage)){
                     ((MessageQueueLayer)this).addInRoutingMessageQueue(routingMessage);
                 }
