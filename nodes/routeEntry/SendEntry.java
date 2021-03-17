@@ -122,6 +122,134 @@ public class SendEntry {
     boolean deletingFlagOfRightChild;
     DeletePrepareMessage deletePrepareMessageOfRightChild = null;
 
+    // 下面这个函数，仅在Confirm时调用。不能用于其他目的！
+    public List<DeletePrepareMessage> getDeletePrepareMessage() {
+        List<DeletePrepareMessage> results = new LinkedList<>();
+        if(this.deletePrepareMessage != null){
+            results.add(this.deletePrepareMessage);
+            return results;
+        }
+        else{
+            if(this.deletePrepareMessageOfParent != null){
+                results.add(this.deletePrepareMessageOfParent);
+            }
+
+            if(this.deletePrepareMessageOfLeftChild != null){
+                results.add(this.deletePrepareMessageOfLeftChild);
+            }
+
+            if(this.deletePrepareMessageOfRightChild != null){
+                results.add(this.deletePrepareMessageOfRightChild);
+            }
+
+            return results;
+        }
+    }
+
+
+    public void setDeletePrepareMessage(DeletePrepareMessage deletePrepareMessage) {
+        int target = deletePrepareMessage.getDeleteTarget();
+
+        char relation = this.getRelationShipTo(target);
+
+        if(relation == 'w'){
+            // 说明是自己发送的，要设置到自己身上
+            int numTmp = 0;
+
+            DeletePrepareMessage[] deletePrepareMessages = {this.deletePrepareMessageOfParent, this.deletePrepareMessageOfRightChild,
+                    this.deletePrepareMessageOfLeftChild};
+
+
+            for(int i = 0; i<3;i++){
+                // 快速方式，说明之前已经有比不过的了
+                if(numTmp < i){
+                    break;
+                }
+                DeletePrepareMessage message = deletePrepareMessages[i];
+                if(message != null){
+                    if(i == 0){
+                        if(deletePrepareMessage.compareTo(message) <= 0){
+                            numTmp += 1;
+                        }
+                    }
+                    else{
+                        // 与两个孩子结点的请求比，如果相等，需要优先执行孩子结点的请求
+                        if(deletePrepareMessage.compareTo(message) < 0){
+                            numTmp += 1;
+                        }
+                    }
+                }
+                else{
+                    numTmp += 1;
+                }
+            }
+
+
+            if(numTmp == 3){
+                this.deletePrepareMessage = deletePrepareMessage;
+
+                this.deletePrepareMessageOfParent = null;
+                this.deletePrepareMessageOfLeftChild = null;
+                this.deletePrepareMessageOfRightChild = null;
+            }
+        }
+        else{
+            //'r' 'l' 'p'
+            boolean setFlag = false;
+            if(this.deletePrepareMessage != null){
+                if(relation == 'p'){
+                    if(deletePrepareMessage.compareTo(this.deletePrepareMessage) < 0){
+                        setFlag = true;
+                    }
+                }
+                else{
+                    if(deletePrepareMessage.compareTo(this.deletePrepareMessage) < 0){
+                        setFlag = true;
+                    }
+                }
+            }
+            else{
+                setFlag = true;
+            }
+
+            if(setFlag){
+                switch (relation){
+                    case 'p':
+                        this.deletePrepareMessageOfParent = deletePrepareMessage;
+                        break;
+                    case 'l':
+                        this.deletePrepareMessageOfLeftChild = deletePrepareMessage;
+                        break;
+                    case 'r':
+                        this.deletePrepareMessageOfRightChild = deletePrepareMessage;
+                        break;
+                }
+
+                this.deletePrepareMessage = null;
+            }
+
+        }
+    }
+
+    public void setDeletePrepareMessageOfParent(DeletePrepareMessage deletePrepareMessageOfParent) {
+        this.deletePrepareMessageOfParent = deletePrepareMessageOfParent;
+    }
+
+    public void setDeletePrepareMessageOfLeftChild(DeletePrepareMessage deletePrepareMessageOfLeftChild) {
+        this.deletePrepareMessageOfLeftChild = deletePrepareMessageOfLeftChild;
+    }
+
+    public void setDeletePrepareMessageOfRightChild(DeletePrepareMessage deletePrepareMessageOfRightChild) {
+        this.deletePrepareMessageOfRightChild = deletePrepareMessageOfRightChild;
+    }
+
+
+
+
+
+
+
+
 
 
 
@@ -187,7 +315,7 @@ public class SendEntry {
             return 'r';
         }
         else{
-            return 'w'; // means wrong
+            return 'w';
         }
     }
 
@@ -267,31 +395,36 @@ public class SendEntry {
         return deletingFlagOfMySelf;
     }
 
-    public DeletePrepareMessage getDeletePrepareMessage() {
-        return deletePrepareMessage;
+    public void setDeleteFlag(boolean deleteFlag) {
+        this.deleteFlag = deleteFlag;
+    }
+
+    public void setDeletingFlagOfMySelf(boolean deletingFlagOfMySelf) {
+        this.deletingFlagOfMySelf = deletingFlagOfMySelf;
+    }
+
+    public void setDeletingFlagOfParent(boolean deletingFlagOfParent) {
+        this.deletingFlagOfParent = deletingFlagOfParent;
+    }
+
+    public void setDeletingFlagOfLeftChild(boolean deletingFlagOfLeftChild) {
+        this.deletingFlagOfLeftChild = deletingFlagOfLeftChild;
+    }
+
+    public void setDeletingFlagOfRightChild(boolean deletingFlagOfRightChild) {
+        this.deletingFlagOfRightChild = deletingFlagOfRightChild;
     }
 
     public boolean isDeletingFlagOfParent() {
         return deletingFlagOfParent;
     }
 
-    public DeletePrepareMessage getDeletePrepareMessageOfParent() {
-        return deletePrepareMessageOfParent;
-    }
-
     public boolean isDeletingFlagOfLeftChild() {
         return deletingFlagOfLeftChild;
-    }
-
-    public DeletePrepareMessage getDeletePrepareMessageOfLeftChild() {
-        return deletePrepareMessageOfLeftChild;
     }
 
     public boolean isDeletingFlagOfRightChild() {
         return deletingFlagOfRightChild;
     }
 
-    public DeletePrepareMessage getDeletePrepareMessageOfRightChild() {
-        return deletePrepareMessageOfRightChild;
-    }
 }

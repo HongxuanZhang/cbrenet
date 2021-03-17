@@ -11,6 +11,9 @@ public class DeletePrepareMessage extends DeleteBaseMessage implements Comparabl
 
     @Override
     public int compareTo(DeletePrepareMessage o) {
+        if(o == null){
+            return 1;
+        }
         double result = this.t - o.t;
         if(result > 0) {
             return 1;
