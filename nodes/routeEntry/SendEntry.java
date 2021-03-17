@@ -199,13 +199,13 @@ public class SendEntry {
     public List<Integer> getAllSendIds(){
         List<Integer> results = new LinkedList<>();
         if(this.egoTreeIdOfParent > 0){
-            results.add(this.sendIdOfParent);
+            results.add(this.egoTreeIdOfParent);
         }
         if(this.egoTreeIdOfLeftChild > 0){
-            results.add(this.sendIdOfLeftChild);
+            results.add(this.egoTreeIdOfLeftChild);
         }
         if(this.egoTreeIdOfRightChild > 0){
-            results.add(this.sendIdOfRightChild);
+            results.add(this.egoTreeIdOfRightChild);
         }
         return results;
     }

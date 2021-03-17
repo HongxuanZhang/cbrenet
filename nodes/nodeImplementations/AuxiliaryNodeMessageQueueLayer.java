@@ -64,11 +64,23 @@ public abstract class AuxiliaryNodeMessageQueueLayer extends AuxiliaryNodeStruct
     }
 
 
+    public void sendEgoTreeMessage(int largeId, int dst, Message msg, boolean upward,int helpedId){
+        assert msg instanceof DeleteBaseMessage;
+
+        RoutingMessage routingMessage = new RoutingMessage(this.ID, dst, msg, largeId, upward);
+
+        if(!this.forwardMessage(routingMessage)){
+            this.addRoutingMessageToQueue(helpedId, routingMessage);
+        }
+    }
+
+
     public void addRoutingMessageToQueue(int helpedID, RoutingMessage routingMessage) {
         int largeId = routingMessage.getLargeId();
         AuxiliarySendEntry entry = this.getCorrespondingEntry(helpedID, largeId);
         entry.addMessageIntoRoutingMessageQueue(routingMessage);
     }
+
 
 
     public boolean forwardMessage(RoutingMessage routingMessage) {
@@ -79,8 +91,14 @@ public abstract class AuxiliaryNodeMessageQueueLayer extends AuxiliaryNodeStruct
          *@author Zhang Hongxuan
          *@create time  2021/3/14
          */
+
+
+        int helpedId = routingMessage.getNextHop();
         MessageForwardAndSendHelper helper = new MessageForwardAndSendHelper();
-        return helper.forwardMessage(this.ID, this, routingMessage);
+
+        // 为什么是helped id 呢？ 因为forwardMessage需要和第一位参数进行比较的来决定RoutingMessage该去哪的
+        return helper.forwardMessage(helpedId, this, routingMessage);
+
     }
 //
 //        int destination = routingMessage.getDestination();

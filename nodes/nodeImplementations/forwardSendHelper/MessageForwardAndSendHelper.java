@@ -11,6 +11,7 @@ import sinalgo.tools.Tools;
 public class MessageForwardAndSendHelper  {
 
 
+    // Call different EntryGetter instance to execute in AN and BST N differently.
     public boolean forwardMessage(int ID, EntryGetter entryGetter, RoutingMessage routingMessage) {
 
         int destination = routingMessage.getDestination();
@@ -53,7 +54,7 @@ public class MessageForwardAndSendHelper  {
             Message message = routingMessage.getPayLoad();
 
             if(message instanceof CbRenetMessage){
-                if(!((CbRenetMessage) message).isUpForward()){
+                if(!routingMessage.isUpForward()){
                     // if not upForward, the message would send to the child
                     if (helpedId < destination) {
                         int rightChild = entryGetter.getRightChildOf(helpedId, largeId);
