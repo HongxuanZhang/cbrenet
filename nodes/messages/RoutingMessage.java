@@ -100,6 +100,10 @@ public class RoutingMessage extends NetworkMessage {
         this.payload = payload;
     }
 
+    public boolean isUpForward() {
+        return upForward;
+    }
+
     @Override
     public Message clone() {
         return this;

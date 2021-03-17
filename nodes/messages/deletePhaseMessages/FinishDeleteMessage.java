@@ -5,7 +5,7 @@ package projects.cbrenet.nodes.messages.deletePhaseMessages;
 * Indicate the node to change the link to which node */
 
 public class FinishDeleteMessage extends DeleteBaseMessage{
-    
+
     final private int egoTreeId;
 
     final private int trueId;

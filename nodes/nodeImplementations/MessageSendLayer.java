@@ -4,6 +4,8 @@ import projects.cbrenet.nodes.messages.CbRenetMessage;
 import projects.cbrenet.nodes.messages.RoutingMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.LargeInsertMessage;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteRequestMessage;
+import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteBaseMessage;
+import projects.cbrenet.nodes.messages.deletePhaseMessages.DeletePrepareMessage;
 import projects.cbrenet.nodes.tableEntry.Request;
 import sinalgo.nodes.messages.Message;
 import sinalgo.runtime.Global;
@@ -83,6 +85,8 @@ public abstract class MessageSendLayer extends MessageQueueLayer{
         }
     }
 
+
+
     @Override
     public void sendEgoTreeMessage(int largeId, int dst, Message msg){
         /**
@@ -154,6 +158,16 @@ public abstract class MessageSendLayer extends MessageQueueLayer{
             this.addInRoutingMessageQueue(routingMessage);
         }
 
+    }
+
+    public void sendEgoTreeMessage(int largeId, int dst, Message msg, boolean upward){
+        assert msg instanceof DeleteBaseMessage;
+
+        RoutingMessage routingMessage = new RoutingMessage(this.ID, dst, msg, largeId, upward);
+
+        if(!this.forwardMessage(routingMessage)){
+            this.addInRoutingMessageQueue(routingMessage);
+        }
     }
 
 

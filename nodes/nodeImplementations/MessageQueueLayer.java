@@ -4,6 +4,7 @@ import projects.cbrenet.nodes.messages.CbRenetMessage;
 import projects.cbrenet.nodes.messages.RoutingMessage;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteRequestMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.LargeInsertMessage;
+import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteBaseMessage;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
 import sinalgo.nodes.messages.Message;
 import sinalgo.tools.Tools;
@@ -235,6 +236,28 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
                 if(this.ID != deleteRequestMessageTmp.getDst()){
                     int parentId = this.getParent(largeId);
                     if(this.sendTo(parentId, routingMessage)){
+                        sendFlag = true;
+                    }
+                }
+            }
+            else if(message instanceof DeleteBaseMessage){
+                if(!routingMessage.isUpForward()){
+                    // if not upForward, the message would send to the child
+                    if (this.ID < destination) {
+                        int rightChild = this.getRightChild(largeId);
+                        if(sendTo(rightChild, routingMessage)){
+                            sendFlag = true;
+                        }
+                    } else if (destination < ID) {
+                        int leftChild = this.getLeftChild(largeId);
+                        if(sendTo(leftChild, routingMessage)){
+                            sendFlag = true;
+                        }
+                    }
+                }
+                else{
+                    int parentId = this.getParent(largeId);
+                    if(sendTo(parentId, routingMessage)){
                         sendFlag = true;
                     }
                 }
