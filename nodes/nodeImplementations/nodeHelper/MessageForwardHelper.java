@@ -10,7 +10,6 @@ import sinalgo.tools.Tools;
 
 public class MessageForwardHelper {
 
-
     // Call different EntryGetter instance to execute in AN and BST N differently.
     public boolean forwardMessage(int ID, EntryGetter entryGetter, RoutingMessage routingMessage) {
 
@@ -140,8 +139,5 @@ public class MessageForwardHelper {
             return false;
         }
     }
-
-
-
 
 }

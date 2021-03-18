@@ -89,7 +89,7 @@ public class SendEntry {
         this.routingMessageQueue = new LinkedList<>();
 
         this.deleteFlag = true;
-        this.deletingFlagOfMySelf = false;
+        this.deletingFlagOfItSelf = false;
         this.deletingFlagOfParent = false;
         this.deletingFlagOfLeftChild = false;
         this.deletingFlagOfRightChild = false;
@@ -134,14 +134,16 @@ public class SendEntry {
     }
 
     // call in start delete
-    public boolean cheakNeighborDeleting(){
+    public boolean checkNeighborDeleting(){
         return (!this.deletingFlagOfParent) && (!this.deletingFlagOfRightChild) && (!this.deletingFlagOfLeftChild);
     }
 
 
     boolean deleteFlag;
+    // when delete flag is ture, it means the node would try to delete itself every round
+    // and would not accept adjust.
 
-    boolean deletingFlagOfMySelf;
+    boolean deletingFlagOfItSelf;
     // 发送后设置，当收到所有期望的DeleteConfirmMessage后删除？
     DeletePrepareMessage deletePrepareMessage = null;
 
@@ -443,16 +445,33 @@ public class SendEntry {
         return deleteFlag;
     }
 
-    public boolean isDeletingFlagOfMySelf() {
-        return deletingFlagOfMySelf;
+    public boolean isDeletingFlagOfItSelf() {
+        return deletingFlagOfItSelf;
     }
 
     public void setDeleteFlag(boolean deleteFlag) {
         this.deleteFlag = deleteFlag;
     }
 
-    public void setDeletingFlagOfMySelf(boolean deletingFlagOfMySelf) {
-        this.deletingFlagOfMySelf = deletingFlagOfMySelf;
+    public void setDeletingFlag(int targetId){
+        char relation = this.getRelationShipTo(targetId);
+        switch (relation){
+            case 'p':
+                this.deletingFlagOfParent = true;
+                break;
+            case 'l':
+                this.deletingFlagOfLeftChild = true;
+                break;
+            case 'r':
+                this.deletingFlagOfRightChild = true;
+                break;
+            default:
+                break;
+        }
+    }
+
+    public void setDeletingFlagOfItSelf(boolean deletingFlagOfItSelf) {
+        this.deletingFlagOfItSelf = deletingFlagOfItSelf;
     }
 
     public void setDeletingFlagOfParent(boolean deletingFlagOfParent) {

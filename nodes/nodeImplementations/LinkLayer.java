@@ -2,6 +2,12 @@ package projects.cbrenet.nodes.nodeImplementations;
 
 import projects.cbrenet.nodes.messages.SDNMessage.*;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteRequestMessage;
+import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteBaseMessage;
+import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteConfirmMessage;
+import projects.cbrenet.nodes.messages.deletePhaseMessages.DeletePrepareMessage;
+import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteFinishMessage;
+import projects.cbrenet.nodes.nodeImplementations.deleteProcedure.DeleteProcess;
+import projects.cbrenet.nodes.routeEntry.SendEntry;
 import sinalgo.nodes.Node;
 import sinalgo.nodes.messages.Message;
 import sinalgo.tools.Tools;
@@ -17,6 +23,8 @@ import java.util.*;
  * */
 
 public abstract class LinkLayer extends MessageQueueLayer{
+
+    DeleteProcess deleteProcess = new DeleteProcess();
 
     HashMap<Integer, PriorityQueue<StatusRelatedMessage>> unsatisfiedLinkMessage;
 
@@ -154,23 +162,11 @@ public abstract class LinkLayer extends MessageQueueLayer{
     }
 
 
-    private void executeDeleteMessage(DeleteMessage deleteMessage){
-        // TODO　完善DeleteMessage
-        if(deleteMessage.isAllFlag()){
-            // 全删的
-        }
-        else{
-            // 只删自己的
-        }
-    }
-
-
     private void executeStatusRelatedMessage(StatusRelatedMessage statusRelatedMessage){
         if(statusRelatedMessage instanceof LinkMessage){
             this.executeLinkMessage((LinkMessage) statusRelatedMessage);
         }
         else if(statusRelatedMessage instanceof DeleteMessage){
-            // ToDo 这还不够，在执行DeleteMessage的时候，必须保障当前Node没有未发出的结点！
             this.executeDeleteMessage((DeleteMessage) statusRelatedMessage);
         }
         else if(statusRelatedMessage instanceof LargeInsertMessage){
@@ -183,6 +179,55 @@ public abstract class LinkLayer extends MessageQueueLayer{
             Tools.warning("The StatusRelatedMessage in LinkLayer is "+ statusRelatedMessage.getClass());
         }
     }
+
+
+
+    //  Delete Message Part
+    private void executeDeleteMessage(DeleteMessage deleteMessage){
+
+        int largeId = deleteMessage.getLargeId();
+        if(deleteMessage.isAllFlag()){
+            // 全删模式，整个Ego-Tree全部清空！
+            // 清空就行了！不必担心Ego-Tree中是否有剩余的Message
+            this.removeLinkToParent(largeId);
+            this.removeLinkToLeftChild(largeId);
+            this.removeLinkToRightChild(largeId);
+            this.removeSendEntry(-1, largeId);
+        }
+        else{
+            // 只删自己的Entry和Link, 这就需要保证Queue清空
+            SendEntry correspondingEntry = this.getCorrespondingEntry(-1, largeId);
+            correspondingEntry.setDeleteFlag(true);
+            if(correspondingEntry.isQueueEmpty()){
+
+                deleteProcess.startDelete(this.getCorrespondingEntry(-1, largeId), this, largeId, this.ID);
+
+            }
+        }
+    }
+
+
+    private void tryToDeleteInPostRound(){
+        Set<Integer> largeIds = this.routeTable.keySet();
+
+        for(int largeId : largeIds){
+            SendEntry correspondingEntry = this.getCorrespondingEntry(-1,largeId);
+            if(correspondingEntry.isQueueEmpty() && correspondingEntry.isDeleteFlag()){
+                this.deleteProcess.startDelete(correspondingEntry, this, largeId, this.ID);
+            }
+        }
+
+    }
+
+
+
+
+    @Override
+    protected void doInPostRound(){
+        super.doInPostRound();
+        this.tryToDeleteInPostRound();
+    }
+
 
 
     @Override
@@ -281,6 +326,24 @@ public abstract class LinkLayer extends MessageQueueLayer{
                 }
             }
 
+        }
+        else if(msg instanceof DeleteBaseMessage){
+            if(msg instanceof DeletePrepareMessage){
+                SendEntry entry = this.getCorrespondingEntry(-1, ((DeletePrepareMessage) msg).getLargeId());
+                this.deleteProcess.receiveDeletePrepareMessage(entry,(DeletePrepareMessage) msg);
+            }
+            else if(msg instanceof DeleteConfirmMessage){
+                int largeId = ((DeleteConfirmMessage) msg).getLargeId();
+                SendEntry entry = this.getCorrespondingEntry(-1,largeId);
+                if(this.deleteProcess.receiveDeleteConfirmMessage(entry, (DeleteConfirmMessage)msg)){
+                    this.deleteProcess.sendDeleteFinishMessage(entry,largeId,this.ID, this);
+                }
+            }
+            else if(msg instanceof DeleteFinishMessage){
+                int largeId = ((DeleteFinishMessage) msg).getLargeId();
+                SendEntry entry = this.getCorrespondingEntry(-1,largeId);
+                this.deleteProcess.executeDeleteFinishMessage(entry, this, (DeleteFinishMessage)msg, -1);
+            }
         }
     }
 

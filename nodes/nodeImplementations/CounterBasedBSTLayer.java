@@ -9,6 +9,7 @@ import projects.cbrenet.nodes.messages.SDNMessage.StatusChangedMessage;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteEgoTreeRequestMessage;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteRequestMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.LargeInsertMessage;
+import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteBaseMessage;
 import sinalgo.configuration.WrongConfigurationException;
 import sinalgo.nodes.messages.Inbox;
 import sinalgo.nodes.messages.Message;
@@ -394,7 +395,9 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
                             Tools.fatalError("DeleteRequestMessage has been sent to a wrong node!!!");
                         }
                     }
-
+                    else if(payload instanceof DeleteBaseMessage){
+                        this.receiveMessage(payload);
+                    }
                     // todo 这里或许还需要几种message
                     else{
                         Tools.fatalError("Some message in the RoutingMessage is " + msg.getClass() + " and being received");

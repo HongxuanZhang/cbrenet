@@ -7,6 +7,7 @@ package projects.cbrenet.nodes.nodeImplementations;
 
 import projects.cbrenet.nodes.messages.RoutingMessage;
 import projects.cbrenet.nodes.nodeImplementations.nodeHelper.EntryGetter;
+import projects.cbrenet.nodes.routeEntry.AuxiliarySendEntry;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
 import sinalgo.tools.Tools;
 
@@ -56,6 +57,17 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
         SendEntry entry = new SendEntry(parent, leftChild, rightChild);
         this.routeTable.put(largeId, entry);
     }
+
+    public void removeSendEntry(int helpedId, int largeId){
+        if(this.routeTable.containsKey(largeId)){
+            this.routeTable.remove(largeId);
+        }
+        else{
+            Tools.warning("The BST node want to delete entry whose largeId: " +
+                    largeId+ " but not exist!");
+        }
+    }
+
 
     // May use it in cluster layer or rotation layer
     public char getRelationShipTo(int largeId, int targetId){

@@ -96,7 +96,6 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
          *@author  Zhang Hongxuan
          *@create time  2021/3/1
          */
-
         Set<Integer> largeIds = this.routeTable.keySet();
 
         for(int largeId : largeIds){
@@ -113,13 +112,10 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
                     routingMessageQueueTmp.add(routingMessage);
                 }
             }
-            routingMessageQueue.addAll(routingMessageQueueTmp);
-
-
+            if(!routingMessageQueueTmp.isEmpty()){
+                routingMessageQueue.addAll(routingMessageQueueTmp);
+            }
         }
-
-
-
     }
 
 
