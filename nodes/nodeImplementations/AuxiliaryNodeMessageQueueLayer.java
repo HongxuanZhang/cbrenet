@@ -1,11 +1,8 @@
 package projects.cbrenet.nodes.nodeImplementations;
 
-import projects.cbrenet.nodes.messages.CbRenetMessage;
 import projects.cbrenet.nodes.messages.RoutingMessage;
-import projects.cbrenet.nodes.messages.SDNMessage.LargeInsertMessage;
-import projects.cbrenet.nodes.messages.controlMessage.DeleteRequestMessage;
 import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteBaseMessage;
-import projects.cbrenet.nodes.nodeImplementations.forwardSendHelper.MessageForwardAndSendHelper;
+import projects.cbrenet.nodes.nodeImplementations.nodeHelper.MessageForwardAndSendHelper;
 import projects.cbrenet.nodes.routeEntry.AuxiliarySendEntry;
 import sinalgo.nodes.messages.Message;
 import sinalgo.tools.Tools;
@@ -50,7 +47,7 @@ public abstract class AuxiliaryNodeMessageQueueLayer extends AuxiliaryNodeStruct
                     // Check whether satisfy the delete condition
                     int egoIdOfLeft = entry.getEgoTreeIdOfLeftChild();
                     int egoIdOfRight = entry.getEgoTreeIdOfRightChild();
-                    entry.setDeleteConditionSatisfied(this.checkDeleteCondition(egoIdOfLeft, egoIdOfRight));
+                    entry.setDeleteConditionSatisfied(this.checkRemoveEntryCondition(egoIdOfLeft, egoIdOfRight));
                     // Part finished!
 
                 }

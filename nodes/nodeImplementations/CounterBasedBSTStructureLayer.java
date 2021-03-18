@@ -6,7 +6,7 @@ package projects.cbrenet.nodes.nodeImplementations;
 * In this layer, I will rebuild the data structure of the CBBST in the ego-tree. */
 
 import projects.cbrenet.nodes.messages.RoutingMessage;
-import projects.cbrenet.nodes.nodeImplementations.forwardSendHelper.EntryGetter;
+import projects.cbrenet.nodes.nodeImplementations.nodeHelper.EntryGetter;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
 import sinalgo.tools.Tools;
 
@@ -48,18 +48,18 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
 
 
 
-    public SendEntry getSendEntryOf(int largeId){
+    public SendEntry getCorrespondingEntry(int helpedId, int largeId){
         return this.routeTable.getOrDefault(largeId,null);
     }
 
-    public void addSendEntry(int largeId, int parent, int leftChild, int rightChild){
+    public void addSendEntry(int helpedId, int largeId, int parent, int leftChild, int rightChild){
         SendEntry entry = new SendEntry(parent, leftChild, rightChild);
         this.routeTable.put(largeId, entry);
     }
 
     // May use it in cluster layer or rotation layer
     public char getRelationShipTo(int largeId, int targetId){
-        SendEntry entry = this.getSendEntryOf(largeId);
+        SendEntry entry = this.getCorrespondingEntry(-1, largeId);
         if(entry == null){
             return 'w';
         }
@@ -127,7 +127,7 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
             }
         }
 
-        SendEntry entry = this.getSendEntryOf(largeId);
+        SendEntry entry = this.getCorrespondingEntry(-1, largeId);
 
 
         if(entry != null){
@@ -172,7 +172,7 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
          *@author  Zhang Hongxuan
          *@create time  2021/3/15
          */
-        SendEntry entry = this.getSendEntryOf(largeId);
+        SendEntry entry = this.getCorrespondingEntry(-1, largeId);
         if(entry != null){
             switch (relation){
                 case 'p':
@@ -202,7 +202,7 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
          *@author  Zhang Hongxuan
          *@create time  2021/3/15
          */
-        SendEntry entry = this.getSendEntryOf(largeId);
+        SendEntry entry = this.getCorrespondingEntry(-1, largeId);
         if(entry != null){
             if(egoTreeFlag){
                 switch (relation){

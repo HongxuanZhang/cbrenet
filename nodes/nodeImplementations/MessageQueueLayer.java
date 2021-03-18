@@ -2,10 +2,7 @@ package projects.cbrenet.nodes.nodeImplementations;
 
 import projects.cbrenet.nodes.messages.CbRenetMessage;
 import projects.cbrenet.nodes.messages.RoutingMessage;
-import projects.cbrenet.nodes.messages.controlMessage.DeleteRequestMessage;
-import projects.cbrenet.nodes.messages.SDNMessage.LargeInsertMessage;
-import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteBaseMessage;
-import projects.cbrenet.nodes.nodeImplementations.forwardSendHelper.MessageForwardAndSendHelper;
+import projects.cbrenet.nodes.nodeImplementations.nodeHelper.MessageForwardAndSendHelper;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
 import sinalgo.nodes.messages.Message;
 import sinalgo.tools.Tools;
@@ -30,7 +27,7 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
          *@create time  2021/3/11
          */
         int largeId = routingMessage.getLargeId();
-        SendEntry entry = this.getSendEntryOf(largeId);
+        SendEntry entry = this.getCorrespondingEntry(-1,largeId);
         if(entry == null){
             Tools.fatalError("Something terrible happened! Want to add Routing message into the queue but " +
                     "the corresponding entry is NULL!!!");
@@ -104,7 +101,7 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
 
         for(int largeId : largeIds){
 
-            SendEntry correspondingEntry = this.getSendEntryOf(largeId);
+            SendEntry correspondingEntry = this.getCorrespondingEntry(-1,largeId);
             Queue<RoutingMessage> routingMessageQueue = correspondingEntry.getRoutingMessageQueue();
 
             Queue<RoutingMessage> routingMessageQueueTmp = new LinkedList<>();

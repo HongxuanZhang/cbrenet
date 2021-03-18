@@ -48,11 +48,11 @@ public abstract class RPCLayer extends SynchronizerLayer {
             break;
 
         case "changeLeftChildTo":
-            this.changeLeftChildTo(largeId, (CBTreeWeightLayer) rpc.getNode());
+            this.changeLeftChild(largeId, (CBTreeWeightLayer) rpc.getNode());
             break;
 
         case "changeRightChildTo":
-            this.changeRightChildTo(largeId, (CBTreeWeightLayer) rpc.getNode());
+            this.changeRightChild(largeId, (CBTreeWeightLayer) rpc.getNode());
             break;
 
         case "setWeight":

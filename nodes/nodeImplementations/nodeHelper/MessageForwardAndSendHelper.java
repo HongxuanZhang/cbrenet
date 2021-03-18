@@ -1,4 +1,4 @@
-package projects.cbrenet.nodes.nodeImplementations.forwardSendHelper;
+package projects.cbrenet.nodes.nodeImplementations.nodeHelper;
 
 import projects.cbrenet.nodes.messages.CbRenetMessage;
 import projects.cbrenet.nodes.messages.RoutingMessage;

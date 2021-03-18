@@ -16,6 +16,10 @@ public class DeleteMessage extends StatusRelatedMessage {
 
     private final boolean allFlag;
 
+    private int auxiliaryNodeId;
+
+
+
     public DeleteMessage(int dst, int largeId, int uniqueStatusId){
         super(uniqueStatusId);
         this.dst = dst;
@@ -40,6 +44,14 @@ public class DeleteMessage extends StatusRelatedMessage {
 
     public boolean isAllFlag() {
         return allFlag;
+    }
+
+    public int getAuxiliaryNodeId() {
+        return auxiliaryNodeId;
+    }
+
+    public void setAuxiliaryNodeId(int auxiliaryNodeId) {
+        this.auxiliaryNodeId = auxiliaryNodeId;
     }
 
     @Override

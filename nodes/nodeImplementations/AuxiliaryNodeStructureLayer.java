@@ -1,16 +1,20 @@
 package projects.cbrenet.nodes.nodeImplementations;
 
 import projects.cbrenet.nodes.messages.RoutingMessage;
-import projects.cbrenet.nodes.nodeImplementations.forwardSendHelper.EntryGetter;
+import projects.cbrenet.nodes.nodeImplementations.nodeHelper.EntryGetter;
+import projects.cbrenet.nodes.nodeImplementations.nodeHelper.LinkHelper;
 import projects.cbrenet.nodes.routeEntry.AuxiliarySendEntry;
 import sinalgo.nodes.Node;
 import sinalgo.tools.Tools;
-import projects.cbrenet.nodes.routeEntry.SendEntry;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
 
 public abstract class AuxiliaryNodeStructureLayer extends Node implements EntryGetter {
+
+    LinkHelper linkHelper = new LinkHelper();
+
 
     public Queue<RoutingMessage> cycleRoutingMessage = new LinkedList<>();
 
@@ -90,9 +94,6 @@ public abstract class AuxiliaryNodeStructureLayer extends Node implements EntryG
         }
     }
 
-
-
-
     public void addSendEntry(int helpedId, int largeId, int parent, int leftChild, int rightChild){
         assert leftChild != -1 && rightChild != -1;
         // if one of them are -1, means the node can be delete!
@@ -107,6 +108,8 @@ public abstract class AuxiliaryNodeStructureLayer extends Node implements EntryG
         }
     }
 
+
+    // delete node 时调用
     public void removeSendEntry(int helpedId, int largeId){
         /**
          *@description Call this method when the node is satisfied to truly delete from the
@@ -174,10 +177,18 @@ public abstract class AuxiliaryNodeStructureLayer extends Node implements EntryG
         }
     }
 
-    public boolean checkDeleteCondition(int leftEgoId, int rightEgoId){
+    public boolean checkRemoveEntryCondition(int leftEgoId, int rightEgoId){
         return (leftEgoId<0 || rightEgoId < 0);
     }
 
-
+    public boolean changeLeftChildTo(int largeId, int egoTreeId, int trueId, int helpedId){
+        return this.linkHelper.changeLeftChildTo(largeId,egoTreeId,trueId, helpedId, this, this);
+    }
+    public boolean changeRightChildTo(int largeId, int egoTreeId, int trueId, int helpedId){
+        return this.linkHelper.changeRightChildTo(largeId,egoTreeId,trueId, helpedId, this, this);
+    }
+    public boolean changeParentTo(int largeId, int egoTreeId, int trueId, int helpedId){
+        return this.linkHelper.changeParentTo(largeId,egoTreeId,trueId, helpedId, this, this);
+    }
 
 }

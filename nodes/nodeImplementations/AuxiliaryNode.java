@@ -3,6 +3,7 @@ package projects.cbrenet.nodes.nodeImplementations;
 import projects.cbrenet.nodes.messages.AuxiliaryNodeMessage.AuxiliaryRequestMessage;
 import projects.cbrenet.nodes.messages.RoutingMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.LargeInsertMessage;
+import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteBaseMessage;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
 import sinalgo.configuration.WrongConfigurationException;
 import sinalgo.nodes.Node;
@@ -55,6 +56,10 @@ public class AuxiliaryNode extends AuxiliaryNodeMessageQueueLayer{
             else if(msg instanceof AuxiliaryRequestMessage){
 
             }
+            else if(msg instanceof DeleteBaseMessage){
+
+            }
+            //else if() 聚类和旋转的部分
             else{
 
             }

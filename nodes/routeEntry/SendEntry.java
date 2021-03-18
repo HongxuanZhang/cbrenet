@@ -1,6 +1,7 @@
 package projects.cbrenet.nodes.routeEntry;
 
 import projects.cbrenet.nodes.messages.RoutingMessage;
+import projects.cbrenet.nodes.messages.SDNMessage.DeleteMessage;
 import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteConfirmMessage;
 import projects.cbrenet.nodes.messages.deletePhaseMessages.DeletePrepareMessage;
 import sinalgo.tools.Tools;
@@ -104,7 +105,20 @@ public class SendEntry {
     boolean sendFlagOfRightChild;
 
 
+
+
+
     // Delete Phase field
+
+    DeleteMessage correspondingDeleteMessage = null;
+
+    public void setDeleteMessage(DeleteMessage correspondingDeleteMessage ){
+        this.correspondingDeleteMessage = correspondingDeleteMessage;
+    }
+
+    public DeleteMessage getCorrespondingDeleteMessage(){
+        return this.correspondingDeleteMessage;
+    }
 
     // 控制是否发送deletePrepareMessage.
     HashMap<Integer, Boolean> gotConfirmMessageMap = null;
