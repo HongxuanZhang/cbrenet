@@ -8,7 +8,7 @@ import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteBaseMessage;
 import sinalgo.nodes.messages.Message;
 import sinalgo.tools.Tools;
 
-public class MessageForwardAndSendHelper  {
+public class MessageForwardHelper {
 
 
     // Call different EntryGetter instance to execute in AN and BST N differently.

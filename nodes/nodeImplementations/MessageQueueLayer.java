@@ -2,7 +2,7 @@ package projects.cbrenet.nodes.nodeImplementations;
 
 import projects.cbrenet.nodes.messages.CbRenetMessage;
 import projects.cbrenet.nodes.messages.RoutingMessage;
-import projects.cbrenet.nodes.nodeImplementations.nodeHelper.MessageForwardAndSendHelper;
+import projects.cbrenet.nodes.nodeImplementations.nodeHelper.MessageForwardHelper;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
 import sinalgo.nodes.messages.Message;
 import sinalgo.tools.Tools;
@@ -133,7 +133,7 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
          *@author Zhang Hongxuan
          *@create time  2021/2/7
          */
-        MessageForwardAndSendHelper helper = new MessageForwardAndSendHelper();
+        MessageForwardHelper helper = new MessageForwardHelper();
         return helper.forwardMessage(this.ID, this, routingMessage);
     }
 

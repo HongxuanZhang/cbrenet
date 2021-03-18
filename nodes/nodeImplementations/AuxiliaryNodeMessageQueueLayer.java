@@ -2,7 +2,7 @@ package projects.cbrenet.nodes.nodeImplementations;
 
 import projects.cbrenet.nodes.messages.RoutingMessage;
 import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteBaseMessage;
-import projects.cbrenet.nodes.nodeImplementations.nodeHelper.MessageForwardAndSendHelper;
+import projects.cbrenet.nodes.nodeImplementations.nodeHelper.MessageForwardHelper;
 import projects.cbrenet.nodes.routeEntry.AuxiliarySendEntry;
 import sinalgo.nodes.messages.Message;
 import sinalgo.tools.Tools;
@@ -50,14 +50,14 @@ public abstract class AuxiliaryNodeMessageQueueLayer extends AuxiliaryNodeStruct
                     entry.setDeleteConditionSatisfied(this.checkRemoveEntryCondition(egoIdOfLeft, egoIdOfRight));
                     // Part finished!
 
+                    // todo Start a Delete Process here?
+
                 }
             } else {
                 Tools.fatalError("");
             }
         }
         // clear queue part and delete condition check
-
-
     }
 
 
@@ -79,7 +79,6 @@ public abstract class AuxiliaryNodeMessageQueueLayer extends AuxiliaryNodeStruct
     }
 
 
-
     public boolean forwardMessage(RoutingMessage routingMessage) {
         /**
          *@description The auxiliary node use this to transfer message
@@ -88,14 +87,11 @@ public abstract class AuxiliaryNodeMessageQueueLayer extends AuxiliaryNodeStruct
          *@author Zhang Hongxuan
          *@create time  2021/3/14
          */
-
-
         int helpedId = routingMessage.getNextHop();
-        MessageForwardAndSendHelper helper = new MessageForwardAndSendHelper();
+        MessageForwardHelper helper = new MessageForwardHelper();
 
         // 为什么是helped id 呢？ 因为forwardMessage需要和第一位参数进行比较的来决定RoutingMessage该去哪的
         return helper.forwardMessage(helpedId, this, routingMessage);
-
     }
 //
 //        int destination = routingMessage.getDestination();
