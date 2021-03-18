@@ -1,11 +1,11 @@
 package projects.cbrenet.nodes.routeEntry;
 
 import projects.cbrenet.nodes.messages.RoutingMessage;
+import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteConfirmMessage;
 import projects.cbrenet.nodes.messages.deletePhaseMessages.DeletePrepareMessage;
+import sinalgo.tools.Tools;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 
 public class SendEntry {
 
@@ -107,6 +107,24 @@ public class SendEntry {
     // Delete Phase field
 
     // 控制是否发送deletePrepareMessage.
+    HashMap<Integer, Boolean> gotConfirmMessageMap = null;
+
+    // call in start delete
+    public void initGotMap(){
+        List<Integer> ids = this.getAllSendIds();
+        this.gotConfirmMessageMap = new HashMap<>();
+
+        for(int id : ids){
+            this.gotConfirmMessageMap.put(id, false);
+        }
+    }
+
+    // call in start delete
+    public boolean cheakNeighborDeleting(){
+        return (!this.deletingFlagOfParent) && (!this.deletingFlagOfRightChild) && (!this.deletingFlagOfLeftChild);
+    }
+
+
     boolean deleteFlag;
 
     boolean deletingFlagOfMySelf;
@@ -229,6 +247,26 @@ public class SendEntry {
             }
 
         }
+    }
+
+    public boolean setDeleteConfirmMessage(DeleteConfirmMessage deleteConfirmMessage){
+        int src = deleteConfirmMessage.getSrcId();
+        if(this.gotConfirmMessageMap.containsKey(src)) {
+            this.gotConfirmMessageMap.replace(src, false, true);
+        }
+        else{
+            Tools.warning("The node receive a DeleteConfirmMessage but not from a node expected!");
+        }
+
+        Set<Integer> ids = this.gotConfirmMessageMap.keySet();
+        boolean gotAll = true;
+        for(int id: ids){
+            if(!this.gotConfirmMessageMap.get(id)){
+                gotAll = false;
+                break;
+            }
+        }
+        return gotAll;
     }
 
     public void setDeletePrepareMessageOfParent(DeletePrepareMessage deletePrepareMessageOfParent) {

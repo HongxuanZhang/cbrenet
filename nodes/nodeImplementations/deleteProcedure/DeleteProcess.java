@@ -36,6 +36,7 @@ public class DeleteProcess {
 
     public void startDelete(SendEntry deleteEntry, Node node, int largeId, int helpedId){
 
+
         // when node is node AN, node.id should equal to helpedId
         assert !(node instanceof CounterBasedBSTLayer) || node.ID == helpedId;
 
@@ -52,23 +53,26 @@ public class DeleteProcess {
                 (largeId, helpedId, Tools.getGlobalTime() + (new Random()).nextDouble());
 
         deleteEntry.setDeletePrepareMessage(deletePrepareMessage);
-        // todo 思考什么情况应该发送的问题
+        deleteEntry.initGotMap();
 
-
-        for(int targetId : egoIdTargetList){
-            boolean upward = false;
-            if(deleteEntry.getRelationShipTo(targetId) == 'p'){
-                upward = true;
+        if(deleteEntry.cheakNeighborDeleting()){
+            for(int targetId : egoIdTargetList){
+                boolean upward = false;
+                if(deleteEntry.getRelationShipTo(targetId) == 'p'){
+                    upward = true;
+                }
+                if(node instanceof MessageSendLayer){
+                    ((MessageSendLayer)node).sendEgoTreeMessage(largeId, targetId,
+                            deletePrepareMessage, upward);
+                }
+                else if(node instanceof AuxiliaryNodeMessageQueueLayer){
+                    ((AuxiliaryNodeMessageQueueLayer)node).sendEgoTreeMessage(largeId, targetId,
+                            deletePrepareMessage, upward, helpedId);
+                }
             }
-            if(node instanceof MessageSendLayer){
-                ((MessageSendLayer)node).sendEgoTreeMessage(largeId, targetId,
-                        deletePrepareMessage, upward);
-            }
-            else if(node instanceof AuxiliaryNodeMessageQueueLayer){
-                ((AuxiliaryNodeMessageQueueLayer)node).sendEgoTreeMessage(largeId, targetId,
-                        deletePrepareMessage, upward, helpedId);
-            }
-
+        }
+        else{
+            Tools.warning("At least one of neighbors is deleting itself, so can not delete now!");
         }
 
     }
@@ -102,15 +106,38 @@ public class DeleteProcess {
         for(DeletePrepareMessage deletePrepareMessage : messageList){
             int largeId = deletePrepareMessage.getLargeId();
             int deleteTarget = deletePrepareMessage.getDeleteTarget();
-
-            // todo 思考这个结点确认了另一个没确认怎么办的问题。
-            // 等吧
-
+            // 等待
             DeleteConfirmMessage confirmMessage = new DeleteConfirmMessage(largeId, deleteTarget, helpedId);
 
-
             this.sendDeleteBaseMessage(confirmMessage, largeId, deleteEntry, deleteTarget, helpedId, node);
+        }
+    }
 
+    public boolean receiveDeleteConfirmMessage(SendEntry sendEntry, DeleteConfirmMessage deleteConfirmMessage, int helpedId){
+        int src = deleteConfirmMessage.getSrcId();
+        int largeId = deleteConfirmMessage.getLargeId();
+        return sendEntry.setDeleteConfirmMessage(deleteConfirmMessage);
+    }
+
+    public void sendFinishDeleteMessage(SendEntry sendEntry,){
+        List<Integer> ids = sendEntry.getAllSendIds();
+
+        if(ids.size() == 3){
+            // Need AN to help
+
+        }
+        else{
+            if(ids.size() == 2){
+                // Just Connect them two would be OK
+
+            }
+            else if(ids.size() == 1){
+                // no need to create any link
+
+            }
+            else{
+                Tools.warning("Very Interesting situation， no node connect to it!");
+            }
         }
 
     }
