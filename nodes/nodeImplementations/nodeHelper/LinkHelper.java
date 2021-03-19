@@ -25,13 +25,14 @@ public class LinkHelper {
     }
 
 
+    // todo 这三个可能没有必要继续保留
     public boolean changeLeftChildTo(int largeId, int egoTreeId, int helpedId, EntryGetter entryGetter, Node node){
 
         // 原来的思路是先remove再add
         // remove the previous connection
         if(this.removeLinkToLeftChild(largeId, helpedId, entryGetter, node)){
             // update current left child and create edge
-            return this.addLinkToLeftChild(largeId, egoTreeId, helpedId, entryGetter, node);
+            return this.addLinkToLeftChild(largeId, egoTreeId, egoTreeId, helpedId, entryGetter, node);
         }
         return false;
     }
@@ -39,7 +40,7 @@ public class LinkHelper {
         // remove the previous connection
         if(this.removeLinkToRightChild(largeId, helpedId, entryGetter, node)){
             // update current left child and create edge
-            return this.addLinkToRightChild(largeId, egoTreeId, helpedId, entryGetter, node);
+            return this.addLinkToRightChild(largeId, egoTreeId, egoTreeId,helpedId, entryGetter, node);
         }
         return false;
     }
@@ -48,7 +49,7 @@ public class LinkHelper {
         //int largeId,int helpedId, EntryGetter entryGetter, Node node
         if(this.removeLinkToParent(largeId, helpedId, entryGetter, node)){
             // update current left child and create edge
-            return this.addLinkToParent(largeId, egoTreeId, helpedId, entryGetter, node);
+            return this.addLinkToParent(largeId, egoTreeId, egoTreeId, helpedId, entryGetter, node);
         }
         return false;
     }
@@ -161,8 +162,8 @@ public class LinkHelper {
     // These part's code only used to add link, and only in ego-tree.
     // DO NOT use it to create link to auxiliary node!
 
-    public boolean addLinkToLeftChild(int largeId, int egoTreeId, int helpedId, EntryGetter entryGetter, Node node){
-        if(this.addLeftChildInRouteTable(largeId, egoTreeId, helpedId, entryGetter)){
+    public boolean addLinkToLeftChild(int largeId, int egoTreeId, int sendId, int helpedId, EntryGetter entryGetter, Node node){
+        if(this.addLeftChildInRouteTable(largeId, egoTreeId, sendId ,helpedId, entryGetter)){
             return this.addLinkTo(egoTreeId, node);
         }
         else{
@@ -172,8 +173,8 @@ public class LinkHelper {
         }
     }
 
-    public boolean addLinkToRightChild(int largeId, int egoTreeId, int helpedId, EntryGetter entryGetter, Node node){
-        if(this.addRightChildInRouteTable(largeId, egoTreeId, helpedId, entryGetter)){
+    public boolean addLinkToRightChild(int largeId, int egoTreeId, int sendId, int helpedId, EntryGetter entryGetter, Node node){
+        if(this.addRightChildInRouteTable(largeId, egoTreeId, sendId, helpedId, entryGetter)){
             return this.addLinkTo(egoTreeId, node);
         }
         else{
@@ -183,8 +184,8 @@ public class LinkHelper {
         }
     }
 
-    public boolean addLinkToParent(int largeId, int egoTreeId, int helpedId, EntryGetter entryGetter, Node node){
-        if(this.addParentInRouteTable(largeId, egoTreeId, helpedId, entryGetter)){
+    public boolean addLinkToParent(int largeId, int egoTreeId, int sendID ,int helpedId, EntryGetter entryGetter, Node node){
+        if(this.addParentInRouteTable(largeId, egoTreeId, sendID, helpedId, entryGetter)){
             return this.addLinkTo(egoTreeId, node);
         }
         else{
@@ -195,19 +196,19 @@ public class LinkHelper {
     }
 
 
-    private boolean addParentInRouteTable(int largeId, int id, int helpedId , EntryGetter entryGetter){
-        return this.addNeighborInRouteTable(largeId,'p', id, helpedId, entryGetter);
+    private boolean addParentInRouteTable(int largeId, int targetId, int sendId, int helpedId , EntryGetter entryGetter){
+        return this.addNeighborInRouteTable(largeId,'p', targetId, sendId, helpedId, entryGetter);
     }
 
-    private boolean addRightChildInRouteTable(int largeId, int id, int helpedId , EntryGetter entryGetter){
-        return this.addNeighborInRouteTable(largeId,'r', id, helpedId, entryGetter);
+    private boolean addRightChildInRouteTable(int largeId, int targetId, int sendId, int helpedId , EntryGetter entryGetter){
+        return this.addNeighborInRouteTable(largeId,'r', targetId, sendId, helpedId, entryGetter);
     }
 
-    private boolean addLeftChildInRouteTable(int largeId, int targetId, int helpedId , EntryGetter entryGetter){
-        return this.addNeighborInRouteTable(largeId, 'l',targetId, helpedId, entryGetter);
+    private boolean addLeftChildInRouteTable(int largeId, int targetId, int sendId , int helpedId , EntryGetter entryGetter){
+        return this.addNeighborInRouteTable(largeId, 'l',targetId, sendId, helpedId, entryGetter);
     }
 
-    private boolean addNeighborInRouteTable(int largeId, char relation, int targetId, int helpedId , EntryGetter entryGetter){
+    private boolean addNeighborInRouteTable(int largeId, char relation, int targetId, int sendId, int helpedId , EntryGetter entryGetter){
         assert (relation =='p' || relation=='r' || relation == 'l') ;
 
         SendEntry entryTmp = entryGetter.getCorrespondingEntry(helpedId, largeId);
@@ -221,15 +222,15 @@ public class LinkHelper {
         switch (relation){
             case 'p':
                 entryTmp.setEgoTreeIdOfParent(targetId);
-                entryTmp.setSendIdOfParent(targetId);
+                entryTmp.setSendIdOfParent(sendId);
                 break;
             case 'l':
                 entryTmp.setEgoTreeIdOfLeftChild(targetId);
-                entryTmp.setSendIdOfLeftChild(targetId);
+                entryTmp.setSendIdOfLeftChild(sendId);
                 break;
             case 'r':
                 entryTmp.setEgoTreeIdOfRightChild(targetId);
-                entryTmp.setSendIdOfRightChild(targetId);
+                entryTmp.setSendIdOfRightChild(sendId);
                 break;
             default:
                 break;

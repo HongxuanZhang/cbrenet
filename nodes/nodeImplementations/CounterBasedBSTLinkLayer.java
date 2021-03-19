@@ -21,25 +21,25 @@ public abstract class CounterBasedBSTLinkLayer extends CounterBasedBSTStructureL
     // delete 的时候如果用到AN，就调用这个method
     //int largeId, int egoTreeId, int trueId, int helpedId, EntryGetter entryGetter, Node helpedNode
 
-    public boolean changeLeftChildTo(int largeId, int egoTreeId, int trueId){
-        return this.linkHelper.changeLeftChildTo(largeId,egoTreeId,trueId, this.ID, this, this);
+    public boolean changeLeftChildTo(int largeId, int egoTreeId, int sendId){
+        return this.linkHelper.changeLeftChildTo(largeId,egoTreeId,sendId, this.ID, this, this);
     }
-    public boolean changeRightChildTo(int largeId, int egoTreeId, int trueId){
-        return this.linkHelper.changeRightChildTo(largeId,egoTreeId,trueId, this.ID, this, this);
+    public boolean changeRightChildTo(int largeId, int egoTreeId, int sendId){
+        return this.linkHelper.changeRightChildTo(largeId,egoTreeId,sendId, this.ID, this, this);
     }
-    public boolean changeParentTo(int largeId, int egoTreeId, int trueId){
-        return this.linkHelper.changeParentTo(largeId,egoTreeId,trueId, this.ID, this, this);
+    public boolean changeParentTo(int largeId, int egoTreeId, int sendId){
+        return this.linkHelper.changeParentTo(largeId,egoTreeId,sendId, this.ID, this, this);
     }
 
     // add
-    public boolean addLinkToLeftChild(int largeId, int egoTreeId){
-        return this.linkHelper.addLinkToLeftChild(largeId, egoTreeId, this.ID, this, this);
+    public boolean addLinkToLeftChild(int largeId, int egoTreeId, int sendId){
+        return this.linkHelper.addLinkToLeftChild(largeId, egoTreeId, sendId, this.ID,this, this);
     }
-    public boolean addLinkToRightChild(int largeId, int egoTreeId){
-        return this.linkHelper.addLinkToRightChild(largeId, egoTreeId, this.ID, this, this);
+    public boolean addLinkToRightChild(int largeId, int egoTreeId, int sendId){
+        return this.linkHelper.addLinkToRightChild(largeId, egoTreeId, sendId, this.ID, this, this);
     }
-    public boolean addLinkToParent(int largeId, int egoTreeId){
-        return this.linkHelper.addLinkToParent(largeId, egoTreeId, this.ID, this, this);
+    public boolean addLinkToParent(int largeId, int egoTreeId, int sendId){
+        return this.linkHelper.addLinkToParent(largeId, egoTreeId, sendId, this.ID, this, this);
     }
 
 

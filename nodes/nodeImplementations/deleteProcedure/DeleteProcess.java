@@ -11,6 +11,7 @@ import projects.cbrenet.nodes.nodeImplementations.AuxiliaryNode;
 import projects.cbrenet.nodes.nodeImplementations.AuxiliaryNodeMessageQueueLayer;
 import projects.cbrenet.nodes.nodeImplementations.CounterBasedBSTLayer;
 import projects.cbrenet.nodes.nodeImplementations.MessageSendLayer;
+import projects.cbrenet.nodes.nodeImplementations.nodeHelper.EntryGetter;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
 import sinalgo.nodes.Node;
 import sinalgo.nodes.messages.Message;
@@ -58,18 +59,7 @@ public class DeleteProcess {
         if(deleteEntry.checkNeighborDeleting()){
             deleteEntry.setDeletingFlagOfItSelf(true);
             for(int targetId : egoIdTargetList){
-                boolean upward = false;
-                if(deleteEntry.getRelationShipTo(targetId) == 'p'){
-                    upward = true;
-                }
-                if(node instanceof MessageSendLayer){
-                    ((MessageSendLayer)node).sendEgoTreeMessage(largeId, targetId,
-                            deletePrepareMessage, upward);
-                }
-                else if(node instanceof AuxiliaryNodeMessageQueueLayer){
-                    ((AuxiliaryNodeMessageQueueLayer)node).sendEgoTreeMessage(largeId, targetId,
-                            deletePrepareMessage, upward, helpedId);
-                }
+                this.sendDeleteBaseMessage(deletePrepareMessage, largeId, deleteEntry, targetId, helpedId, node);
             }
         }
         else{
@@ -218,6 +208,26 @@ public class DeleteProcess {
                 break;
         }
 
+    }
+
+
+    public void executeDeleteBaseMessage(DeleteBaseMessage msg, EntryGetter entryGetter, Node node){
+        int largeId = msg.getLargeId();
+        int helpedId = msg.getDeleteTarget();
+        if(msg instanceof DeletePrepareMessage){
+            SendEntry entry = entryGetter.getCorrespondingEntry(helpedId, largeId);
+            this.receiveDeletePrepareMessage(entry,(DeletePrepareMessage) msg);
+        }
+        else if(msg instanceof DeleteConfirmMessage){
+            SendEntry entry = entryGetter.getCorrespondingEntry(helpedId,largeId);
+            if(this.receiveDeleteConfirmMessage(entry, (DeleteConfirmMessage)msg)){
+                this.sendDeleteFinishMessage(entry,largeId, helpedId, node);
+            }
+        }
+        else if(msg instanceof DeleteFinishMessage){
+            SendEntry entry = entryGetter.getCorrespondingEntry(helpedId,largeId);
+            this.executeDeleteFinishMessage(entry, node, (DeleteFinishMessage)msg, helpedId);
+        }
     }
 
 

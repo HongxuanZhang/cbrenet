@@ -24,5 +24,11 @@ public class AuxiliarySendEntry extends SendEntry{
         this.deleteConditionSatisfied = deleteConditionSatisfied;
     }
 
+    public void setInsertedFlag(boolean insertedFlag) {
+        this.insertedFlag = insertedFlag;
+    }
 
+    public boolean isInsertedFlag() {
+        return insertedFlag;
+    }
 }

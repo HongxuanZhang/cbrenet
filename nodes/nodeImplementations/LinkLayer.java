@@ -59,14 +59,14 @@ public abstract class LinkLayer extends MessageQueueLayer{
                     char relation = linkMessage.getRelationships().get(idx);
                     switch (relation){
                         case 'p':
-                            this.addLinkToParent(largeId,id);
+                            this.addLinkToParent(largeId,id, id);
                             this.addCommunicationPartner(largeId,true);
                             break;
                         case 'l':
-                            this.addLinkToLeftChild(largeId, id);
+                            this.addLinkToLeftChild(largeId, id, id);
                             break;
                         case 'r':
-                            this.addLinkToRightChild(largeId, id);
+                            this.addLinkToRightChild(largeId, id, id);
                             break;
                         case 't':
                             this.addBidirectionalLinkToRootNode(largeId, id);
@@ -328,22 +328,7 @@ public abstract class LinkLayer extends MessageQueueLayer{
 
         }
         else if(msg instanceof DeleteBaseMessage){
-            if(msg instanceof DeletePrepareMessage){
-                SendEntry entry = this.getCorrespondingEntry(-1, ((DeletePrepareMessage) msg).getLargeId());
-                this.deleteProcess.receiveDeletePrepareMessage(entry,(DeletePrepareMessage) msg);
-            }
-            else if(msg instanceof DeleteConfirmMessage){
-                int largeId = ((DeleteConfirmMessage) msg).getLargeId();
-                SendEntry entry = this.getCorrespondingEntry(-1,largeId);
-                if(this.deleteProcess.receiveDeleteConfirmMessage(entry, (DeleteConfirmMessage)msg)){
-                    this.deleteProcess.sendDeleteFinishMessage(entry,largeId,this.ID, this);
-                }
-            }
-            else if(msg instanceof DeleteFinishMessage){
-                int largeId = ((DeleteFinishMessage) msg).getLargeId();
-                SendEntry entry = this.getCorrespondingEntry(-1,largeId);
-                this.deleteProcess.executeDeleteFinishMessage(entry, this, (DeleteFinishMessage)msg, -1);
-            }
+            this.deleteProcess.executeDeleteBaseMessage((DeleteBaseMessage) msg, this, this);
         }
     }
 

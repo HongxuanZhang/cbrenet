@@ -4,9 +4,9 @@ import projects.cbrenet.nodes.messages.AuxiliaryNodeMessage.AuxiliaryRequestMess
 import projects.cbrenet.nodes.messages.RoutingMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.LargeInsertMessage;
 import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteBaseMessage;
+import projects.cbrenet.nodes.nodeImplementations.deleteProcedure.DeleteProcess;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
 import sinalgo.configuration.WrongConfigurationException;
-import sinalgo.nodes.Node;
 import sinalgo.nodes.messages.Inbox;
 import sinalgo.nodes.messages.Message;
 
@@ -22,6 +22,19 @@ import sinalgo.nodes.messages.Message;
 public class AuxiliaryNode extends AuxiliaryNodeMessageQueueLayer{
 
 
+    private void takeEgoTreeNodeBack(){
+        /**
+         *@description Use this method to call the corresponding communication node back
+         *@parameters  []
+         *@return  void
+         *@author  Zhang Hongxuan
+         *@create time  2021/3/19
+         */
+
+
+
+    }
+
     private void executeRoutingMessage(RoutingMessage routingMessage){
         Message payload = routingMessage.getPayload();
         if(payload instanceof LargeInsertMessage){
@@ -31,9 +44,28 @@ public class AuxiliaryNode extends AuxiliaryNodeMessageQueueLayer{
             SendEntry entry = this.getCorrespondingEntry(helpedId, largeId);
             if(entry != null){
                 // todo make the corresponding node return;
+                this.takeEgoTreeNodeBack();
+
                 return; // no need to forward.
             }
+            else{
+                // means this AN do not have the LIM's target's entry, no need to call the node back
+            }
         }
+        else if(payload instanceof DeleteBaseMessage){
+            DeleteBaseMessage deleteBaseMessage = (DeleteBaseMessage) payload;
+
+            int largeId = deleteBaseMessage.getLargeId();
+            int helpedId = deleteBaseMessage.getDeleteTarget();
+            SendEntry entry = this.getCorrespondingEntry(helpedId, largeId);
+            if(entry != null){
+                // the DBM got the destination
+                this.deleteProcess.executeDeleteBaseMessage(deleteBaseMessage, this, this);
+            }
+            return;
+        }
+        //else if() 聚类和旋转的部分
+
         if(!this.forwardMessage( routingMessage )){
             this.addRoutingMessageToQueue(routingMessage.getNextHop(), routingMessage);
         }
@@ -54,12 +86,22 @@ public class AuxiliaryNode extends AuxiliaryNodeMessageQueueLayer{
 
             }
             else if(msg instanceof AuxiliaryRequestMessage){
+                AuxiliaryRequestMessage auxiliaryRequestMessage = (AuxiliaryRequestMessage) msg;
+                int helpedId = auxiliaryRequestMessage.getHelpedId();
+                int largeId = auxiliaryRequestMessage.getLargeId();
+                int egoTreeId_p = auxiliaryRequestMessage.getEgoTreeId_p();
+                int egoTreeId_l = auxiliaryRequestMessage.getEgoTreeId_l();
+                int egoTreeId_r = auxiliaryRequestMessage.getEgoTreeId_r();
 
-            }
-            else if(msg instanceof DeleteBaseMessage){
+                int sendId_p = auxiliaryRequestMessage.getSendId_p();
+                int sendId_l = auxiliaryRequestMessage.getSendId_l();
+                int sendId_r = auxiliaryRequestMessage.getSendId_r();
 
+                // add link
+                this.addLinkToParent(largeId, egoTreeId_p, sendId_p, helpedId);
+                this.addLinkToLeftChild(largeId, egoTreeId_l, sendId_l, helpedId);
+                this.addLinkToRightChild(largeId, egoTreeId_r, sendId_r, helpedId);
             }
-            //else if() 聚类和旋转的部分
             else{
 
             }

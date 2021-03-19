@@ -94,7 +94,6 @@ public class SendEntry {
         this.deletingFlagOfLeftChild = false;
         this.deletingFlagOfRightChild = false;
 
-
     }
 
 

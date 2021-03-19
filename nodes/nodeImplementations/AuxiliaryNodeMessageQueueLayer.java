@@ -2,6 +2,7 @@ package projects.cbrenet.nodes.nodeImplementations;
 
 import projects.cbrenet.nodes.messages.RoutingMessage;
 import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteBaseMessage;
+import projects.cbrenet.nodes.nodeImplementations.deleteProcedure.DeleteProcess;
 import projects.cbrenet.nodes.nodeImplementations.nodeHelper.MessageForwardHelper;
 import projects.cbrenet.nodes.routeEntry.AuxiliarySendEntry;
 import sinalgo.nodes.messages.Message;
@@ -11,6 +12,7 @@ import java.util.*;
 
 public abstract class AuxiliaryNodeMessageQueueLayer extends AuxiliaryNodeStructureLayer {
 
+    protected final DeleteProcess deleteProcess = new DeleteProcess();
 
     protected void doInPostRound() {
 
@@ -50,7 +52,10 @@ public abstract class AuxiliaryNodeMessageQueueLayer extends AuxiliaryNodeStruct
                     entry.setDeleteConditionSatisfied(this.checkRemoveEntryCondition(egoIdOfLeft, egoIdOfRight));
                     // Part finished!
 
-                    // todo Start a Delete Process here?
+                    // Start a Delete Process here?
+                    if(entry.isDeleteConditionSatisfied()) {
+                        this.deleteProcess.startDelete(entry, this, largeId, helpedId);
+                    }
 
                 }
             } else {
@@ -93,133 +98,4 @@ public abstract class AuxiliaryNodeMessageQueueLayer extends AuxiliaryNodeStruct
         // 为什么是helped id 呢？ 因为forwardMessage需要和第一位参数进行比较的来决定RoutingMessage该去哪的
         return helper.forwardMessage(helpedId, this, routingMessage);
     }
-//
-//        int destination = routingMessage.getDestination();
-//
-//        int largeId = routingMessage.getLargeId();
-//        int helpedId = routingMessage.getNextHop();
-//
-//
-//        if(largeId != -1){
-//            // which means need to transfer in the large id's tree
-//
-//            // Very Important!!
-//            boolean sendFlag = false;
-//            // Note that every message can not send in this turn must store in the routingMessageQueue to
-//            // send it in the next turn;
-//
-//
-//            if(routingMessage.getSpecialHopFlag()){
-//                // when nextHop flag is true, we need a special forward
-//                int currentParentId = this.getParentOf(helpedId, largeId);
-//                if(currentParentId != -1){
-//
-//                    if(currentParentId == routingMessage.getSpecialHop()){
-//                        routingMessage.resetSpecialHop();
-//                        return this.sendTo(currentParentId, routingMessage);
-//                    }
-//                    else{
-//                        Tools.warning("We have to send a message according to the next hop, but the parent" +
-//                                " still seems wrong! NextHop ID is not same as the parent ID!");
-//                        return false;
-//                    }
-//                }
-//                else{
-//                    Tools.warning("We have to send a message according to the next hop, but the current parent" +
-//                            "ID still seems wrong!");
-//                    return false;
-//                }
-//            }
-//
-//
-//
-//            Message message = routingMessage.getPayLoad();
-//
-//            if(message instanceof CbRenetMessage){
-//                if(!((CbRenetMessage) message).isUpForward()){
-//                    // if not upForward, the message would send to the child
-//                    if (helpedId < destination) {
-//                        int rightChild = this.getRightChildOf(helpedId, largeId);
-//                        if(sendTo(rightChild, routingMessage)){
-//                            sendFlag = true;
-//                        }
-//                    } else if (destination < helpedId) {
-//                        int leftChild = this.getLeftChildOf(helpedId, largeId);
-//                        if(sendTo(leftChild, routingMessage)){
-//                            sendFlag = true;
-//                        }
-//                    }
-//                }
-//                else{
-//                    int parentId = this.getParentOf(helpedId, largeId);
-//                    if(sendTo(parentId, routingMessage)){
-//                        sendFlag = true;
-//                    }
-//                }
-//            }
-//            else if(message instanceof LargeInsertMessage){
-//                LargeInsertMessage insertMessageTmp = (LargeInsertMessage) message;
-//                int target = insertMessageTmp.getTarget();
-//                if(target > this.ID){
-//                    int rightChild = this.getRightChildOf(helpedId, largeId);
-//                    if(this.sendTo(rightChild, routingMessage)){
-//                        sendFlag = true;
-//                    }
-//                }
-//                else{
-//                    int leftChild = this.getLeftChildOf(helpedId, largeId);
-//                    if(this.sendTo(leftChild, routingMessage)){
-//                        sendFlag = true;
-//                    }
-//                }
-//
-//            }
-//            else if(message instanceof DeleteRequestMessage){
-//                DeleteRequestMessage deleteRequestMessageTmp = (DeleteRequestMessage) message;
-//                if(this.ID != deleteRequestMessageTmp.getDst()){
-//                    int parentId = this.getParentOf(helpedId, largeId);
-//                    if(this.sendTo(parentId, routingMessage)){
-//                        sendFlag = true;
-//                    }
-//                }
-//            }
-//            else if(message instanceof DeleteBaseMessage){
-//                if(!routingMessage.isUpForward()){
-//                    // if not upForward, the message would send to the child
-//                    if (this.ID < destination) {
-//                        int rightChild = this.getRightChildOf(helpedId,largeId);
-//                        if(sendTo(rightChild, routingMessage)){
-//                            sendFlag = true;
-//                        }
-//                    } else if (destination < ID) {
-//                        int leftChild = this.getLeftChildOf(helpedId,largeId);
-//                        if(sendTo(leftChild, routingMessage)){
-//                            sendFlag = true;
-//                        }
-//                    }
-//                }
-//                else{
-//                    int parentId = this.getParentOf(helpedId,largeId);
-//                    if(sendTo(parentId, routingMessage)){
-//                        sendFlag = true;
-//                    }
-//                }
-//            }
-//            else{
-//                Tools.fatalError("Some message in the RoutingMessage is " + message.getClass());
-//            }
-//
-//
-//            if(!sendFlag){
-//                // can not send for some reason
-//                Tools.warning("A routing message contains " + message.getClass() + " can not send for some reason " +
-//                        "has been add into rMQ");
-//            }
-//            return sendFlag;
-//        }
-//        else{
-//            Tools.fatalError("A RoutingMessage do not have largeId but sent to AuxiliaryNode!");
-//            return false;
-//        }
-//    }
 }

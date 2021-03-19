@@ -140,32 +140,6 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
     }
 
 
-    // todo 这些 addLinkTo 的函数们，似乎是用于rotate, check 是否满足我们的要求
-    /**
-     * Set the link to node and update reference to left child
-     */
-//    public void addBidirectionalLinkToLeftChild(int largeId, int id) {
-//        // update current left child and create edge
-//        CounterBasedBSTLayer node = (CounterBasedBSTLayer) Tools.getNodeByID(id);
-//        this.addBidirectionalLinkTo(node);
-//        this.setLeftChild(largeId,id);
-//        if (node != null) {
-//            node.setParent(largeId, this.ID);
-//        }
-//    }
-//
-//    /**
-//     * Set the link to node and update reference to right child
-//     */
-//    public void addBidirectionalLinkToRightChild(int largeId, int id) {
-//        CounterBasedBSTLayer node = (CounterBasedBSTLayer) Tools.getNodeByID(id);
-//        this.addBidirectionalLinkTo(node);
-//        this.setRightChild(largeId, id);
-//        if (node != null) {
-//            node.setParent(largeId, this.ID);
-//        }
-//    }
-
     public void addBidirectionalLinkToRootNode(int largeId, int id){
         CounterBasedBSTLayer node = (CounterBasedBSTLayer) Tools.getNodeByID(id);
         this.addBidirectionalLinkTo(node);
@@ -476,12 +450,11 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
 
 
     protected void sendForwardMessage(int dst, Message msg) {
-        // TODO 这是cbent中的，因为似乎关系到Rotation Layer故在此保留 反正后面要改先留着后面再删除
         if (dst == this.ID) {
             this.receiveMessage(msg);
             return;
         }
-        int largeId = -1; // todo 我们要在这里， 得到largeId
+        int largeId = -1;
         RoutingMessage rt = new RoutingMessage(this.ID, dst, msg, largeId, );
         forwardMessage(rt);
     }

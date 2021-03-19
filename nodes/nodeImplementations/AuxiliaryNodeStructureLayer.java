@@ -106,6 +106,12 @@ public abstract class AuxiliaryNodeStructureLayer extends Node implements EntryG
             }
             entriesTmp.put(largeId, new AuxiliarySendEntry(parent, leftChild, rightChild));
         }
+        else{
+            AuxiliarySendEntry auxiliarySendEntry = new AuxiliarySendEntry(parent, leftChild, rightChild);
+            HashMap<Integer, AuxiliarySendEntry> entryHashMap = new HashMap<>();
+            entryHashMap.put(largeId, auxiliarySendEntry);
+            this.routeTable.put(helpedId, entryHashMap);
+        }
     }
 
 
@@ -181,14 +187,28 @@ public abstract class AuxiliaryNodeStructureLayer extends Node implements EntryG
         return (leftEgoId<0 || rightEgoId < 0);
     }
 
-    public boolean changeLeftChildTo(int largeId, int egoTreeId, int trueId, int helpedId){
-        return this.linkHelper.changeLeftChildTo(largeId,egoTreeId,trueId, helpedId, this, this);
+
+
+
+    public boolean addLinkToLeftChild(int largeId, int egoTreeId, int sendId, int helpedId){
+        return this.linkHelper.addLinkToLeftChild(largeId, egoTreeId, sendId, helpedId,this, this);
     }
-    public boolean changeRightChildTo(int largeId, int egoTreeId, int trueId, int helpedId){
-        return this.linkHelper.changeRightChildTo(largeId,egoTreeId,trueId, helpedId, this, this);
+    public boolean addLinkToRightChild(int largeId, int egoTreeId, int sendId, int helpedId){
+        return this.linkHelper.addLinkToRightChild(largeId, egoTreeId, sendId, helpedId, this, this);
     }
-    public boolean changeParentTo(int largeId, int egoTreeId, int trueId, int helpedId){
-        return this.linkHelper.changeParentTo(largeId,egoTreeId,trueId, helpedId, this, this);
+    public boolean addLinkToParent(int largeId, int egoTreeId, int sendId, int helpedId){
+        return this.linkHelper.addLinkToParent(largeId, egoTreeId, sendId, helpedId, this, this);
+    }
+
+
+    public boolean changeLeftChildTo(int largeId, int egoTreeId, int sendId, int helpedId){
+        return this.linkHelper.changeLeftChildTo(largeId,egoTreeId,sendId, helpedId, this, this);
+    }
+    public boolean changeRightChildTo(int largeId, int egoTreeId, int sendId, int helpedId){
+        return this.linkHelper.changeRightChildTo(largeId,egoTreeId,sendId, helpedId, this, this);
+    }
+    public boolean changeParentTo(int largeId, int egoTreeId, int sendId, int helpedId){
+        return this.linkHelper.changeParentTo(largeId,egoTreeId,sendId, helpedId, this, this);
     }
 
 }
