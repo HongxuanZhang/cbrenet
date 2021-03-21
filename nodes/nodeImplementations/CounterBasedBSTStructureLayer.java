@@ -7,7 +7,6 @@ package projects.cbrenet.nodes.nodeImplementations;
 
 import projects.cbrenet.nodes.messages.RoutingMessage;
 import projects.cbrenet.nodes.nodeImplementations.nodeHelper.EntryGetter;
-import projects.cbrenet.nodes.routeEntry.AuxiliarySendEntry;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
 import sinalgo.tools.Tools;
 
@@ -76,7 +75,7 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
             return 'w';
         }
         else{
-            return entry.getRelationShipTo(targetId);
+            return entry.getRelationShipOf(targetId);
         }
     }
 

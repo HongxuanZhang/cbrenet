@@ -5,6 +5,7 @@ import projects.cbrenet.nodes.messages.RoutingMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.LargeInsertMessage;
 import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteBaseMessage;
 import projects.cbrenet.nodes.nodeImplementations.deleteProcedure.DeleteProcess;
+import projects.cbrenet.nodes.routeEntry.AuxiliarySendEntry;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
 import sinalgo.configuration.WrongConfigurationException;
 import sinalgo.nodes.messages.Inbox;
@@ -41,15 +42,19 @@ public class AuxiliaryNode extends AuxiliaryNodeMessageQueueLayer{
             // check whether this need to make the node return.
             int largeId = routingMessage.getLargeId();
             int helpedId = ((LargeInsertMessage) payload).getTarget();
-            SendEntry entry = this.getCorrespondingEntry(helpedId, largeId);
+            AuxiliarySendEntry entry = this.getCorrespondingEntry(helpedId, largeId);
             if(entry != null){
-                // todo make the corresponding node return;
-                this.takeEgoTreeNodeBack();
 
-                return; // no need to forward.
+                entry.setAuxiliaryId((LargeInsertMessage) payload);
+                this.deleteProcess.startDelete(entry, this, largeId, helpedId);
+
+                // no need to forward any more.
+                return;
             }
             else{
-                // means this AN do not have the LIM's target's entry, no need to call the node back
+                // means this AN do not have the LIM's target's entry,
+                // no need to call the node back
+                // continue Forward
             }
         }
         else if(payload instanceof DeleteBaseMessage){
@@ -105,7 +110,6 @@ public class AuxiliaryNode extends AuxiliaryNodeMessageQueueLayer{
             else{
 
             }
-
         }
 
         while(!this.cycleRoutingMessage.isEmpty()){
@@ -114,19 +118,7 @@ public class AuxiliaryNode extends AuxiliaryNodeMessageQueueLayer{
             RoutingMessage routingMessage = this.cycleRoutingMessage.poll();
             this.executeRoutingMessage(routingMessage);
         }
-
     }
-
-    private void tryToDelete(){
-        // 在handleMessages后执行，删除已经被满足的entry
-        // 确保其MessageQueue中没有对应的Message。
-    }
-
-
-    private void startDelete(){
-
-    }
-
 
     @Override
     public void preStep() {

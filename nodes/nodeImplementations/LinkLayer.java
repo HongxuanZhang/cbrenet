@@ -196,13 +196,13 @@ public abstract class LinkLayer extends MessageQueueLayer{
         }
         else{
             // 只删自己的Entry和Link, 这就需要保证Queue清空
+            // DeleteProcess 就是用于保障Queue清空！
             SendEntry correspondingEntry = this.getCorrespondingEntry(-1, largeId);
+
             correspondingEntry.setDeleteFlag(true);
-            if(correspondingEntry.isQueueEmpty()){
+            correspondingEntry.setAuxiliaryId(deleteMessage);
 
-                deleteProcess.startDelete(this.getCorrespondingEntry(-1, largeId), this, largeId, this.ID);
-
-            }
+            deleteProcess.startDelete(this.getCorrespondingEntry(-1, largeId), this, largeId, this.ID);
         }
     }
 
@@ -215,6 +215,7 @@ public abstract class LinkLayer extends MessageQueueLayer{
             if(correspondingEntry.isQueueEmpty() && correspondingEntry.isDeleteFlag()){
                 this.deleteProcess.startDelete(correspondingEntry, this, largeId, this.ID);
             }
+            deleteProcess.getHighestPriorityDeletePrepareMessage(correspondingEntry, this.ID, this);
         }
 
     }
