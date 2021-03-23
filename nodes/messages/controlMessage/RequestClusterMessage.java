@@ -7,7 +7,7 @@ import sinalgo.nodes.messages.Message;
  */
 public class RequestClusterMessage extends Message implements Comparable<RequestClusterMessage> {
 
-    private int largeId;
+    private final int largeId;
     private int currentNode;
     private int src;
     private int dst;
@@ -17,7 +17,7 @@ public class RequestClusterMessage extends Message implements Comparable<Request
     private boolean isFinalNode; // keep track if this node is final node in current request
     
     public RequestClusterMessage(RequestClusterMessage msg) {
-        int largeId = msg.largeId;
+        this.largeId = msg.largeId;
         this.currentNode = msg.getCurrentNode();
         this.src = msg.getSrc();
         this.dst = msg.getDst();

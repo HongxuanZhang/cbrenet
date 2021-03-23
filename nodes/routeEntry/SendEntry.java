@@ -3,6 +3,7 @@ package projects.cbrenet.nodes.routeEntry;
 import projects.cbrenet.nodes.messages.RoutingMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.DeleteMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.LargeInsertMessage;
+import projects.cbrenet.nodes.messages.controlMessage.RequestClusterMessage;
 import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteConfirmMessage;
 import projects.cbrenet.nodes.messages.deletePhaseMessages.DeletePrepareMessage;
 import sinalgo.tools.Tools;
@@ -42,6 +43,18 @@ public class SendEntry {
         this.rotationAbleFlag = rotationAbleFlag;
     }
 
+    // Count base network weight.
+    int weight;  // 包含自身和子树
+    int counter; // 以自身为 src or dst 的 Message数目
+
+    // 第一次想要cluster时就出现，直到cluster被满足。
+    RequestClusterMessage clusterMessage;
+    PriorityQueue<RequestClusterMessage> requestClusterMessagePriorityQueue;
+
+
+    RequestClusterMessage highestPriorityRequest; // 需要保存并且被处理的
+
+    
 
 
 
@@ -102,6 +115,12 @@ public class SendEntry {
         this.deletingFlagOfLeftChild = false;
         this.deletingFlagOfRightChild = false;
 
+        this.weight = 0;
+        this.counter = 0;
+
+
+        this.clusterMessage = null;
+        this.requestClusterMessagePriorityQueue = new PriorityQueue<>();
     }
 
 
@@ -202,7 +221,7 @@ public class SendEntry {
 
     // Call when receive DPM
     public void receiveOrSetDeletePrepareMessage(DeletePrepareMessage deletePrepareMessage){
-        // todo 这个地方可能是不管用的，可能需要自己再做处理，但是这个逻辑是没问题的
+        //  这个地方可能是不管用的，可能需要自己再做处理，但是这个逻辑是没问题的
         if(this.deletePrepareMessagePriorityQueue.contains(deletePrepareMessage)){
             // contains 里面用的是 equal,应该没有问题！
             return;
@@ -212,8 +231,18 @@ public class SendEntry {
 
     // Every round
     public DeletePrepareMessage getDeletePrepareMessageFromPriorityQueue(){
+        if(this.requestClusterMessagePriorityQueue.isEmpty()){
+            return null;
+        }
         return this.deletePrepareMessagePriorityQueue.poll();
     }
+
+    private void deleteCorrespondingDeletePrepareMessageInPriorityQueue(int largeId, int deleteTarget){
+        this.deletePrepareMessagePriorityQueue.removeIf(
+                deletePrepareMessage -> deletePrepareMessage.getLargeId() == largeId
+                        && deletePrepareMessage.getDeleteTarget() == deleteTarget);
+    }
+
 
 
     boolean deletingFlagOfItSelf;
@@ -384,7 +413,7 @@ public class SendEntry {
         }
     }
 
-    public void targetDeletingFinish(int targetId){
+    public void targetDeletingFinish(int largeId, int targetId){
         /*
          *@description Call this method when the neighbor has not removed yet.
          *@parameters  [targetId]
@@ -393,8 +422,10 @@ public class SendEntry {
          *@create time  2021/3/21
          */
 
-        // todo 移除那个在Queue中的DPM
+        // 移除那个在Queue中的DPM
+        this.deleteCorrespondingDeletePrepareMessageInPriorityQueue(largeId, targetId);
 
+        // set deleting & send flag
         char relation = this.getRelationShipOf(targetId);
         switch (relation){
             case 'p':

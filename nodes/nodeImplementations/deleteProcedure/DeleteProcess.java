@@ -108,9 +108,11 @@ public class DeleteProcess {
             }
         }
         else{
-            // 想想看，这里需不需要确认一下发送DPM的问题
+            // 为什么可以直接发送DCM而不用担心冲突呢？
+            // 因为冲突只可能发生在这条边上，但是按照规定对方先进行删除，那自己需要等待的DCM对方不会发给自己，自己就一直等着。。
             this.confirmNeighborsDeleteRequest(deletePrepareMessageToDealWith, deleteEntry, helpedId, node);
         }
+        deleteEntry.receiveOrSetDeletePrepareMessage(deletePrepareMessageToDealWith);
     }
 
     private void confirmNeighborsDeleteRequest(DeletePrepareMessage deletePrepareMessage, SendEntry deleteEntry, int helpedId, Node node){
@@ -193,7 +195,7 @@ public class DeleteProcess {
         char relation = sendEntry.getRelationShipOf(deleteTarget);
 
         // must call unset here, because the follow code would change the ego tree id of its neighbor
-        sendEntry.targetDeletingFinish(deleteTarget);
+        sendEntry.targetDeletingFinish(largeId, deleteTarget);
 
         switch (relation){
             case 'p':
