@@ -9,9 +9,9 @@ public class RequestClusterMessage extends Message implements Comparable<Request
 
     private final int largeId;
     private int currentNode;
-    private int src;
-    private int dst;
-    private double priority;
+    private int requesterId;
+
+    private double generateTime; // used as priority
 
     private int position;
     private boolean isFinalNode; // keep track if this node is final node in current request
@@ -19,19 +19,19 @@ public class RequestClusterMessage extends Message implements Comparable<Request
     public RequestClusterMessage(RequestClusterMessage msg) {
         this.largeId = msg.largeId;
         this.currentNode = msg.getCurrentNode();
-        this.src = msg.getSrc();
-        this.dst = msg.getDst();
-        this.priority = msg.getPriority();
+        this.requesterId = msg.getRequesterId();
+
+        this.generateTime = msg.getGenerateTime();
         this.position = msg.getPosition();
         this.isFinalNode = false;
     }
 
-    public RequestClusterMessage(int largeId,int currentNode, int src, int dst, int position, double priority) {
+    public RequestClusterMessage(int largeId, int currentNode, int requesterId, int position, double generateTime) {
         this.largeId = largeId;
         this.currentNode = currentNode;
-        this.src = src;
-        this.dst = dst;
-        this.priority = priority;
+        this.requesterId = requesterId;
+
+        this.generateTime = generateTime;
         this.position = position;
         this.isFinalNode = false;
     }
@@ -40,16 +40,13 @@ public class RequestClusterMessage extends Message implements Comparable<Request
         return currentNode;
     }
 
-    public int getSrc() {
-        return src;
+    public int getRequesterId() {
+        return requesterId;
     }
 
-    public int getDst() {
-        return dst;
-    }
 
-    public double getPriority() {
-        return priority;
+    public double getGenerateTime() {
+        return generateTime;
     }
 
     public int getPosition() {
@@ -64,16 +61,13 @@ public class RequestClusterMessage extends Message implements Comparable<Request
         this.currentNode = currentNode;
     }
 
-    public void setSrc(int src) {
-        this.src = src;
+    public void setRequesterId(int requesterId) {
+        this.requesterId = requesterId;
     }
 
-    public void setDst(int dst) {
-        this.dst = dst;
-    }
 
-    public void setPriority(double priority) {
-        this.priority = priority;
+    public void setGenerateTime(double generateTime) {
+        this.generateTime = generateTime;
     }
 
     public void setPosition(int position) {
@@ -99,9 +93,9 @@ public class RequestClusterMessage extends Message implements Comparable<Request
 
     @Override
 	public int compareTo(RequestClusterMessage o) {
-		int value = Double.compare(this.priority, o.priority);
+		int value = Double.compare(this.generateTime, o.generateTime);
 		if (value == 0) { // In case tie, compare the id of the source node
-			return this.src - o.src;
+			return this.requesterId - o.requesterId;
 		} else {
 			return value;
 		}

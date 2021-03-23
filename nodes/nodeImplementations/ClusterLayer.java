@@ -291,7 +291,7 @@ public abstract class ClusterLayer extends CounterBasedNetLayer {
             else if (!queueClusterRequestTmp.isEmpty()) {
                 RequestClusterMessage rq = queueClusterRequestTmp.poll();
                 CBInfo info = this.getNodeInfo();
-                AckClusterMessage ack = new AckClusterMessage(rq.getSrc(), rq.getDst(), rq.getPriority(), rq.getPosition(),
+                AckClusterMessage ack = new AckClusterMessage(-1, rq.getRequesterId(), rq.getDst(), rq.getGenerateTime(), rq.getPosition(),
                         rq.getLargeId(), info);
 
                 if (rq.isFinalNode()) {

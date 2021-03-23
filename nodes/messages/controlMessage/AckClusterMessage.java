@@ -8,37 +8,23 @@ import sinalgo.nodes.messages.Message;
 /**
  * AckCluster
  */
-public class AckClusterMessage extends Message {
-    
-    private int src;
-    private int dst;
+public class AckClusterMessage extends AckBaseMessage{
+
     private double priority;
     private CBInfo info;
 
-    private int largeId;
+
 
     private int position;
     private boolean isFinalNode; // keep track if this node is final node in current request
 
-    public AckClusterMessage(int src, int dst, double priority, int position, int largeId,CBInfo info) {
-        this.src = src;
-        this.dst = dst;
+    public AckClusterMessage(int masterId, int largeId, int clusterId, double priority, int position,CBInfo info) {
+        super(masterId, largeId, clusterId);
+
         this.priority = priority;
         this.info = info;
         this.position = position;
-        this.largeId = largeId;
-    }
 
-    public int getLargeId() {
-        return largeId;
-    }
-
-    public int getSrc() {
-        return src;
-    }
-
-    public int getDst() {
-        return dst;
     }
 
     public double getPriority() {
@@ -57,14 +43,6 @@ public class AckClusterMessage extends Message {
         return isFinalNode;
     }
 
-    public void setSrc(int src) {
-        this.src = src;
-    }
-
-    public void setDst(int dst) {
-        this.dst = dst;
-    }
-
     public void setPriority(double priority) {
         this.priority = priority;
     }
@@ -79,11 +57,6 @@ public class AckClusterMessage extends Message {
 
     public void setFinalNode() {
         this.isFinalNode = true;
-    }
-
-    @Override
-    public Message clone() {
-        return this;
     }
 
 }

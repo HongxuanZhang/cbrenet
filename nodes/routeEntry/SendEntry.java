@@ -33,7 +33,9 @@ public class SendEntry {
     int sendIdOfRightChild;
 
 
-    // TODO
+
+
+    // TODO rotation part
     // 旋转位
     boolean rotationAbleFlag;
     public boolean isRotationAbleFlag() {
@@ -52,13 +54,108 @@ public class SendEntry {
     PriorityQueue<RequestClusterMessage> requestClusterMessagePriorityQueue;
 
 
-    RequestClusterMessage highestPriorityRequest; // 需要保存并且被处理的
+    public void setClusterMessage(RequestClusterMessage clusterMessage) {
+        this.clusterMessage = clusterMessage;
+    }
 
-    
+    public RequestClusterMessage getClusterMessage() {
+        return clusterMessage;
+    }
+
+    // 当前自己已经倾心的Cluster， 除非收到NonAck 或者cluster结束才更新的
+    int currentClusterRequesterId;
+
+    public int getCurrentClusterRequesterId() {
+        return currentClusterRequesterId;
+    }
+
+    public void setCurrentClusterRequesterId(int currentClusterRequesterId) {
+        this.currentClusterRequesterId = currentClusterRequesterId;
+    }
+
+    boolean updateHighestPriorityRequestPermission;
+
+    // 需要保存并且被处理的高优先级request
+    // 在收到Ack时进行更新, 或者是自身是一个到来的request的master时允许
+    RequestClusterMessage highestPriorityRequest;
+    // 如果确认加入某一个cluster，锁定该项
+    public void lockUpdateHighestPriorityRequestPermission(){
+        this.updateHighestPriorityRequestPermission = false;
+    }
+    // 如果因为通知或者cluster完毕，解锁
+    public void unlockUpdateHighestPriorityRequestPermission(){
+        this.updateHighestPriorityRequestPermission = true;
+    }
 
 
 
-    // Queue
+    public boolean checkRotationRequirement(){
+        // todo add in delete part,
+        // 不仅自己认为自己有希望得到一个cluster， （注意：：：自己可以已经在一个cluster中，只要等到所有都收到就行
+
+        if(this.egoTreeRoot){
+            return false; // 结点都是Ego-Tree的root了还想着去哪呢。。
+        }
+
+
+
+        return true;
+
+    }
+
+
+    public void addRequestClusterMessageIntoPriorityQueue(RequestClusterMessage requestClusterMessage){
+        this.requestClusterMessagePriorityQueue.add(requestClusterMessage);
+    }
+
+    public RequestClusterMessage getRequestClusterMessageFromPriorityQueue(){
+        if(this.requestClusterMessagePriorityQueue.isEmpty()){
+            return null;
+        }
+        return this.requestClusterMessagePriorityQueue.peek(); // 不删除！
+    }
+
+    public void deleteCorrespondingRequestClusterMessageInPriorityQueue(int largeId, int clusterId){
+        this.requestClusterMessagePriorityQueue.removeIf(
+                requestClusterMessage -> requestClusterMessage.getLargeId() == largeId
+                        && requestClusterMessage.getRequesterId() == clusterId);
+    }
+
+
+    public void updateHighestPriorityRequest(){
+        /*
+         *@description  get the new highest priority request when it may change!
+         *@parameters  []
+         *@return  void
+         *@author  Zhang Hongxuan
+         *@create time  2021/3/23
+         */
+        if(this.updateHighestPriorityRequestPermission){
+            this.highestPriorityRequest = this.getRequestClusterMessageFromPriorityQueue();
+        }
+    }
+
+    public void setHighestPriorityRequest(RequestClusterMessage highestPriorityRequest) {
+        this.highestPriorityRequest = highestPriorityRequest;
+    }
+
+    public RequestClusterMessage getHighestPriorityRequest() {
+        return highestPriorityRequest;
+    }
+
+
+
+
+
+
+    // rotation part end
+
+
+
+
+
+
+    // Message Queue Part
     Queue<RoutingMessage> routingMessageQueue;
 
     public Queue<RoutingMessage> getRoutingMessageQueue() {
@@ -78,7 +175,10 @@ public class SendEntry {
     public void setQueueEmpty(boolean queueEmpty) {
         this.queueEmpty = queueEmpty;
     }
-    // Queue Part.
+    // Message Queue Part end
+
+
+
 
 
 
@@ -121,7 +221,14 @@ public class SendEntry {
 
         this.clusterMessage = null;
         this.requestClusterMessagePriorityQueue = new PriorityQueue<>();
+
+        this.currentClusterRequesterId = -1;
+        this.updateHighestPriorityRequestPermission = true;
+        this.highestPriorityRequest = null;
     }
+
+
+
 
 
 
@@ -129,7 +236,11 @@ public class SendEntry {
     boolean sendFlagOfParent;
     boolean sendFlagOfLeftChild;
     boolean sendFlagOfRightChild;
-    // Send Flag part finish
+    // Send Flag part end
+
+
+
+
 
 
 
@@ -247,7 +358,7 @@ public class SendEntry {
 
     boolean deletingFlagOfItSelf;
     // 该field 用于 防止重复的启动 startDelete
-    // 发送DPM后设置 为 true， 当收到所有期望的DeleteConfirmMessage后置为false？
+    // 发送DPM后设置 为 true， 当收到所有期望的DeleteConfirmMessage后置为false
     // 不能用于指示DPM是否需要重新发送！
 
     DeletePrepareMessage deletePrepareMessageOfMine = null;
