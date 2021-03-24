@@ -1,9 +1,6 @@
 package projects.cbrenet.nodes.nodeImplementations.nodeHelper;
 
-import projects.cbrenet.nodes.messages.controlMessage.AckBaseMessage;
-import projects.cbrenet.nodes.messages.controlMessage.AckClusterMessage;
-import projects.cbrenet.nodes.messages.controlMessage.NonAckClusterMessage;
-import projects.cbrenet.nodes.messages.controlMessage.RequestClusterMessage;
+import projects.cbrenet.nodes.messages.controlMessage.*;
 import projects.cbrenet.nodes.nodeImplementations.AuxiliaryNodeMessageQueueLayer;
 import projects.cbrenet.nodes.nodeImplementations.MessageSendLayer;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
@@ -32,6 +29,12 @@ public class ClusterHelper {
             // send cluster Message
             RequestClusterMessage clusterMessage = entry.getClusterMessage();
 
+            NodeInfo nodeInfo = new NodeInfo(helpedId, entry.getEgoTreeIdOfLeftChild(), entry.getSendIdOfRightChild(),
+                    entry.getSendIdOfLeftChild(), entry.getSendIdOfRightChild(),
+                    entry.getCounter(), entry.getWeightOfLeft(), entry.getWeightOfRight());
+
+            clusterMessage.addNodeInfoPair(clusterMessage.getPosition(), nodeInfo);
+
             this.sendRequestClusterMessageUp(node, entry, largeId, clusterMessage, helpedId);
 
             entry.addRequestClusterMessageIntoPriorityQueue(clusterMessage);
@@ -47,21 +50,38 @@ public class ClusterHelper {
         int clusterId = requestClusterMessage.getRequesterId();
 
         if(entry.checkRotationRequirement()){
+
+            boolean continueFlag = true;
+
             entry.addRequestClusterMessageIntoPriorityQueue(requestClusterMessage);
 
             // process
             requestClusterMessage.shiftPosition();
             int position = requestClusterMessage.getPosition();
 
+            NodeInfo nodeInfo = new NodeInfo(helpedId, entry.getEgoTreeIdOfLeftChild(), entry.getSendIdOfRightChild(),
+                    entry.getSendIdOfLeftChild(), entry.getSendIdOfRightChild(),
+                    entry.getCounter(), entry.getWeightOfLeft(), entry.getWeightOfRight());
+
+            requestClusterMessage.addNodeInfoPair(position, nodeInfo);
+
+
             // todo 完善 处理part
 
 
             // process part end
 
+            if(position == 2){
+                // 计算势变
+                RotationHelper rotationHelper = new RotationHelper();
+                double diff = rotationHelper.diffPotential(requestClusterMessage);
+            }
 
 
             if(position == 3 || entry.isEgoTreeRoot()){
                 requestClusterMessage.setFinalNode();
+
+                requestClusterMessage.setTheMasterOfCluster(helpedId);
 
                 entry.updateHighestPriorityRequest();
 
@@ -85,12 +105,14 @@ public class ClusterHelper {
 
             }
             else{
-                this.sendRequestClusterMessageUp(node, entry, largeId, requestClusterMessage, helpedId);
-
+                if(continueFlag){
+                    this.sendRequestClusterMessageUp(node, entry, largeId, requestClusterMessage, helpedId);
+                }
+                else{
+                    NonAckClusterMessage nonAckClusterMessage = new NonAckClusterMessage(helpedId, largeId,clusterId, false);
+                    this.sendAckBaseMessage(node, entry, largeId, nonAckClusterMessage, helpedId);
+                }
             }
-
-
-
         }
         else{
             NonAckClusterMessage nonAckClusterMessage = new NonAckClusterMessage(helpedId, largeId,clusterId, false);

@@ -49,6 +49,11 @@ public class SendEntry {
     int weight;  // 包含自身和子树
     int counter; // 以自身为 src or dst 的 Message数目
 
+    // todo 完善统计机制， 只统计 LIM CbRenetMessage 即可
+    int weightOfLeft;
+    int weightOfRight;
+
+
     // 第一次想要cluster时就出现，直到cluster被满足。
     RequestClusterMessage clusterMessage;
     PriorityQueue<RequestClusterMessage> requestClusterMessagePriorityQueue;
@@ -714,4 +719,29 @@ public class SendEntry {
     public void setDeletingFlagOfItSelf(boolean deletingFlagOfItSelf) {
         this.deletingFlagOfItSelf = deletingFlagOfItSelf;
     }
+
+    public int getWeightOfLeft() {
+        return weightOfLeft;
+    }
+
+    public int getWeightOfRight() {
+        return weightOfRight;
+    }
+
+    public int getSendIdOfLeftChild() {
+        return sendIdOfLeftChild;
+    }
+
+    public int getSendIdOfRightChild() {
+        return sendIdOfRightChild;
+    }
+
+    public int getWeight(){
+        return this.weight;
+    }
+
+    public int getCounter(){
+        return this.counter;
+    }
+
 }
