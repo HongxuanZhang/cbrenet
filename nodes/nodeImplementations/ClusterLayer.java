@@ -5,7 +5,7 @@ import java.util.LinkedList;
 import java.util.PriorityQueue;
 import java.util.Queue;
 
-import projects.cbrenet.nodes.messages.controlMessage.AckClusterMessage;
+import projects.cbrenet.nodes.messages.controlMessage.AcceptClusterMessage;
 import projects.cbrenet.nodes.messages.controlMessage.RequestClusterUpMessage;
 import projects.cbrenet.nodes.messages.controlMessage.RequestClusterDownMessage;
 import projects.cbrenet.nodes.messages.controlMessage.RequestClusterMessage;
@@ -39,8 +39,8 @@ public abstract class ClusterLayer extends CounterBasedNetLayer {
     private HashMap<Integer, PriorityQueue<RequestClusterMessage>> queueClusterRequests;
 
     // this queue keeps all acks received due to a request cluster operation
-    private Queue<AckClusterMessage> queueAckCluster;
-    private HashMap<Integer, Queue<AckClusterMessage>> queueAckClusters;
+    private Queue<AcceptClusterMessage> queueAckCluster;
+    private HashMap<Integer, Queue<AcceptClusterMessage>> queueAckClusters;
 
 
 
@@ -66,15 +66,15 @@ public abstract class ClusterLayer extends CounterBasedNetLayer {
     }
 
 
-    private void addQueueAckClusters(int largeId, AckClusterMessage msg){
+    private void addQueueAckClusters(int largeId, AcceptClusterMessage msg){
         if(this.queueAckClusters.containsKey(largeId)){
-            Queue<AckClusterMessage> tmp = this.queueAckClusters.getOrDefault(largeId, null);
+            Queue<AcceptClusterMessage> tmp = this.queueAckClusters.getOrDefault(largeId, null);
             assert tmp != null;
             tmp.add(msg);
             this.queueAckClusters.replace(largeId,tmp);
         }
         else{
-            Queue<AckClusterMessage> tmp = new LinkedList<>();
+            Queue<AcceptClusterMessage> tmp = new LinkedList<>();
             tmp.add(msg);
             this.queueAckClusters.put(largeId, tmp);
         }
@@ -265,9 +265,9 @@ public abstract class ClusterLayer extends CounterBasedNetLayer {
 
             return;
 
-        } else if (msg instanceof AckClusterMessage) {
+        } else if (msg instanceof AcceptClusterMessage) {
 
-            AckClusterMessage ackMessage = (AckClusterMessage) msg;
+            AcceptClusterMessage ackMessage = (AcceptClusterMessage) msg;
             this.addQueueAckClusters(ackMessage.getLargeId(),ackMessage);
 
             return;
@@ -291,7 +291,7 @@ public abstract class ClusterLayer extends CounterBasedNetLayer {
             else if (!queueClusterRequestTmp.isEmpty()) {
                 RequestClusterMessage rq = queueClusterRequestTmp.poll();
                 CBInfo info = this.getNodeInfo();
-                AckClusterMessage ack = new AckClusterMessage(-1, rq.getRequesterId(), rq.getDst(), rq.getGenerateTime(), rq.getPosition(),
+                AcceptClusterMessage ack = new AcceptClusterMessage(-1, rq.getRequesterId(), rq.getDst(), rq.getGenerateTime(), rq.getPosition(),
                         rq.getLargeId(), info);
 
                 if (rq.isFinalNode()) {
@@ -303,14 +303,14 @@ public abstract class ClusterLayer extends CounterBasedNetLayer {
         }
     }
 
-    private AckClusterMessage findAckMessageInBufferByPosition(int largeId, int pos) {
-        Queue<AckClusterMessage> q = this.queueAckClusters.getOrDefault(largeId, null);
+    private AcceptClusterMessage findAckMessageInBufferByPosition(int largeId, int pos) {
+        Queue<AcceptClusterMessage> q = this.queueAckClusters.getOrDefault(largeId, null);
         if(q == null){
             Tools.fatalError("Wrong things happen in the " + this.ID+", the large node " + largeId +
                     "do not have corresponding queueAckCluster");
             return null;
         }
-        for (AckClusterMessage m : q) {
+        for (AcceptClusterMessage m : q) {
             if (m.getPosition() == pos) {
                 return m;
             }
@@ -325,7 +325,7 @@ public abstract class ClusterLayer extends CounterBasedNetLayer {
      * @return
      */
     private boolean isClusterGranted(int largeId) {
-        AckClusterMessage m;
+        AcceptClusterMessage m;
         // 这里的3应该是检测是否有3个结点可以参与cluster
         // 我们需要的是，把这个buffer按照largeId分开
         for (int pos = 0; pos <= 3; pos++) {
@@ -383,13 +383,13 @@ public abstract class ClusterLayer extends CounterBasedNetLayer {
     }
 
     private CBInfo findTarget(int largeId) {
-        Queue<AckClusterMessage> queueTmp = this.queueAckClusters.getOrDefault(largeId, null);
+        Queue<AcceptClusterMessage> queueTmp = this.queueAckClusters.getOrDefault(largeId, null);
         if(queueTmp == null){
             Tools.fatalError("Wrong things happen in the " + this.ID+", the large node " + largeId +
                     "do not have corresponding queueAckCluster in findTarget");
             return null;
         }
-        for (AckClusterMessage m : queueTmp) {
+        for (AcceptClusterMessage m : queueTmp) {
             if (m.getDst() == m.getInfo().getNode().ID 
             		&& this.isNeighbor(largeId, m.getInfo().getNode())) {
 //            	System.out.println(ID + " Node found");
@@ -408,7 +408,7 @@ public abstract class ClusterLayer extends CounterBasedNetLayer {
     public void timeslot6() {
         super.timeslot6();
         for(int largeId : this.getLargeIds()){
-            Queue<AckClusterMessage> qTmp = this.queueAckClusters.getOrDefault(largeId, null);
+            Queue<AcceptClusterMessage> qTmp = this.queueAckClusters.getOrDefault(largeId, null);
             if(qTmp == null){
                 continue;
             }

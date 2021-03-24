@@ -6,7 +6,7 @@ import sinalgo.tools.Tools;
 
 public class RotationHelper {
 
-    private double epsilon = -1.5;
+
 
     private double log2(long value) {
         if(value == 0){
@@ -17,8 +17,6 @@ public class RotationHelper {
 
 
     public double diffPotential(RequestClusterMessage requestClusterMessage){
-
-
 
         NodeInfo info0 = requestClusterMessage.getNodeInfoOf(0);
         NodeInfo info1 = requestClusterMessage.getNodeInfoOf(1);

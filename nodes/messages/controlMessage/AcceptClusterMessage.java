@@ -8,7 +8,7 @@ import sinalgo.nodes.messages.Message;
 /**
  * AckCluster
  */
-public class AckClusterMessage extends AckBaseMessage{
+public class AcceptClusterMessage extends AckBaseMessage{
 
     private double priority;
     private CBInfo info;
@@ -18,7 +18,7 @@ public class AckClusterMessage extends AckBaseMessage{
     private int position;
     private boolean isFinalNode; // keep track if this node is final node in current request
 
-    public AckClusterMessage(int masterId, int largeId, int clusterId, double priority, int position,CBInfo info) {
+    public AcceptClusterMessage(int masterId, int largeId, int clusterId, double priority, int position, CBInfo info) {
         super(masterId, largeId, clusterId);
 
         this.priority = priority;

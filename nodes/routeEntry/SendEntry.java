@@ -94,18 +94,36 @@ public class SendEntry {
 
 
 
-    public boolean checkRotationRequirement(){
-        // todo add in delete part,
+    public boolean checkAdjustRequirement(){
+        // 判断该结点是否应该发起一个cluster
         // 不仅自己认为自己有希望得到一个cluster， （注意：：：自己可以已经在一个cluster中，只要等到所有都收到就行
 
         if(this.egoTreeRoot){
             return false; // 结点都是Ego-Tree的root了还想着去哪呢。。
         }
+        return true;
+    }
 
+    public boolean checkRotationRequirement(){
+        /*
+         *@description  这个函数用于判断该Entry在现在或者未来的某个时刻是否可能参与cluster，如果已经在某个cluster中，立即返回false;
+         *@parameters  []
+         *@return  boolean
+         *@author  Zhang Hongxuan
+         *@create time  2021/3/24
+         */
 
+        // todo add in delete part,
+
+        if(this.currentClusterRequesterId > 0){
+            return false;
+        }
+
+        if(this.checkNeighborDeleting()){
+            return false;
+        }
 
         return true;
-
     }
 
 
@@ -227,7 +245,7 @@ public class SendEntry {
         this.clusterMessage = null;
         this.requestClusterMessagePriorityQueue = new PriorityQueue<>();
 
-        this.currentClusterRequesterId = -1;
+        this.currentClusterRequesterId = -3; // 随便写的。-3
         this.updateHighestPriorityRequestPermission = true;
         this.highestPriorityRequest = null;
     }

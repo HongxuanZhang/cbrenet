@@ -1,6 +1,8 @@
 package projects.cbrenet.nodes.nodeImplementations.nodeHelper;
 
+import javafx.scene.SnapshotParameters;
 import projects.cbrenet.nodes.messages.controlMessage.*;
+import projects.cbrenet.nodes.nodeImplementations.AuxiliaryNode;
 import projects.cbrenet.nodes.nodeImplementations.AuxiliaryNodeMessageQueueLayer;
 import projects.cbrenet.nodes.nodeImplementations.MessageSendLayer;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
@@ -9,7 +11,7 @@ import sinalgo.tools.Tools;
 
 public class ClusterHelper {
 
-
+    private final double epsilon = -1.5;
 
     public void clusterRequest(SendEntry entry, int largeId, int helpedId, Node node){
 
@@ -24,12 +26,11 @@ public class ClusterHelper {
 
         }
 
-
-        if(entry.checkRotationRequirement()){
+        if(entry.checkAdjustRequirement()){
             // send cluster Message
             RequestClusterMessage clusterMessage = entry.getClusterMessage();
 
-            NodeInfo nodeInfo = new NodeInfo(helpedId, entry.getEgoTreeIdOfLeftChild(), entry.getSendIdOfRightChild(),
+            NodeInfo nodeInfo = new NodeInfo(node.ID, helpedId, entry.getEgoTreeIdOfLeftChild(), entry.getSendIdOfRightChild(),
                     entry.getSendIdOfLeftChild(), entry.getSendIdOfRightChild(),
                     entry.getCounter(), entry.getWeightOfLeft(), entry.getWeightOfRight());
 
@@ -49,149 +50,195 @@ public class ClusterHelper {
         int largeId = requestClusterMessage.getLargeId();
         int clusterId = requestClusterMessage.getRequesterId();
 
-        if(entry.checkRotationRequirement()){
+        if(!entry.checkRotationRequirement()){
+            RejectClusterMessage rejectClusterMessage = new RejectClusterMessage(helpedId, largeId,clusterId, false);
+            this.sendAcceptOrRejectMessage(node, entry, largeId, rejectClusterMessage, helpedId);
+        }
+        else{
 
-            boolean continueFlag = true;
-
-            entry.addRequestClusterMessageIntoPriorityQueue(requestClusterMessage);
-
-            // process
             requestClusterMessage.shiftPosition();
             int position = requestClusterMessage.getPosition();
 
-            NodeInfo nodeInfo = new NodeInfo(helpedId, entry.getEgoTreeIdOfLeftChild(), entry.getSendIdOfRightChild(),
-                    entry.getSendIdOfLeftChild(), entry.getSendIdOfRightChild(),
-                    entry.getCounter(), entry.getWeightOfLeft(), entry.getWeightOfRight());
+            if(position == 1 || position == 2){
+                // add in node info
+                NodeInfo nodeInfo = new NodeInfo(node.ID, helpedId, entry.getEgoTreeIdOfLeftChild(), entry.getSendIdOfRightChild(),
+                        entry.getSendIdOfLeftChild(), entry.getSendIdOfRightChild(),
+                        entry.getCounter(), entry.getWeightOfLeft(), entry.getWeightOfRight());
 
-            requestClusterMessage.addNodeInfoPair(position, nodeInfo);
-
-
-            // todo 完善 处理part
-
-
-            // process part end
-
-            if(position == 2){
-                // 计算势变
-                RotationHelper rotationHelper = new RotationHelper();
-                double diff = rotationHelper.diffPotential(requestClusterMessage);
-            }
+                requestClusterMessage.addNodeInfoPair(position, nodeInfo);
 
 
-            if(position == 3 || entry.isEgoTreeRoot()){
-                requestClusterMessage.setFinalNode();
+                // add relation
+                int index = position - 1;
+                NodeInfo info = requestClusterMessage.getNodeInfoOf(index);
+                if(index == 0){
+                    requestClusterMessage.setRelationFromNode0ToNode1(entry.getRelationShipOf(info.getCurNodeTrueId()));
+                }
+                else {
+                    requestClusterMessage.setRelationFromNode1ToNode2(entry.getRelationShipOf(info.getCurNodeTrueId()));
+                }
 
-                requestClusterMessage.setTheMasterOfCluster(helpedId);
+                if(entry.isEgoTreeRoot()){
+                    // calculate potential difference
+                    RotationHelper rotationHelper = new RotationHelper();
+                    double diff = rotationHelper.diffPotential(requestClusterMessage);
 
-                entry.updateHighestPriorityRequest();
+                    if(diff > this.epsilon) {
+                        // reject
+                        RejectClusterMessage rejectClusterMessage = new RejectClusterMessage(helpedId, largeId,
+                                clusterId, false);
+                        this.sendAcceptOrRejectMessage(node, entry, largeId,
+                                rejectClusterMessage, helpedId);
+                    }
 
-                RequestClusterMessage highestRequest = entry.getHighestPriorityRequest();
-
-                if(highestRequest.getRequesterId() == clusterId &&
-                        highestRequest.getLargeId() == largeId){
-                    entry.lockUpdateHighestPriorityRequestPermission();
-                    entry.setCurrentClusterRequesterId(clusterId);
-
-                    // remember that masterId equals to helpedId
-                    AckClusterMessage ackClusterMessage = new AckClusterMessage(helpedId, largeId, clusterId, requestClusterMessage.getGenerateTime(), );
-                    this.sendAckBaseMessage(node, entry, largeId, ackClusterMessage, helpedId);
                 }
                 else{
-                    NonAckClusterMessage nonAckClusterMessage = new NonAckClusterMessage
-                            (helpedId, largeId,clusterId, false);
-                    this.sendAckBaseMessage(node, entry, largeId, nonAckClusterMessage, helpedId);
+
+                    this.sendRequestClusterMessageUp(node, entry, largeId, requestClusterMessage, helpedId);
+
+                    // 往后发送后，这里也会变吧，看看怎么处理还是没有影响。
+                    entry.addRequestClusterMessageIntoPriorityQueue(requestClusterMessage);
                 }
-
-
             }
             else{
-                if(continueFlag){
-                    this.sendRequestClusterMessageUp(node, entry, largeId, requestClusterMessage, helpedId);
-                }
-                else{
-                    NonAckClusterMessage nonAckClusterMessage = new NonAckClusterMessage(helpedId, largeId,clusterId, false);
-                    this.sendAckBaseMessage(node, entry, largeId, nonAckClusterMessage, helpedId);
-                }
+                requestClusterMessage.setTheMasterOfCluster(helpedId);
+
+                entry.addRequestClusterMessageIntoPriorityQueue(requestClusterMessage);
             }
         }
-        else{
-            NonAckClusterMessage nonAckClusterMessage = new NonAckClusterMessage(helpedId, largeId,clusterId, false);
-            this.sendAckBaseMessage(node, entry, largeId, nonAckClusterMessage, helpedId);
-        }
-
-
-
     }
 
 
-    public void receiveAckClusterMessage(AckClusterMessage ackClusterMessage, SendEntry entry,
-                                         Node node, int helpedId){
-        int largeId = ackClusterMessage.getLargeId();
-        int clusterId = ackClusterMessage.getClusterId();
-        int masterId = ackClusterMessage.getMasterId();
+    public void acceptClusterRequest(SendEntry entry, int largeId ,int helpedId, Node node){
+        /*
+         *@description Execute this method in the post round
+         *@parameters  [entry, largeId, helpedId, node]
+         *@return  void
+         *@author  Zhang Hongxuan
+         *@create time  2021/3/24
+         */
+        assert node instanceof AuxiliaryNode || node.ID == helpedId;
 
+        if(entry.getCurrentClusterRequesterId() > 0){
+            // mean the node is in the cluster already.
+            return;
+        }
 
         entry.updateHighestPriorityRequest();
 
         RequestClusterMessage highestRequest = entry.getHighestPriorityRequest();
-        if(clusterId == highestRequest.getRequesterId() && largeId == highestRequest.getLargeId()){
+
+        if(highestRequest.getTheMasterOfCluster() == helpedId){
+            // if this is the master
 
             entry.lockUpdateHighestPriorityRequestPermission();
+
+            int clusterId = highestRequest.getRequesterId();
+
             entry.setCurrentClusterRequesterId(clusterId);
-
-            this.sendAckBaseMessage(node, entry, largeId, ackClusterMessage, helpedId);
-
+            // remember that masterId equals to helpedId
+            AcceptClusterMessage acceptClusterMessage = new AcceptClusterMessage(helpedId, largeId,
+                    clusterId, highestRequest.getGenerateTime(), );
+            this.sendAcceptOrRejectMessage(node, entry, largeId, acceptClusterMessage, helpedId);
         }
-        else{
-            // 虽然上面的结点接受聚合，但是本结点处还有更高优先级的请求要同意，所以当前的结点不接受聚合
-            // 向上发NonAck
-            NonAckClusterMessage nonAckClusterMessage = new NonAckClusterMessage(masterId,largeId, clusterId,true);
-            this.sendAckBaseMessage(node, entry, largeId, nonAckClusterMessage, helpedId);
-            // 向下发NonAck
-            NonAckClusterMessage nonAckClusterMessage2 = new NonAckClusterMessage(masterId,largeId, clusterId,false);
-            this.sendAckBaseMessage(node, entry, largeId, nonAckClusterMessage2, helpedId);
 
-            entry.deleteCorrespondingRequestClusterMessageInPriorityQueue(largeId, clusterId);
-        }
 
     }
 
 
 
-    public void receiveNonAckClusterMessage(NonAckClusterMessage nonAckClusterMessage, SendEntry entry,
+    public void rejectRequest(SendEntry entry, Node node, int largeId, int helpedId, int clusterId, int masterId){
+        // todo cluster ID 和 masterId或许可以是随便写的？？
+        // 虽然上面的结点接受聚合，但是本结点处还有更高优先级的请求要同意，所以当前的结点不接受聚合
+        // 向上发NonAck
+        RejectClusterMessage rejectClusterMessage = new RejectClusterMessage(masterId,largeId, clusterId,true);
+        this.sendAcceptOrRejectMessage(node, entry, largeId, rejectClusterMessage, helpedId);
+        // 向下发NonAck
+        RejectClusterMessage rejectClusterMessage2 = new RejectClusterMessage(masterId,largeId, clusterId,false);
+        this.sendAcceptOrRejectMessage(node, entry, largeId, rejectClusterMessage2, helpedId);
+
+        entry.deleteCorrespondingRequestClusterMessageInPriorityQueue(largeId, clusterId);
+    }
+
+
+    public void receiveAcceptClusterMessage(AcceptClusterMessage acceptClusterMessage, SendEntry entry,
                                             Node node, int helpedId){
-        int largeId = nonAckClusterMessage.getLargeId();
-        int clusterId = nonAckClusterMessage.getClusterId();
-        int masterId = nonAckClusterMessage.getMasterId();
-        boolean upward = nonAckClusterMessage.isUpward();
+        int largeId = acceptClusterMessage.getLargeId();
+        int clusterId = acceptClusterMessage.getClusterId(); //also the requester's id
+        int masterId = acceptClusterMessage.getMasterId();
+
+        int currentClusterId = entry.getCurrentClusterRequesterId();
+
+        if(currentClusterId> 0 && currentClusterId != clusterId){
+            // reject
+            this.rejectRequest(entry, node, largeId, helpedId, clusterId, masterId);
+            return;
+        }
+
+        if(currentClusterId == clusterId){
+            Tools.warning("Should not happen! How a node get the Accept ahead??");
+            return;
+        }
+
+        entry.updateHighestPriorityRequest();
+        RequestClusterMessage highestRequest = entry.getHighestPriorityRequest();
+        if(clusterId == highestRequest.getRequesterId() && largeId == highestRequest.getLargeId()){
+            entry.lockUpdateHighestPriorityRequestPermission();
+            entry.setCurrentClusterRequesterId(clusterId);
+            if(helpedId == clusterId){
+                // 这就是我发起的cluster，成功了
+                // todo adjust
+            }
+            else{
+                this.sendAcceptOrRejectMessage(node, entry, largeId, acceptClusterMessage, helpedId);
+            }
+        }
+        else{
+            this.rejectRequest(entry, node, largeId, helpedId, clusterId, masterId);
+        }
+    }
+
+
+
+    public void receiveNonAckClusterMessage(RejectClusterMessage rejectClusterMessage, SendEntry entry,
+                                            Node node, int helpedId){
+
+        int largeId = rejectClusterMessage.getLargeId();
+        int clusterId = rejectClusterMessage.getClusterId();
+        int masterId = rejectClusterMessage.getMasterId();
+        boolean upward = rejectClusterMessage.isUpward();
         // 既然被否决，那就移除吧。
         entry.deleteCorrespondingRequestClusterMessageInPriorityQueue(largeId, clusterId);
 
 
+        if(entry.getCurrentClusterRequesterId() == clusterId){
+            // 所在的cluster被否决，退出并允许新的highest Priority Request出现
+            entry.setCurrentClusterRequesterId(-3);
+            entry.unlockUpdateHighestPriorityRequestPermission();
+        }
+
+        // 继续传
         if(!upward) {
             // 当前结点是否是requester的判断
             if (node.ID != clusterId) {
                 // 这一条 NonAck 还没传递到目的地，需要继续传递
-                NonAckClusterMessage nonAckClusterMessage2 = new NonAckClusterMessage
+                RejectClusterMessage rejectClusterMessage2 = new RejectClusterMessage
                         (masterId, largeId, clusterId, false);
 
-                this.sendAckBaseMessage(node, entry, largeId, nonAckClusterMessage2, helpedId);
+                this.sendAcceptOrRejectMessage(node, entry, largeId, rejectClusterMessage2, helpedId);
             }
         }
         else{
             // 当前结点是否是master
             if(node.ID != masterId){
-                NonAckClusterMessage nonAckClusterMessage2 = new NonAckClusterMessage
+                // 不是master， 继续向上传
+                RejectClusterMessage rejectClusterMessage2 = new RejectClusterMessage
                         (masterId, largeId, clusterId, true);
 
-                this.sendAckBaseMessage(node, entry, largeId, nonAckClusterMessage2, helpedId);
+                this.sendAcceptOrRejectMessage(node, entry, largeId, rejectClusterMessage2, helpedId);
             }
         }
 
-        if(clusterId == entry.getCurrentClusterRequesterId()){
-            entry.unlockUpdateHighestPriorityRequestPermission();
-            entry.setCurrentClusterRequesterId(-1);
-        }
 
     }
 
@@ -216,14 +263,14 @@ public class ClusterHelper {
 
     }
 
-    private void sendAckBaseMessage(Node node, SendEntry entry, int largeId,
-                                    AckBaseMessage ackBaseMessage, int helpedId){
+    private void sendAcceptOrRejectMessage(Node node, SendEntry entry, int largeId,
+                                           AckBaseMessage ackBaseMessage, int helpedId){
         // targetId 记得改，可能是 master 也 可能是requester
         int targetId = ackBaseMessage.getClusterId();
 
         boolean upward = false;
-        if(ackBaseMessage instanceof NonAckClusterMessage){
-            upward =((NonAckClusterMessage)ackBaseMessage).isUpward();
+        if(ackBaseMessage instanceof RejectClusterMessage){
+            upward =((RejectClusterMessage)ackBaseMessage).isUpward();
         }
 
 

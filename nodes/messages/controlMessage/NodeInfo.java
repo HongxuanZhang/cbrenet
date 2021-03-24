@@ -2,7 +2,8 @@ package projects.cbrenet.nodes.messages.controlMessage;
 
 public class NodeInfo {
 
-    int curNodeId;
+    int curNodeTrueId;
+    int curNodeEgoId; // 在AN中也就是Helped Id
 
     int egoTreeIdOfLeftChild;
     int egoTreeIdOfRightChild;
@@ -16,10 +17,13 @@ public class NodeInfo {
     int weightOfRightChild;
 
 
-    public NodeInfo(int curNodeId, int egoTreeIdOfLeftChild, int egoTreeIdOfRightChild,
+    public NodeInfo(int curNodeTrueId, int curNodeEgoId,
+                    int egoTreeIdOfLeftChild, int egoTreeIdOfRightChild,
                     int sendIdOfLeftChild, int sendIdOfRightChild,
                     int counterOfCurNode, int weightOfLeftChild, int weightOfRightChild){
-        this.curNodeId = curNodeId;
+        this.curNodeTrueId = curNodeTrueId;
+        this.curNodeEgoId = curNodeEgoId;
+
         this.egoTreeIdOfLeftChild = egoTreeIdOfLeftChild;
         this.egoTreeIdOfRightChild = egoTreeIdOfRightChild;
 
@@ -32,8 +36,8 @@ public class NodeInfo {
         this.weightOfRightChild = weightOfRightChild;
     }
 
-    public int getCurNodeId() {
-        return curNodeId;
+    public int getCurNodeTrueId() {
+        return curNodeTrueId;
     }
 
     public int getEgoTreeIdOfLeftChild() {
@@ -66,5 +70,9 @@ public class NodeInfo {
 
     public int getWeightOfRightChild() {
         return weightOfRightChild;
+    }
+
+    public int getCurNodeEgoId() {
+        return curNodeEgoId;
     }
 }
