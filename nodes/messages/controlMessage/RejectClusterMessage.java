@@ -1,8 +1,6 @@
 package projects.cbrenet.nodes.messages.controlMessage;
 
-import sinalgo.nodes.messages.Message;
-
-public class RejectClusterMessage extends AckBaseMessage {
+public class RejectClusterMessage extends AcceptOrRejectBaseMessage {
 
     boolean upward;
 

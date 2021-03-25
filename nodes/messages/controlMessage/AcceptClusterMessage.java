@@ -1,29 +1,29 @@
 package projects.cbrenet.nodes.messages.controlMessage;
 
-import projects.cbrenet.nodes.messages.CbRenetMessage;
 import projects.cbrenet.nodes.tableEntry.CBInfo;
 //import projects.cbrenet.nodes.tableEntry.CBRenetNodeInfo;
-import sinalgo.nodes.messages.Message;
+
 
 /**
  * AckCluster
  */
-public class AcceptClusterMessage extends AckBaseMessage{
+public class AcceptClusterMessage extends AcceptOrRejectBaseMessage {
 
     private double priority;
     private CBInfo info;
 
+    RequestClusterMessage requestClusterMessage;
 
 
     private int position;
     private boolean isFinalNode; // keep track if this node is final node in current request
 
-    public AcceptClusterMessage(int masterId, int largeId, int clusterId, double priority, int position, CBInfo info) {
+    public AcceptClusterMessage(int masterId, int largeId, int clusterId, double priority,
+                                RequestClusterMessage requestClusterMessage) {
         super(masterId, largeId, clusterId);
 
         this.priority = priority;
-        this.info = info;
-        this.position = position;
+        this.requestClusterMessage = requestClusterMessage;
 
     }
 

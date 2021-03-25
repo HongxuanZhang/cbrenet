@@ -1,6 +1,5 @@
 package projects.cbrenet.nodes.nodeImplementations.nodeHelper;
 
-import javafx.scene.SnapshotParameters;
 import projects.cbrenet.nodes.messages.controlMessage.*;
 import projects.cbrenet.nodes.nodeImplementations.AuxiliaryNode;
 import projects.cbrenet.nodes.nodeImplementations.AuxiliaryNodeMessageQueueLayer;
@@ -43,6 +42,16 @@ public class ClusterHelper {
     }
 
 
+    private void setClusterMaster(int egoTreeId, int sendId, RequestClusterMessage requestClusterMessage){
+        requestClusterMessage.setTheEgoTreeMasterOfCluster(egoTreeId);
+        requestClusterMessage.setTheSendIdOfCluster(sendId);
+    }
+
+    private void setUpperNodeId(RequestClusterMessage requestClusterMessage, int egoTreeId, int sendId,boolean lnFlag){
+        requestClusterMessage.setTheMostUpperEgoTreeId(egoTreeId);
+        requestClusterMessage.setTheMostUpperSendId(sendId);
+        requestClusterMessage.setLnFlag(lnFlag);
+    }
 
     public void receiveRequestClusterMessage(Node node, SendEntry entry, RequestClusterMessage requestClusterMessage,
                                              int helpedId){
@@ -79,6 +88,8 @@ public class ClusterHelper {
                 }
 
                 if(entry.isEgoTreeRoot()){
+                    // 到头了
+
                     // calculate potential difference
                     RotationHelper rotationHelper = new RotationHelper();
                     double diff = rotationHelper.diffPotential(requestClusterMessage);
@@ -90,19 +101,42 @@ public class ClusterHelper {
                         this.sendAcceptOrRejectMessage(node, entry, largeId,
                                 rejectClusterMessage, helpedId);
                     }
+                    else{
+                        this.setClusterMaster(helpedId, node.ID, requestClusterMessage);
+                        this.setUpperNodeId(requestClusterMessage, helpedId, node.ID, true);
+                        entry.addRequestClusterMessageIntoPriorityQueue(requestClusterMessage);
+                    }
 
                 }
                 else{
+                    if(position == 2){
+                        RotationHelper rotationHelper = new RotationHelper();
+                        double diff = rotationHelper.diffPotential(requestClusterMessage);
 
-                    this.sendRequestClusterMessageUp(node, entry, largeId, requestClusterMessage, helpedId);
-
-                    // 往后发送后，这里也会变吧，看看怎么处理还是没有影响。
-                    entry.addRequestClusterMessageIntoPriorityQueue(requestClusterMessage);
+                        if(diff > this.epsilon) {
+                            // reject
+                            RejectClusterMessage rejectClusterMessage = new RejectClusterMessage(helpedId, largeId,
+                                    clusterId, false);
+                            this.sendAcceptOrRejectMessage(node, entry, largeId,
+                                    rejectClusterMessage, helpedId);
+                            return;
+                        }
+                        else{
+                            // 向上继续发送
+                            this.sendRequestClusterMessageUp(node, entry, largeId, requestClusterMessage, helpedId);
+                            entry.addRequestClusterMessageIntoPriorityQueue(requestClusterMessage);
+                        }
+                    }
+                    else{
+                        // 往后发送后，(浅拷贝？)这里也会变吧，看看怎么处理还是没有影响。
+                        this.sendRequestClusterMessageUp(node, entry, largeId, requestClusterMessage, helpedId);
+                        entry.addRequestClusterMessageIntoPriorityQueue(requestClusterMessage);
+                    }
                 }
             }
             else{
-                requestClusterMessage.setTheMasterOfCluster(helpedId);
-
+                this.setClusterMaster(helpedId, node.ID, requestClusterMessage);
+                this.setUpperNodeId(requestClusterMessage, helpedId, node.ID, false);
                 entry.addRequestClusterMessageIntoPriorityQueue(requestClusterMessage);
             }
         }
@@ -128,7 +162,7 @@ public class ClusterHelper {
 
         RequestClusterMessage highestRequest = entry.getHighestPriorityRequest();
 
-        if(highestRequest.getTheMasterOfCluster() == helpedId){
+        if(highestRequest.getTheEgoTreeMasterOfCluster() == helpedId){
             // if this is the master
 
             entry.lockUpdateHighestPriorityRequestPermission();
@@ -138,7 +172,7 @@ public class ClusterHelper {
             entry.setCurrentClusterRequesterId(clusterId);
             // remember that masterId equals to helpedId
             AcceptClusterMessage acceptClusterMessage = new AcceptClusterMessage(helpedId, largeId,
-                    clusterId, highestRequest.getGenerateTime(), );
+                    clusterId, highestRequest.getGenerateTime(), highestRequest);
             this.sendAcceptOrRejectMessage(node, entry, largeId, acceptClusterMessage, helpedId);
         }
 
@@ -264,23 +298,23 @@ public class ClusterHelper {
     }
 
     private void sendAcceptOrRejectMessage(Node node, SendEntry entry, int largeId,
-                                           AckBaseMessage ackBaseMessage, int helpedId){
+                                           AcceptOrRejectBaseMessage acceptOrRejectBaseMessage, int helpedId){
         // targetId 记得改，可能是 master 也 可能是requester
-        int targetId = ackBaseMessage.getClusterId();
+        int targetId = acceptOrRejectBaseMessage.getClusterId();
 
         boolean upward = false;
-        if(ackBaseMessage instanceof RejectClusterMessage){
-            upward =((RejectClusterMessage)ackBaseMessage).isUpward();
+        if(acceptOrRejectBaseMessage instanceof RejectClusterMessage){
+            upward =((RejectClusterMessage) acceptOrRejectBaseMessage).isUpward();
         }
 
 
         if(node instanceof MessageSendLayer){
             ((MessageSendLayer)node).sendEgoTreeMessage(largeId, targetId,
-                    ackBaseMessage, upward);
+                    acceptOrRejectBaseMessage, upward);
         }
         else if(node instanceof AuxiliaryNodeMessageQueueLayer){
             ((AuxiliaryNodeMessageQueueLayer)node).sendEgoTreeMessage(largeId, targetId,
-                    ackBaseMessage, upward, helpedId);
+                    acceptOrRejectBaseMessage, upward, helpedId);
         }
 
 

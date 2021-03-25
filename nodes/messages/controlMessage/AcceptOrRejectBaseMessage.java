@@ -2,14 +2,14 @@ package projects.cbrenet.nodes.messages.controlMessage;
 
 import sinalgo.nodes.messages.Message;
 
-public class AckBaseMessage extends Message {
+public class AcceptOrRejectBaseMessage extends Message {
 
     int masterId;
 
     int largeId;    // in which ego-tree
     int clusterId;  // which is also the requester 's ID
 
-    protected AckBaseMessage(int masterId, int largeId, int clusterId){
+    protected AcceptOrRejectBaseMessage(int masterId, int largeId, int clusterId){
         this.masterId = masterId;
         this.largeId = largeId;
         this.clusterId = clusterId;
