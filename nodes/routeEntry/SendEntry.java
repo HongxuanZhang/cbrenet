@@ -12,8 +12,6 @@ import java.util.*;
 
 public class SendEntry {
 
-
-    // todo 如果是 root结点被删除的话，看看会不会有什么影响。。
     boolean egoTreeRoot; // when this is true, then the parent is the LN of the Ego-Tree
     public boolean isEgoTreeRoot() {
         return egoTreeRoot;
