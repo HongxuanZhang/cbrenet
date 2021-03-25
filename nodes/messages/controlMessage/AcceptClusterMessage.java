@@ -59,4 +59,7 @@ public class AcceptClusterMessage extends AcceptOrRejectBaseMessage {
         this.isFinalNode = true;
     }
 
+    public RequestClusterMessage getRequestClusterMessage() {
+        return requestClusterMessage;
+    }
 }

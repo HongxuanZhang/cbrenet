@@ -46,7 +46,6 @@ public class SendEntry {
     }
 
     // Count base network weight.
-    int weight;  // 包含自身和子树
     int counter; // 以自身为 src or dst 的 Message数目
 
     // todo 完善统计机制， 只统计 LIM CbRenetMessage 即可
@@ -97,6 +96,10 @@ public class SendEntry {
     public boolean checkAdjustRequirement(){
         // 判断该结点是否应该发起一个cluster
         // 不仅自己认为自己有希望得到一个cluster， （注意：：：自己可以已经在一个cluster中，只要等到所有都收到就行
+        if(this.deleteFlag){
+            // wait for delete
+            return false;
+        }
 
         if(this.egoTreeRoot){
             return false; // 结点都是Ego-Tree的root了还想着去哪呢。。
@@ -120,6 +123,7 @@ public class SendEntry {
         }
 
         if(this.checkNeighborDeleting()){
+            // three links should all be available
             return false;
         }
 
@@ -238,9 +242,9 @@ public class SendEntry {
         this.deletingFlagOfLeftChild = false;
         this.deletingFlagOfRightChild = false;
 
-        this.weight = 0;
         this.counter = 0;
-
+        this.weightOfLeft = 0;
+        this.weightOfRight = 0;
 
         this.clusterMessage = null;
         this.requestClusterMessagePriorityQueue = new PriorityQueue<>();
@@ -710,6 +714,8 @@ public class SendEntry {
         this.sendFlagOfRightChild = sendFlagOfRightChild;
     }
 
+
+
     public int getEgoTreeIdOfParent() {
         return egoTreeIdOfParent;
     }
@@ -738,12 +744,25 @@ public class SendEntry {
         this.deletingFlagOfItSelf = deletingFlagOfItSelf;
     }
 
+
+    public int getCounter(){
+        return this.counter;
+    }
+
     public int getWeightOfLeft() {
         return weightOfLeft;
     }
 
     public int getWeightOfRight() {
         return weightOfRight;
+    }
+
+    public int getWeight(){
+        return this.counter + this.weightOfRight + this.weightOfLeft;
+    }
+
+    public int getSendIdOfParent() {
+        return sendIdOfParent;
     }
 
     public int getSendIdOfLeftChild() {
@@ -754,12 +773,11 @@ public class SendEntry {
         return sendIdOfRightChild;
     }
 
-    public int getWeight(){
-        return this.weight;
+    public void setWeightOfLeft(int weightOfLeft) {
+        this.weightOfLeft = weightOfLeft;
     }
 
-    public int getCounter(){
-        return this.counter;
+    public void setWeightOfRight(int weightOfRight) {
+        this.weightOfRight = weightOfRight;
     }
-
 }

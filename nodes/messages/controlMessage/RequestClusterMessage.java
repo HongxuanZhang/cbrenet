@@ -17,16 +17,7 @@ public class RequestClusterMessage extends Message implements Comparable<Request
 
     private int position;
     private boolean isFinalNode; // keep track if this node is final node in current request
-    
-    public RequestClusterMessage(RequestClusterMessage msg) {
-        this.largeId = msg.largeId;
-        this.currentNode = msg.getCurrentNode();
-        this.requesterId = msg.getRequesterId();
 
-        this.generateTime = msg.getGenerateTime();
-        this.position = msg.getPosition();
-        this.isFinalNode = false;
-    }
 
     public RequestClusterMessage(int largeId, int currentNode, int requesterId, int position, double generateTime) {
         this.largeId = largeId;

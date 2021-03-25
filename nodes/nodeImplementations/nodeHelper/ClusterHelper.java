@@ -41,18 +41,6 @@ public class ClusterHelper {
         }
     }
 
-
-    private void setClusterMaster(int egoTreeId, int sendId, RequestClusterMessage requestClusterMessage){
-        requestClusterMessage.setTheEgoTreeMasterOfCluster(egoTreeId);
-        requestClusterMessage.setTheSendIdOfCluster(sendId);
-    }
-
-    private void setUpperNodeId(RequestClusterMessage requestClusterMessage, int egoTreeId, int sendId,boolean lnFlag){
-        requestClusterMessage.setTheMostUpperEgoTreeId(egoTreeId);
-        requestClusterMessage.setTheMostUpperSendId(sendId);
-        requestClusterMessage.setLnFlag(lnFlag);
-    }
-
     public void receiveRequestClusterMessage(Node node, SendEntry entry, RequestClusterMessage requestClusterMessage,
                                              int helpedId){
 
@@ -63,6 +51,7 @@ public class ClusterHelper {
             RejectClusterMessage rejectClusterMessage = new RejectClusterMessage(helpedId, largeId,clusterId, false);
             this.sendAcceptOrRejectMessage(node, entry, largeId, rejectClusterMessage, helpedId);
         }
+
         else{
 
             requestClusterMessage.shiftPosition();
@@ -87,12 +76,14 @@ public class ClusterHelper {
                     requestClusterMessage.setRelationFromNode1ToNode2(entry.getRelationShipOf(info.getCurNodeTrueId()));
                 }
 
+
+                RotationHelper rotationHelper = new RotationHelper();
+                double diff = 0d;
+
                 if(entry.isEgoTreeRoot()){
                     // 到头了
-
                     // calculate potential difference
-                    RotationHelper rotationHelper = new RotationHelper();
-                    double diff = rotationHelper.diffPotential(requestClusterMessage);
+                    diff = rotationHelper.diffPotential(requestClusterMessage);
 
                     if(diff > this.epsilon) {
                         // reject
@@ -103,15 +94,16 @@ public class ClusterHelper {
                     }
                     else{
                         this.setClusterMaster(helpedId, node.ID, requestClusterMessage);
-                        this.setUpperNodeId(requestClusterMessage, helpedId, node.ID, true);
+                        // set the upper node of the cluster as LN, which do not need to join in cluster
+                        this.setUpperNodeId(requestClusterMessage, entry.getEgoTreeIdOfParent(),
+                                entry.getSendIdOfParent(), true);
                         entry.addRequestClusterMessageIntoPriorityQueue(requestClusterMessage);
                     }
 
                 }
                 else{
                     if(position == 2){
-                        RotationHelper rotationHelper = new RotationHelper();
-                        double diff = rotationHelper.diffPotential(requestClusterMessage);
+                        diff = rotationHelper.diffPotential(requestClusterMessage);
 
                         if(diff > this.epsilon) {
                             // reject
@@ -119,7 +111,6 @@ public class ClusterHelper {
                                     clusterId, false);
                             this.sendAcceptOrRejectMessage(node, entry, largeId,
                                     rejectClusterMessage, helpedId);
-                            return;
                         }
                         else{
                             // 向上继续发送
@@ -319,5 +310,20 @@ public class ClusterHelper {
 
 
     }
+
+
+
+    private void setClusterMaster(int egoTreeId, int sendId, RequestClusterMessage requestClusterMessage){
+        requestClusterMessage.setTheEgoTreeMasterOfCluster(egoTreeId);
+        requestClusterMessage.setTheSendIdOfCluster(sendId);
+    }
+
+    private void setUpperNodeId(RequestClusterMessage requestClusterMessage, int egoTreeId, int sendId,boolean lnFlag){
+        requestClusterMessage.setTheMostUpperEgoTreeId(egoTreeId);
+        requestClusterMessage.setTheMostUpperSendId(sendId);
+        requestClusterMessage.setLnFlag(lnFlag);
+    }
+
+
 
 }

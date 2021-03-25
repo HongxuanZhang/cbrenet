@@ -6,8 +6,6 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 
 import projects.cbrenet.nodes.messages.controlMessage.AcceptClusterMessage;
-import projects.cbrenet.nodes.messages.controlMessage.RequestClusterUpMessage;
-import projects.cbrenet.nodes.messages.controlMessage.RequestClusterDownMessage;
 import projects.cbrenet.nodes.messages.controlMessage.RequestClusterMessage;
 import projects.cbrenet.nodes.tableEntry.CBInfo;
 import sinalgo.nodes.messages.Message;
