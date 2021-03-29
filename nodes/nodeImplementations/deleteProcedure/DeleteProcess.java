@@ -2,7 +2,6 @@ package projects.cbrenet.nodes.nodeImplementations.deleteProcedure;
 
 // 放一些AuxiliaryNode 和 CBBSTNode 都需要的代码
 
-import projects.cbrenet.nodes.messages.SDNMessage.DeleteMessage;
 import projects.cbrenet.nodes.messages.deletePhaseMessages.*;
 import projects.cbrenet.nodes.nodeImplementations.AuxiliaryNode;
 import projects.cbrenet.nodes.nodeImplementations.AuxiliaryNodeMessageQueueLayer;
@@ -54,6 +53,14 @@ public class DeleteProcess {
 
 
     public void startDelete(SendEntry deleteEntry, Node node, int largeId, int helpedId){
+        /*
+         *@description Only call this method to start a delete, but not call it when want to delete
+         *@parameters  [deleteEntry, node, largeId, helpedId]
+         *@return  void
+         *@author  Zhang Hongxuan
+         *@create time  2021/3/29
+         */
+
         // when node is node AN, node.id should equal to helpedId
         assert !(node instanceof CounterBasedBSTLayer) || node.ID == helpedId;
 
@@ -98,7 +105,7 @@ public class DeleteProcess {
             // 执行的时候调试一下看这里是否正确执行
             int largeId = deletePrepareMessageToDealWith.getLargeId();
 
-            if(deleteEntry.checkNeighborDeleting()){
+            if(!deleteEntry.checkNeighborDeleting()){
                 deleteEntry.setDeletingFlagOfItSelf(true);
                 this.sendDeletePrepareMessage(deleteEntry, deletePrepareMessageToDealWith, largeId, helpedId, node);
             }
@@ -149,19 +156,21 @@ public class DeleteProcess {
 
 
     // send DBM
-    private void sendDeleteBaseMessage(DeleteBaseMessage message, int largeId, SendEntry deleteEntry, int targetId, int helpedId, Node node){
+    private boolean sendDeleteBaseMessage(DeleteBaseMessage message, int largeId, SendEntry deleteEntry, int targetId, int helpedId, Node node){
         boolean upward = false;
         if(deleteEntry.getRelationShipOf(targetId) == 'p'){
             upward = true;
         }
         if(node instanceof MessageSendLayer){
-            ((MessageSendLayer)node).sendEgoTreeMessage(largeId, targetId,
+            return ((MessageSendLayer)node).sendEgoTreeMessage(largeId, targetId,
                     message, upward);
         }
         else if(node instanceof AuxiliaryNodeMessageQueueLayer){
-            ((AuxiliaryNodeMessageQueueLayer)node).sendEgoTreeMessage(largeId, targetId,
+            return ((AuxiliaryNodeMessageQueueLayer)node).sendEgoTreeMessage(largeId, targetId,
                     message, upward, helpedId);
         }
+        Tools.fatalError("The node call DeleteProcess should be the instance of one Nodes");
+        return false;
     }
 
 
@@ -239,7 +248,7 @@ public class DeleteProcess {
 
     private void sendDeleteFinishMessage(SendEntry sendEntry, int largeId, int helpedId, Node node){
         /*
-         *@description 清空DCMList, 发送DFM， todo 断链接
+         *@description 清空DCMList, 发送DFM
          *@parameters  [sendEntry, largeId, helpedId, node]
          *@return  void
          *@author  Zhang Hongxuan
@@ -263,6 +272,8 @@ public class DeleteProcess {
         }
         // if insertFlag, the AN need a similar operation as the BST who has 3 neighbor
 
+
+        boolean sendFlag =true;
         if(ids.size() == 3 || insertFlag){
             // Need AN to help or AN want the node back!
             int auxiliaryId = sendEntry.getAuxiliaryId();
@@ -270,7 +281,10 @@ public class DeleteProcess {
             DeleteFinishMessage deleteFinishMessage = new DeleteFinishMessage(largeId, helpedId, helpedId, auxiliaryId);
             for(int dstId : ids)
             {
-                this.sendDeleteBaseMessage(deleteFinishMessage, largeId, sendEntry, dstId, helpedId, node);
+                if(!this.sendDeleteBaseMessage(deleteFinishMessage, largeId,
+                        sendEntry, dstId, helpedId, node)){
+                    sendFlag = false;
+                }
             }
 
         }
@@ -286,24 +300,36 @@ public class DeleteProcess {
                 DeleteFinishMessage deleteFinishMessageTo2 = new DeleteFinishMessage(largeId, helpedId, neighbor1, sendIdOfNeighbor1);
                 DeleteFinishMessage deleteFinishMessageTo1 = new DeleteFinishMessage(largeId, helpedId, neighbor2, sendIdOfNeighbor2);
 
-                this.sendDeleteBaseMessage(deleteFinishMessageTo2, largeId, sendEntry, neighbor2, helpedId, node);
-                this.sendDeleteBaseMessage(deleteFinishMessageTo1, largeId, sendEntry, neighbor1, helpedId, node);
-
-
+                if(! this.sendDeleteBaseMessage(deleteFinishMessageTo2, largeId,
+                        sendEntry, neighbor2, helpedId, node)){
+                    sendFlag = false;
+                }
+                if(!this.sendDeleteBaseMessage(deleteFinishMessageTo1, largeId,
+                        sendEntry, neighbor1, helpedId, node)){
+                    sendFlag = false;
+                }
             }
             else if(ids.size() == 1){
                 // no need to create any link
                 int neighbor1 = ids.get(0);
                 DeleteFinishMessage deleteFinishMessageTo1 = new DeleteFinishMessage(largeId, helpedId, -1, -1);
-                this.sendDeleteBaseMessage(deleteFinishMessageTo1, largeId, sendEntry, neighbor1, helpedId, node);
+                if(this.sendDeleteBaseMessage(deleteFinishMessageTo1, largeId,
+                        sendEntry, neighbor1, helpedId, node)){
+                    sendFlag = false;
+                }
             }
             else{
                 Tools.warning("Very Interesting situation， no node connect to it!");
             }
         }
 
-        sendEntry.setDeletingFlagOfItSelf(false);
-
+        if(!sendFlag){
+            Tools.fatalError("Check what happen cause the DFM not send!");
+        }
+        else {
+            sendEntry.setDeletingFlagOfItSelf(false);
+            // todo 删除Entry
+        }
     }
 
 

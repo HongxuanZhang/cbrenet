@@ -33,8 +33,9 @@ public class SendEntry {
 
 
 
-    // TODO rotation part
+    // rotation part
     // 旋转位
+    // todo 旋转位的完善
     boolean rotationAbleFlag;
     public boolean isRotationAbleFlag() {
         return rotationAbleFlag;
@@ -102,6 +103,7 @@ public class SendEntry {
         if(this.egoTreeRoot){
             return false; // 结点都是Ego-Tree的root了还想着去哪呢。。
         }
+
         return true;
     }
 

@@ -160,7 +160,7 @@ public abstract class MessageSendLayer extends MessageQueueLayer{
 
     }
 
-    public void sendEgoTreeMessage(int largeId, int dst, Message msg, boolean upward){
+    public boolean sendEgoTreeMessage(int largeId, int dst, Message msg, boolean upward){
         /*
          *@description  Used to send Message in the ego-tree
          *@parameters  [largeId, dst, msg, upward]
@@ -175,7 +175,9 @@ public abstract class MessageSendLayer extends MessageQueueLayer{
 
         if(!this.forwardMessage(routingMessage)){
             this.addInRoutingMessageQueue(routingMessage);
+            return false;
         }
+        return true;
     }
 
 

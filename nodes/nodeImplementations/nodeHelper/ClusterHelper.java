@@ -119,6 +119,7 @@ public class ClusterHelper {
                         }
                     }
                     else{
+                        // position == 1 && root == false
                         // 往后发送后，(浅拷贝？)这里也会变吧，看看怎么处理还是没有影响。
                         this.sendRequestClusterMessageUp(node, entry, largeId, requestClusterMessage, helpedId);
                         entry.addRequestClusterMessageIntoPriorityQueue(requestClusterMessage);
@@ -127,6 +128,7 @@ public class ClusterHelper {
             }
             else{
                 this.setClusterMaster(helpedId, node.ID, requestClusterMessage);
+                // 由于这里的3号结点并不真正参与旋转，所以不必检测其是否为root
                 this.setUpperNodeId(requestClusterMessage, helpedId, node.ID, false);
                 entry.addRequestClusterMessageIntoPriorityQueue(requestClusterMessage);
             }
@@ -318,10 +320,10 @@ public class ClusterHelper {
         requestClusterMessage.setTheSendIdOfCluster(sendId);
     }
 
-    private void setUpperNodeId(RequestClusterMessage requestClusterMessage, int egoTreeId, int sendId,boolean lnFlag){
+    private void setUpperNodeId(RequestClusterMessage requestClusterMessage, int egoTreeId, int sendId,boolean lNFlag){
         requestClusterMessage.setTheMostUpperEgoTreeId(egoTreeId);
         requestClusterMessage.setTheMostUpperSendId(sendId);
-        requestClusterMessage.setLnFlag(lnFlag);
+        requestClusterMessage.setLnFlag(lNFlag);
     }
 
 

@@ -66,14 +66,16 @@ public abstract class AuxiliaryNodeMessageQueueLayer extends AuxiliaryNodeStruct
     }
 
 
-    public void sendEgoTreeMessage(int largeId, int dst, Message msg, boolean upward,int helpedId){
+    public boolean sendEgoTreeMessage(int largeId, int dst, Message msg, boolean upward,int helpedId){
         assert msg instanceof DeleteBaseMessage;
 
         RoutingMessage routingMessage = new RoutingMessage(this.ID, dst, msg, largeId, upward);
 
         if(!this.forwardMessage(routingMessage)){
             this.addRoutingMessageToQueue(helpedId, routingMessage);
+            return false;
         }
+        return true;
     }
 
 

@@ -14,7 +14,7 @@ public class DeletePrepareMessage extends DeleteBaseMessage implements Comparabl
     }
 
     public DeletePrepareMessage(DeletePrepareMessage deletePrepareMessage){
-        /**
+        /*
          *@description Do not need to copy relation field
          *@parameters  [deletePrepareMessage]
          *@return
@@ -23,6 +23,7 @@ public class DeletePrepareMessage extends DeleteBaseMessage implements Comparabl
          */
         super(deletePrepareMessage.getLargeId(), deletePrepareMessage.getDeleteTarget());
         this.t = deletePrepareMessage.t;
+        this.relation = deletePrepareMessage.relation; // Remember call setRelation later.
     }
 
     @Override

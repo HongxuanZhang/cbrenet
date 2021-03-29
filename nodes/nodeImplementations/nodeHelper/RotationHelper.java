@@ -327,7 +327,7 @@ public class RotationHelper {
             }
 
             // set and unset root
-            if(position == 2){
+            if(lNFlag){
                 // means the upper node is root
                 if(relation1 == 'l' && relation2 == 'l'){
                     entryForZ.setEgoTreeRoot(false);
@@ -462,9 +462,6 @@ public class RotationHelper {
 
 
     public void receiveAdjustMessage(){
-
-
-
 
     }
 
