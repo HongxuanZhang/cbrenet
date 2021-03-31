@@ -329,7 +329,16 @@ public abstract class LinkLayer extends MessageQueueLayer{
 
         }
         else if(msg instanceof DeleteBaseMessage){
-            this.deleteProcess.executeDeleteBaseMessage((DeleteBaseMessage) msg, this, this);
+            DeleteBaseMessage deleteBaseMessage = (DeleteBaseMessage) msg;
+
+            int largeId = deleteBaseMessage.getLargeId();
+            int helpedId = -1;
+
+            if(this.deleteProcess.executeDeleteBaseMessage(deleteBaseMessage,
+                    this, this)){
+                // remove entry
+                this.removeCorrespondingEntry(helpedId, largeId);
+            }
         }
     }
 

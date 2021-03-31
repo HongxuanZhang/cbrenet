@@ -48,6 +48,8 @@ public class AuxiliaryNode extends AuxiliaryNodeMessageQueueLayer{
                 entry.setAuxiliaryId((LargeInsertMessage) payload);
                 this.deleteProcess.startDelete(entry, this, largeId, helpedId);
 
+                // 把Entry加到 InsertedNode中去
+
                 // no need to forward any more.
                 return;
             }
@@ -65,7 +67,10 @@ public class AuxiliaryNode extends AuxiliaryNodeMessageQueueLayer{
             SendEntry entry = this.getCorrespondingEntry(helpedId, largeId);
             if(entry != null){
                 // the DBM got the destination
-                this.deleteProcess.executeDeleteBaseMessage(deleteBaseMessage, this, this);
+                if(this.deleteProcess.executeDeleteBaseMessage(deleteBaseMessage, this, this)){
+                    // remove entry.
+                    this.removeCorrespondingEntry(helpedId,largeId);
+                }
             }
             return;
         }

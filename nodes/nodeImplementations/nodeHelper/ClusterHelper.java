@@ -8,6 +8,8 @@ import projects.cbrenet.nodes.routeEntry.SendEntry;
 import sinalgo.nodes.Node;
 import sinalgo.tools.Tools;
 
+import java.util.List;
+
 public class ClusterHelper {
 
     private final double epsilon = -1.5;
@@ -16,18 +18,18 @@ public class ClusterHelper {
 
         //int largeId, int currentNode, int requesterId, int position, double generateTime
 
-        if(entry.getClusterMessage() == null){
+        if(entry.getClusterMessageOfMine() == null){
 
             RequestClusterMessage clusterMessage = new RequestClusterMessage(largeId, -1,
                     helpedId, 0, Tools.getGlobalTime());
 
-            entry.setClusterMessage(clusterMessage);
+            entry.setClusterMessageOfMine(clusterMessage);
 
         }
 
         if(entry.checkAdjustRequirement()){
             // send cluster Message
-            RequestClusterMessage clusterMessage = entry.getClusterMessage();
+            RequestClusterMessage clusterMessage = entry.getClusterMessageOfMine();
 
             NodeInfo nodeInfo = new NodeInfo(node.ID, helpedId, entry.getEgoTreeIdOfLeftChild(), entry.getSendIdOfRightChild(),
                     entry.getSendIdOfLeftChild(), entry.getSendIdOfRightChild(),
@@ -170,21 +172,15 @@ public class ClusterHelper {
         }
 
 
-    }
+        // reject else request;
+        // todo 现在只清理了Master里的，这些消息会怎么传播？？？会有哪些跟着被移除？哪些不会被移除呢？
+        List<RequestClusterMessage> listTmp = entry.getAllRequestClusterMessage();
 
+        for(RequestClusterMessage clusterMessage : listTmp){
+            this.rejectRequest(entry,node, largeId, helpedId, clusterMessage.getRequesterId(),
+                    clusterMessage.getTheEgoTreeMasterOfCluster());
 
-
-    public void rejectRequest(SendEntry entry, Node node, int largeId, int helpedId, int clusterId, int masterId){
-        // todo cluster ID 和 masterId或许可以是随便写的？？
-        // 虽然上面的结点接受聚合，但是本结点处还有更高优先级的请求要同意，所以当前的结点不接受聚合
-        // 向上发NonAck
-        RejectClusterMessage rejectClusterMessage = new RejectClusterMessage(masterId,largeId, clusterId,true);
-        this.sendAcceptOrRejectMessage(node, entry, largeId, rejectClusterMessage, helpedId);
-        // 向下发NonAck
-        RejectClusterMessage rejectClusterMessage2 = new RejectClusterMessage(masterId,largeId, clusterId,false);
-        this.sendAcceptOrRejectMessage(node, entry, largeId, rejectClusterMessage2, helpedId);
-
-        entry.deleteCorrespondingRequestClusterMessageInPriorityQueue(largeId, clusterId);
+        }
     }
 
 
@@ -197,28 +193,46 @@ public class ClusterHelper {
         int currentClusterId = entry.getCurrentClusterRequesterId();
 
         if(currentClusterId> 0 && currentClusterId != clusterId){
-            // reject
+            // reject since this node is in a cluster already
             this.rejectRequest(entry, node, largeId, helpedId, clusterId, masterId);
             return;
         }
 
         if(currentClusterId == clusterId){
-            Tools.warning("Should not happen! How a node get the Accept ahead??");
+             Tools.warning("Should not happen! How a node get the Accept ahead??");
             return;
         }
 
         entry.updateHighestPriorityRequest();
         RequestClusterMessage highestRequest = entry.getHighestPriorityRequest();
+        if(highestRequest == null){
+            return;
+        }
+
+        // 先判断是不是最高优先级的request
         if(clusterId == highestRequest.getRequesterId() && largeId == highestRequest.getLargeId()){
             entry.lockUpdateHighestPriorityRequestPermission();
             entry.setCurrentClusterRequesterId(clusterId);
             if(helpedId == clusterId){
-                // 这就是我发起的cluster，成功了
-                // todo adjust
+                // the message reach the requester of the cluster
+                // do adjust
+                RotationHelper rotationHelper = new RotationHelper();
+                rotationHelper.rotation(acceptClusterMessage);
             }
             else{
                 this.sendAcceptOrRejectMessage(node, entry, largeId, acceptClusterMessage, helpedId);
             }
+
+            // 这里，我要Accept了！
+            // 可是，我手上的请求怎么办？
+            // 残忍的抛弃它们吧！
+            List<RequestClusterMessage> listTmp = entry.getAllRequestClusterMessage();
+
+            for(RequestClusterMessage clusterMessage : listTmp){
+                this.rejectRequest(entry,node, largeId, helpedId, clusterMessage.getRequesterId(),
+                        clusterMessage.getTheEgoTreeMasterOfCluster());
+            }
+
         }
         else{
             this.rejectRequest(entry, node, largeId, helpedId, clusterId, masterId);
@@ -227,7 +241,7 @@ public class ClusterHelper {
 
 
 
-    public void receiveNonAckClusterMessage(RejectClusterMessage rejectClusterMessage, SendEntry entry,
+    public void receiveRejectClusterMessage(RejectClusterMessage rejectClusterMessage, SendEntry entry,
                                             Node node, int helpedId){
 
         int largeId = rejectClusterMessage.getLargeId();
@@ -235,7 +249,12 @@ public class ClusterHelper {
         int masterId = rejectClusterMessage.getMasterId();
         boolean upward = rejectClusterMessage.isUpward();
         // 既然被否决，那就移除吧。
-        entry.deleteCorrespondingRequestClusterMessageInPriorityQueue(largeId, clusterId);
+
+        boolean continueSend = false;
+        if(entry.deleteCorrespondingRequestClusterMessageInPriorityQueue(largeId, clusterId)){
+            // 说明自身可能不是这条Reject消息的终点
+            continueSend = true;
+        }
 
 
         if(entry.getCurrentClusterRequesterId() == clusterId){
@@ -245,27 +264,28 @@ public class ClusterHelper {
         }
 
         // 继续传
-        if(!upward) {
-            // 当前结点是否是requester的判断
-            if (node.ID != clusterId) {
-                // 这一条 NonAck 还没传递到目的地，需要继续传递
-                RejectClusterMessage rejectClusterMessage2 = new RejectClusterMessage
-                        (masterId, largeId, clusterId, false);
 
-                this.sendAcceptOrRejectMessage(node, entry, largeId, rejectClusterMessage2, helpedId);
+        if(continueSend) {
+            if (!upward) {
+                // 当前结点是否是requester的判断
+                if (node.ID != clusterId) {
+                    // 这一条 NonAck 还没传递到目的地，需要继续传递
+                    RejectClusterMessage rejectClusterMessage2 = new RejectClusterMessage
+                            (masterId, largeId, clusterId, false);
+
+                    this.sendAcceptOrRejectMessage(node, entry, largeId, rejectClusterMessage2, helpedId);
+                }
+            } else {
+                // 当前结点是否是master
+                if (node.ID != masterId) {
+                    // 不是master， 继续向上传
+                    RejectClusterMessage rejectClusterMessage2 = new RejectClusterMessage
+                            (masterId, largeId, clusterId, true);
+
+                    this.sendAcceptOrRejectMessage(node, entry, largeId, rejectClusterMessage2, helpedId);
+                }
             }
         }
-        else{
-            // 当前结点是否是master
-            if(node.ID != masterId){
-                // 不是master， 继续向上传
-                RejectClusterMessage rejectClusterMessage2 = new RejectClusterMessage
-                        (masterId, largeId, clusterId, true);
-
-                this.sendAcceptOrRejectMessage(node, entry, largeId, rejectClusterMessage2, helpedId);
-            }
-        }
-
 
     }
 
@@ -275,7 +295,6 @@ public class ClusterHelper {
     // Send Message Part
     private void sendRequestClusterMessageUp(Node node, SendEntry entry, int largeId,
                                              RequestClusterMessage requestClusterMessage, int helpedId){
-
         boolean upward = true;
         int egoParentId = entry.getEgoTreeIdOfParent();
 
@@ -287,7 +306,6 @@ public class ClusterHelper {
             ((AuxiliaryNodeMessageQueueLayer)node).sendEgoTreeMessage(largeId, egoParentId,
                     requestClusterMessage, upward, helpedId);
         }
-
     }
 
     private void sendAcceptOrRejectMessage(Node node, SendEntry entry, int largeId,
@@ -314,10 +332,26 @@ public class ClusterHelper {
     }
 
 
+    private void rejectRequest(SendEntry entry, Node node, int largeId, int helpedId, int clusterId, int masterId){
+        // todo cluster ID 和 masterId或许可以是随便写的？？
+        // 虽然上面的结点接受聚合，但是本结点处还有更高优先级的请求要同意，所以当前的结点不接受聚合
+
+        if(masterId != helpedId){
+            // 向上发NonAck
+            RejectClusterMessage rejectClusterMessage = new RejectClusterMessage(masterId,largeId, clusterId,true);
+            this.sendAcceptOrRejectMessage(node, entry, largeId, rejectClusterMessage, helpedId);
+        }
+        // 向下发NonAck
+        RejectClusterMessage rejectClusterMessage2 = new RejectClusterMessage(masterId,largeId, clusterId,false);
+        this.sendAcceptOrRejectMessage(node, entry, largeId, rejectClusterMessage2, helpedId);
+
+        entry.deleteCorrespondingRequestClusterMessageInPriorityQueue(largeId, clusterId);
+    }
+
 
     private void setClusterMaster(int egoTreeId, int sendId, RequestClusterMessage requestClusterMessage){
         requestClusterMessage.setTheEgoTreeMasterOfCluster(egoTreeId);
-        requestClusterMessage.setTheSendIdOfCluster(sendId);
+        requestClusterMessage.setTheSendIdOfClusterMaster(sendId);
     }
 
     private void setUpperNodeId(RequestClusterMessage requestClusterMessage, int egoTreeId, int sendId,boolean lNFlag){

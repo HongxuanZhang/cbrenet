@@ -15,7 +15,9 @@ import sinalgo.nodes.messages.Message;
 
 public class LargeInsertMessage extends StatusRelatedMessage {
 
-    final private int target;
+    final private int auxiliaryNodeId; // the auxiliary node which SDN allocate
+
+    final private int target;          // which would be inserted to the ego-Tree(largeId)
     final private int largeId;
 
     private int leafId; // This will be the parent of the target.
@@ -24,10 +26,11 @@ public class LargeInsertMessage extends StatusRelatedMessage {
 
     private boolean leftFlag = false; // set by the parent , indicate that whether the target node is leftChild
 
-    public LargeInsertMessage(int target, int largeID, int uniqueStatusId){
+    public LargeInsertMessage(int target, int largeID, int auxiliaryNodeId, int uniqueStatusId){
         super(uniqueStatusId);
         this.largeId = largeID;
         this.target = target;
+        this.auxiliaryNodeId = auxiliaryNodeId;
     }
 
     public void setLeftFlag(boolean leftFlag) {
@@ -40,6 +43,10 @@ public class LargeInsertMessage extends StatusRelatedMessage {
 
     public int getTarget() {
         return target;
+    }
+
+    public int getAuxiliaryNodeId() {
+        return auxiliaryNodeId;
     }
 
     public int getLargeId() {

@@ -246,7 +246,7 @@ public class DeleteProcess {
 
     }
 
-    private void sendDeleteFinishMessage(SendEntry sendEntry, int largeId, int helpedId, Node node){
+    private boolean sendDeleteFinishMessage(SendEntry sendEntry, int largeId, int helpedId, Node node){
         /*
          *@description 清空DCMList, 发送DFM
          *@parameters  [sendEntry, largeId, helpedId, node]
@@ -259,7 +259,7 @@ public class DeleteProcess {
             Tools.fatalError("THIS SHOULD NEVER HAPPEN! When the node want to send DeleteConfirmMessage, " +
                     "all its neighbors should return the DCM, but it seems " +
                     "that one of its neighbor it deleting.");
-            return;
+            return false;
         }
 
         // 清空DCM
@@ -325,15 +325,16 @@ public class DeleteProcess {
 
         if(!sendFlag){
             Tools.fatalError("Check what happen cause the DFM not send!");
+            return false;
         }
         else {
             sendEntry.setDeletingFlagOfItSelf(false);
-            // todo 删除Entry
+            return true;
         }
     }
 
 
-    public void executeDeleteBaseMessage(DeleteBaseMessage msg, EntryGetter entryGetter, Node node){
+    public boolean executeDeleteBaseMessage(DeleteBaseMessage msg, EntryGetter entryGetter, Node node){
         /*
          *@description  Call this method when receive DeleteBaseMessage
          *@parameters  [msg, entryGetter, node]
@@ -350,13 +351,15 @@ public class DeleteProcess {
         else if(msg instanceof DeleteConfirmMessage){
             SendEntry entry = entryGetter.getCorrespondingEntry(helpedId,largeId);
             if(this.receiveDeleteConfirmMessage(entry, (DeleteConfirmMessage)msg)){
-                this.sendDeleteFinishMessage(entry,largeId, helpedId, node);
+                return this.sendDeleteFinishMessage(entry,largeId, helpedId, node);
+                // Remember to remove Entry outside
             }
         }
         else if(msg instanceof DeleteFinishMessage){
             SendEntry entry = entryGetter.getCorrespondingEntry(helpedId,largeId);
             this.receiveAndExecuteDeleteFinishMessage(entry, node, (DeleteFinishMessage)msg, helpedId);
         }
+        return false;
     }
     // receive DBM part finish
 

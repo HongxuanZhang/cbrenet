@@ -116,7 +116,7 @@ public abstract class AuxiliaryNodeStructureLayer extends Node implements EntryG
 
 
     // delete node 时调用
-    public void removeSendEntry(int helpedId, int largeId){
+    public void removeCorrespondingEntry(int helpedId, int largeId){
         /**
          *@description Call this method when the node is satisfied to truly delete from the
          *             Ego-Tree(largeId) (In Complete Delete Phase)

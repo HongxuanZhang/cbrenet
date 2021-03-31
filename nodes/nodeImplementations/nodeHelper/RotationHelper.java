@@ -105,11 +105,12 @@ public class RotationHelper {
 
     }
 
-    public void rotation(AcceptClusterMessage acceptClusterMessage, int largeId){
+    public void rotation(AcceptClusterMessage acceptClusterMessage){
 
         RequestClusterMessage requestClusterMessage =
                 acceptClusterMessage.getRequestClusterMessage();
 
+        int largeId = acceptClusterMessage.getLargeId();
 
 
         int position = requestClusterMessage.getPosition();
@@ -464,5 +465,10 @@ public class RotationHelper {
     public void receiveAdjustMessage(){
 
     }
+
+    private void changeRoutingMessageDestination(){
+        // todo
+    }
+
 
 }

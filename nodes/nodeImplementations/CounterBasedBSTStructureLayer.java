@@ -44,12 +44,16 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
 
 
     HashMap<Integer, SendEntry> routeTable;  // 指示着当前的结点在 Ego-Tree(largeId)中的情况
-
+    // largeId, SendEntry
 
 
 
     public SendEntry getCorrespondingEntry(int helpedId, int largeId){
         return this.routeTable.getOrDefault(largeId,null);
+    }
+
+    public void removeCorrespondingEntry(int helpedId, int largeId){
+        this.routeTable.remove(largeId);
     }
 
     public void addSendEntry(int helpedId, int largeId, int parent, int leftChild, int rightChild){

@@ -44,8 +44,13 @@ public class SendEntry {
         this.rotationAbleFlag = rotationAbleFlag;
     }
 
+    private int rotationAbleCountDown;
+
+
     // Count base network weight.
     int counter; // 以自身为 src or dst 的 Message数目
+
+
 
     // todo 完善统计机制， 只统计 LIM CbRenetMessage 即可
     int weightOfLeft;
@@ -53,17 +58,21 @@ public class SendEntry {
 
 
     // 第一次想要cluster时就出现，直到cluster被满足。
-    RequestClusterMessage clusterMessage;
+    RequestClusterMessage clusterMessageOfMine;
+
+    public void setClusterMessageOfMine(RequestClusterMessage clusterMessageOfMine) {
+        this.clusterMessageOfMine = clusterMessageOfMine;
+    }
+
+    public RequestClusterMessage getClusterMessageOfMine() {
+        return clusterMessageOfMine;
+    }
+
+
     PriorityQueue<RequestClusterMessage> requestClusterMessagePriorityQueue;
 
 
-    public void setClusterMessage(RequestClusterMessage clusterMessage) {
-        this.clusterMessage = clusterMessage;
-    }
 
-    public RequestClusterMessage getClusterMessage() {
-        return clusterMessage;
-    }
 
     // 当前自己已经倾心的Cluster， 除非收到NonAck 或者cluster结束才更新的
     int currentClusterRequesterId;
@@ -142,10 +151,19 @@ public class SendEntry {
         return this.requestClusterMessagePriorityQueue.peek(); // 不删除！
     }
 
-    public void deleteCorrespondingRequestClusterMessageInPriorityQueue(int largeId, int clusterId){
+    public boolean deleteCorrespondingRequestClusterMessageInPriorityQueue(int largeId, int clusterId){
+        boolean flag = false;
+        for(RequestClusterMessage r: this.requestClusterMessagePriorityQueue){
+            if (r.getLargeId() == largeId && r.getRequesterId() == clusterId) {
+                flag = true;
+                break;
+            }
+        }
+
         this.requestClusterMessagePriorityQueue.removeIf(
                 requestClusterMessage -> requestClusterMessage.getLargeId() == largeId
                         && requestClusterMessage.getRequesterId() == clusterId);
+        return flag;
     }
 
 
@@ -170,6 +188,21 @@ public class SendEntry {
         return highestPriorityRequest;
     }
 
+    // 清空所有CLusterRequestMessage专用
+    // 在确认自身加入某一个cluster后，
+    public List<RequestClusterMessage> getAllRequestClusterMessage(){
+
+        List<RequestClusterMessage> resultList = new ArrayList<>();
+
+        while(!this.requestClusterMessagePriorityQueue.isEmpty()){
+            RequestClusterMessage requestClusterMessageTmp = this.requestClusterMessagePriorityQueue.poll();
+            if(!this.highestPriorityRequest.equals(requestClusterMessageTmp)){
+                // check whether here work
+                resultList.add(this.requestClusterMessagePriorityQueue.poll());
+            }
+        }
+        return resultList;
+    }
 
 
 
@@ -223,6 +256,8 @@ public class SendEntry {
         this.egoTreeRoot = false;
         this.rotationAbleFlag = true;
 
+        this.rotationAbleCountDown = 20;
+
         this.sendFlagOfParent = true;
         this.sendFlagOfLeftChild = true;
         this.sendFlagOfRightChild = true;
@@ -246,7 +281,7 @@ public class SendEntry {
         this.weightOfLeft = 0;
         this.weightOfRight = 0;
 
-        this.clusterMessage = null;
+        this.clusterMessageOfMine = null;
         this.requestClusterMessagePriorityQueue = new PriorityQueue<>();
 
         this.currentClusterRequesterId = -3; // 随便写的。-3
@@ -284,7 +319,7 @@ public class SendEntry {
 
     public void setAuxiliaryId(LargeInsertMessage correspondingLargeInsertMessage){
         // only AN can use this to set auxiliary ID
-        this.auxiliaryId = correspondingLargeInsertMessage.getTarget();
+        this.auxiliaryId = correspondingLargeInsertMessage.getAuxiliaryNodeId();
     }
 
     public int getAuxiliaryId(){
@@ -402,27 +437,6 @@ public class SendEntry {
     // 下面这个函数，仅在Confirm时调用。不能用于其他目的！
     public DeletePrepareMessage getDeletePrepareMessageOfMine() {
         return this.deletePrepareMessageOfMine;
-        // 下面这一部分的代码是用来进行三项并行删除的，但是三项并行删除很难实现，问题有点大，不好做，先放一放
-//        List<DeletePrepareMessage> results = new LinkedList<>();
-//        if(this.deletePrepareMessageOfMine != null){
-//            results.add(this.deletePrepareMessageOfMine);
-//            return results;
-//        }
-//        else{
-//            if(this.deletePrepareMessageOfParent != null){
-//                results.add(this.deletePrepareMessageOfParent);
-//            }
-//
-//            if(this.deletePrepareMessageOfLeftChild != null){
-//                results.add(this.deletePrepareMessageOfLeftChild);
-//            }
-//
-//            if(this.deletePrepareMessageOfRightChild != null){
-//                results.add(this.deletePrepareMessageOfRightChild);
-//            }
-//
-//            return results;
-//        }
     }
 
 
@@ -780,4 +794,22 @@ public class SendEntry {
     public void setWeightOfRight(int weightOfRight) {
         this.weightOfRight = weightOfRight;
     }
+
+
+    public void doInPost(){
+
+        // countDown
+        if(this.rotationAbleCountDown >= 1){
+            rotationAbleCountDown --;
+        }
+        if(this.rotationAbleCountDown == 0){
+            this.rotationAbleFlag = false;
+            this.rotationAbleCountDown = 20;
+        }
+        // countdown part end
+
+
+
+    }
+
 }

@@ -11,6 +11,8 @@ public interface EntryGetter {
 
     SendEntry getCorrespondingEntry(int helpedId, int largeId);
 
+    void removeCorrespondingEntry(int helpedId, int largeId);
+
     int getParentOf(int helpedId, int largeId);
 
     int getLeftChildOf(int helpedId, int largeId);

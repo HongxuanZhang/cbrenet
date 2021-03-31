@@ -3,8 +3,10 @@ package projects.cbrenet;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
+import projects.cbrenet.nodes.nodeImplementations.AuxiliaryNode;
 import projects.cbrenet.nodes.nodeImplementations.CBReNetApp;
 import projects.cbrenet.nodes.nodeImplementations.CbRenetBinarySearchTreeLayer;
 import projects.cbrenet.nodes.nodeImplementations.SDNApp;
@@ -15,6 +17,7 @@ import projects.defaultProject.RequestQueue;
 import projects.defaultProject.TreeConstructor;
 import sinalgo.configuration.Configuration;
 import sinalgo.gui.transformation.PositionTransformation;
+import sinalgo.nodes.Node;
 import sinalgo.runtime.AbstractCustomGlobal;
 import sinalgo.tools.Tools;
 import sinalgo.tools.Tuple;
@@ -107,50 +110,61 @@ public class CustomGlobal extends AbstractCustomGlobal {
     sdn.finishInitializationWithDefaultModels(true);
 
 
+    AuxiliaryNode auxiliaryNode = new AuxiliaryNode();
+    auxiliaryNode.finishInitializationWithDefaultModels(true);
+    sdn.setAuxiliaryNodeId(auxiliaryNode.ID);
+
+
+    List<Node> nodes = new ArrayList<>();
+
+
     for (int i = 0; i < numNodes; i++) {
-      CBReNetApp n = new CBReNetApp();
-      n.finishInitializationWithDefaultModels(true);
-      this.allNodes.add(n);
-      n.setSDNId(sdn.ID);
-      sdn.addNodeId(n.ID);
+        CBReNetApp n = new CBReNetApp();
+        n.finishInitializationWithDefaultModels(true);
+        this.allNodes.add(n);
+        n.setSDNId(sdn.ID);
+        sdn.addNodeId(n.ID);
+        nodes.add(n);
     }
 
-    this.controller = new CBReNetApp() {
-      public void draw(Graphics g, PositionTransformation pt, boolean highlight) {
-        String text = "SDN Node";
-        super.drawNodeAsDiskWithText(g, pt, highlight, text, 10, Color.BLUE);
-      }
-    };
-    this.controller.finishInitializationWithDefaultModels(true);
 
-//    this.treeTopology = new BalancedTreeTopology(controlNode, this.tree);
-    this.treeTopology = new BalancedTreeTopology(null, null);
-    this.treeTopology.buildTree();
+    // 整个完全图进来吧
 
-//    this.treeTopology.linearTree();
-    this.treeTopology.setPositions();
+    // node <-> an
+    for(Node n : nodes){
+        n.addBidirectionalConnectionTo(auxiliaryNode);
+    }
+
+    // node <-> node
+    int len = nodes.size();
+    for(int i = 0; i < len; i++){
+        for(int j = i + 1; j < len; j++){
+            nodes.get(i).addBidirectionalConnectionTo(nodes.get(j));
+        }
+    }
+
 
   }
 
   @Override
   public void preRound() {
-    this.treeTopology.setPositions();
 
-    if (mustGenerateSplay && this.requestQueue.hasNextRequest()) {
-      mustGenerateSplay = false;
+      if (mustGenerateSplay && this.requestQueue.hasNextRequest()) {
+        // 使用点阴的，，我们也这么做吧。。。 todo 遏制新Request产生。可以帮助我们跑出实验数据
+        mustGenerateSplay = false;
 
-      double u = random.nextDouble();
-      double x = Math.log(1 - u) / (-lambda);
-      x = (int) x;
-      if (x <= 0) {
-        x = 1;
+        double u = random.nextDouble();
+        double x = Math.log(1 - u) / (-lambda);
+        x = (int) x;
+        if (x <= 0) {
+          x = 1;
+        }
+
+        Tuple<Integer, Integer> r = this.requestQueue.getNextRequest();
+        TriggerNodeOperation ted = new TriggerNodeOperation(r.first, r.second);   //此处设置了一条信息，是request的source 和 destination间的
+        ted.startGlobalTimer(x);  // 设置一个全局触发的timer, 在x后request r会从r.first结点发出
+
       }
-
-      Tuple<Integer, Integer> r = this.requestQueue.getNextRequest();
-      TriggerNodeOperation ted = new TriggerNodeOperation(r.first, r.second);   //此处设置了一条信息，是request的source 和 destination间的
-      ted.startGlobalTimer(x);  // 设置一个全局触发的timer, 在x后request r会从r.first结点发出
-
-    }
   }
 
 }

@@ -30,14 +30,16 @@ public class RequestClusterMessage extends Message implements Comparable<Request
 
         this.nodeInfoMap = new HashMap<>();
 
+        this.theEgoTreeMasterOfCluster = -1;
+        this.theSendIdOfClusterMaster = -1;
     }
 
 
-
+    // master id , 是cluster的master,与 theMostUpperEgoTreId不一定一样，下面那个可以是LN
     // 这个用用于指示 reject 信息传播的
     private int theEgoTreeMasterOfCluster; // the 3 node, would be used in adjust，
     // when 2 node or 3 node is the root of the ego-tree. it would equal to the most upper ego tree id.
-    private int theSendIdOfCluster;
+    private int theSendIdOfClusterMaster;
 
 
     // 用于指示整个子树旋转后的父亲结点。。。
@@ -144,8 +146,8 @@ public class RequestClusterMessage extends Message implements Comparable<Request
         return largeId;
     }
 
-    public int getTheSendIdOfCluster() {
-        return theSendIdOfCluster;
+    public int getTheSendIdOfClusterMaster() {
+        return theSendIdOfClusterMaster;
     }
 
     public int getTheMostUpperEgoTreeId() {
@@ -160,8 +162,8 @@ public class RequestClusterMessage extends Message implements Comparable<Request
         return isLnFlag;
     }
 
-    public void setTheSendIdOfCluster(int theSendIdOfCluster) {
-        this.theSendIdOfCluster = theSendIdOfCluster;
+    public void setTheSendIdOfClusterMaster(int theSendIdOfClusterMaster) {
+        this.theSendIdOfClusterMaster = theSendIdOfClusterMaster;
     }
 
     public void setTheMostUpperEgoTreeId(int theMostUpperEgoTreeId) {

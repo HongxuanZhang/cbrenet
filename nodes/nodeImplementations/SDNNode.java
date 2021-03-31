@@ -38,6 +38,12 @@ public class SDNNode extends Node {
     private ArrayList<Integer> allNodeIds;
 
 
+    private int auxiliaryNodeId;
+
+    public void setAuxiliaryNodeId(int auxiliaryNodeId) {
+        this.auxiliaryNodeId = auxiliaryNodeId;
+    }
+
     // used to present the node of Integer id is big or small
     // true : small
     // false : big
@@ -270,12 +276,12 @@ public class SDNNode extends Node {
                                     LargeInsertMessage largeInsertMessage;
                                     if(!smallFlagForSrc){
                                         // src node is large, and dst node is small
-                                        largeInsertMessage = new LargeInsertMessage(dstId, srcId, this.globalStatusId);
+                                        largeInsertMessage = new LargeInsertMessage(dstId, srcId, this.auxiliaryNodeId , this.globalStatusId);
                                         sendDirect(largeInsertMessage, Tools.getNodeByID(srcId));
                                     }
                                     else{
                                         // dst node is large, and src node is small
-                                        largeInsertMessage = new LargeInsertMessage(srcId, dstId, this.globalStatusId);
+                                        largeInsertMessage = new LargeInsertMessage(srcId, dstId, this.auxiliaryNodeId , this.globalStatusId);
                                         sendDirect(largeInsertMessage, Tools.getNodeByID(dstId));
                                     }
                                     break;
