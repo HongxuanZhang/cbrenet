@@ -13,10 +13,10 @@ public interface EntryGetter {
 
     void removeCorrespondingEntry(int helpedId, int largeId);
 
-    int getParentOf(int helpedId, int largeId);
+    int getEgoTreeIdOfParent(int helpedId, int largeId);
 
-    int getLeftChildOf(int helpedId, int largeId);
+    int getEgoTreeIdOfLeftChild(int helpedId, int largeId);
 
-    int getRightChildOf(int helpedId, int largeId);
+    int getEgoTreeIdOfRightChild(int helpedId, int largeId);
 
 }

@@ -1,10 +1,14 @@
 package projects.cbrenet.nodes.nodeImplementations.nodeHelper;
 
+import projects.cbrenet.nodes.messages.RoutingMessage;
 import projects.cbrenet.nodes.messages.controlMessage.AcceptClusterMessage;
 import projects.cbrenet.nodes.messages.controlMessage.NodeInfo;
 import projects.cbrenet.nodes.messages.controlMessage.RequestClusterMessage;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
 import sinalgo.tools.Tools;
+
+import java.util.LinkedList;
+import java.util.Queue;
 
 public class RotationHelper {
 
@@ -128,6 +132,7 @@ public class RotationHelper {
             int pSendId = requestClusterMessage.getTheMostUpperSendId();
             boolean lNFlag = requestClusterMessage.isLnFlag();
 
+            assert position == 3 || lNFlag;
 
             int xSendId = info0.getCurNodeTrueId();
             int xEgoTreeId = info0.getCurNodeEgoId();
@@ -156,7 +161,7 @@ public class RotationHelper {
 
             if( relation1 == 'l' && relation2 == 'l' ){
                 /*
-
+                            /                   /
                     2      z                   y
                           / \                /   \
                    1     y   D              x     z
@@ -186,6 +191,21 @@ public class RotationHelper {
                 // update weight of z and y
                 entryForZ.setWeightOfLeft(cWeight);
                 entryForY.setWeightOfRight(entryForZ.getWeight());
+
+
+                // set C parent to z
+                if(cEgoTreeId>0){
+                    SendEntry entryForC = ((EntryGetter)Tools.getNodeByID(cSendId))
+                            .getCorrespondingEntry(cEgoTreeId, largeId);
+                    if(entryForC == null){
+                        Tools.warning("Check what happen in  Rotation Helper whey c have ego tree id but no entry");
+                    }
+                    else{
+                        entryForC.setEgoTreeIdOfParent(zEgoTreeId);
+                        entryForC.setSendIdOfParent(zSendId);
+                    }
+                }
+
 
             }
             else if(relation1 == 'r' && relation2 == 'r'){
@@ -221,6 +241,21 @@ public class RotationHelper {
                 // update weight of z and y
                 entryForZ.setWeightOfRight(bWeight);
                 entryForY.setWeightOfLeft(entryForZ.getWeight());
+
+
+                // set B 's parent to z
+                if(bEgoTreeId>0){
+                    SendEntry entryForB = ((EntryGetter)Tools.getNodeByID(bSendId))
+                            .getCorrespondingEntry(bEgoTreeId, largeId);
+                    if(entryForB == null){
+                        Tools.warning("Check what happen in  Rotation Helper whey c have ego tree id but no entry");
+                    }
+                    else{
+                        entryForB.setEgoTreeIdOfParent(zEgoTreeId);
+                        entryForB.setSendIdOfParent(zSendId);
+                    }
+                }
+
             }
             else if(relation1 == 'l' && relation2 == 'r'){
                 /*
@@ -270,6 +305,32 @@ public class RotationHelper {
                 entryForX.setWeightOfLeft(entryForZ.getWeight());
                 entryForX.setWeightOfRight(entryForY.getWeight());
 
+
+                // set c ' parent to Z
+                if(cEgoTreeId>0){
+                    SendEntry entryForC = ((EntryGetter)Tools.getNodeByID(cSendId))
+                            .getCorrespondingEntry(cEgoTreeId, largeId);
+                    if(entryForC == null){
+                        Tools.warning("Check what happen in  Rotation Helper whey c have ego tree id but no entry");
+                    }
+                    else{
+                        entryForC.setEgoTreeIdOfParent(zEgoTreeId);
+                        entryForC.setSendIdOfParent(zSendId);
+                    }
+                }
+
+                // set D's parent to y
+                if(dEgoTreeId>0){
+                    SendEntry entryForD = ((EntryGetter)Tools.getNodeByID(dSendId))
+                            .getCorrespondingEntry(dEgoTreeId, largeId);
+                    if(entryForD == null){
+                        Tools.warning("Check what happen in  Rotation Helper whey d have ego tree id but no entry");
+                    }
+                    else{
+                        entryForD.setEgoTreeIdOfParent(yEgoTreeId);
+                        entryForD.setSendIdOfParent(ySendId);
+                    }
+                }
 
             }
             else if(relation1 == 'r' && relation2 == 'l'){
@@ -321,13 +382,39 @@ public class RotationHelper {
                 entryForX.setWeightOfLeft(entryForY.getWeight());
 
 
+                // set B's parent to y
+                if(bEgoTreeId>0){
+                    SendEntry entryForB = ((EntryGetter)Tools.getNodeByID(bSendId))
+                            .getCorrespondingEntry(bEgoTreeId, largeId);
+                    if(entryForB == null){
+                        Tools.warning("Check what happen in  Rotation Helper whey c have ego tree id but no entry");
+                    }
+                    else{
+                        entryForB.setEgoTreeIdOfParent(yEgoTreeId);
+                        entryForB.setSendIdOfParent(ySendId);
+                    }
+                }
+
+                // set C's parent to z
+                if(cEgoTreeId>0){
+                    SendEntry entryForC = ((EntryGetter)Tools.getNodeByID(cSendId))
+                            .getCorrespondingEntry(cEgoTreeId, largeId);
+                    if(entryForC == null){
+                        Tools.warning("Check what happen in  Rotation Helper whey c have ego tree id but no entry");
+                    }
+                    else{
+                        entryForC.setEgoTreeIdOfParent(zEgoTreeId);
+                        entryForC.setSendIdOfParent(zSendId);
+                    }
+                }
 
             }
             else{
                 Tools.fatalError("At least one of relations is wrong!!!!!!!!!!");
             }
 
-            // set and unset root
+            // set and unset root, and change most upper node's child
+            // todo parent可以最后设置，
             if(lNFlag){
                 // means the upper node is root
                 if(relation1 == 'l' && relation2 == 'l'){
@@ -347,6 +434,43 @@ public class RotationHelper {
                     entryForX.setEgoTreeRoot(true);
                 }
             }
+
+            // set most upper node 's child
+            if(position == 3){
+                // set B's parent to y
+                if(pEgoTreeId>0){
+                    SendEntry entryForP = ((EntryGetter)Tools.getNodeByID(pSendId))
+                            .getCorrespondingEntry(pEgoTreeId, largeId);
+                    if(entryForP == null){
+                        Tools.warning("Check what happen in  Rotation Helper whey c have ego tree id but no entry");
+                    }
+                    else{
+
+                        if(relation1 == 'l' && relation2 == 'l'){
+                            //set from z to y
+                            entryForP.changeChildFromOldToNew
+                                    (zEgoTreeId, yEgoTreeId, ySendId);
+                        }
+                        else if(relation1 == 'r' && relation2 == 'r'){
+                            entryForP.changeChildFromOldToNew
+                                    (zEgoTreeId, yEgoTreeId, ySendId);
+                        }
+                        else if(relation1 == 'l' && relation2 == 'r'){
+                            //from z to x
+                            entryForP.changeChildFromOldToNew
+                                    (zEgoTreeId, xEgoTreeId,xSendId);
+                        }
+                        else if(relation1 == 'r' && relation2 == 'l'){
+                            entryForP.changeChildFromOldToNew
+                                    (zEgoTreeId, xEgoTreeId,xSendId);
+                        }
+                    }
+                }
+                else{
+                    Tools.warning("The egoTree id of the parent < 0");
+                }
+            }
+
 
         }
         else if(position == 1){
@@ -412,6 +536,20 @@ public class RotationHelper {
                 // update weight:
                 entryForY.setWeightOfLeft(info0.getWeightOfRightChild());
                 entryForX.setWeightOfRight(entryForY.getWeight());
+
+                // set B's parent to y
+                if(bEgoTreeId>0){
+                    SendEntry entryForB = ((EntryGetter)Tools.getNodeByID(bSendId))
+                            .getCorrespondingEntry(bEgoTreeId, largeId);
+                    if(entryForB == null){
+                        Tools.warning("Check what happen in  Rotation Helper whey c have ego tree id but no entry");
+                    }
+                    else{
+                        entryForB.setEgoTreeIdOfParent(yEgoTreeId);
+                        entryForB.setSendIdOfParent(ySendId);
+                    }
+                }
+
             }
             else{
                 // r
@@ -423,6 +561,9 @@ public class RotationHelper {
                          / \            / \
                         A   B          C   A
               */
+
+                int aEgoTreeId = info0.getEgoTreeIdOfLeftChild();
+                int aSendId = info0.getSendIdOfLeftChild();
 
                 // set x parent as p
                 entryForX.setEgoTreeIdOfParent(pEgoTreeId);
@@ -437,9 +578,6 @@ public class RotationHelper {
                 entryForY.setEgoTreeIdOfParent(xEgoTreeId);
 
                 // set y right child as a
-                int aEgoTreeId = info0.getEgoTreeIdOfLeftChild();
-                int aSendId = info0.getSendIdOfLeftChild();
-
                 entryForY.setSendIdOfRightChild(aSendId);
                 entryForY.setEgoTreeIdOfRightChild(aEgoTreeId);
 
@@ -447,12 +585,32 @@ public class RotationHelper {
                 // update weight:
                 entryForY.setWeightOfRight(info0.getWeightOfLeftChild());
                 entryForX.setWeightOfLeft(entryForY.getWeight());
+
+                // set A's parent to y
+                if(aEgoTreeId>0){
+                    SendEntry entryForA = ((EntryGetter)Tools.getNodeByID(aSendId))
+                            .getCorrespondingEntry(aEgoTreeId, largeId);
+                    if(entryForA == null){
+                        Tools.warning("Check what happen in  Rotation Helper whey c have ego tree id but no entry");
+                    }
+                    else{
+                        entryForA.setEgoTreeIdOfParent(yEgoTreeId);
+                        entryForA.setSendIdOfParent(ySendId);
+                    }
+                }
+
             }
+
+            // set most upper node's child
+            // todo 设置父亲的
 
             // set root change
             if(requestClusterMessage.isLnFlag()){
                 entryForX.setEgoTreeRoot(true);
                 entryForY.setEgoTreeRoot(false);
+            }
+            else{
+                Tools.warning("In position 1 rotation, it must have the Ln node as upper node ");
             }
 
         }
@@ -462,12 +620,232 @@ public class RotationHelper {
     }
 
 
-    public void receiveAdjustMessage(){
+    private void changeRoutingMessageDestination(AcceptClusterMessage acceptClusterMessage){
 
-    }
+        int largeId = acceptClusterMessage.getLargeId();
 
-    private void changeRoutingMessageDestination(){
-        // todo
+        RequestClusterMessage requestClusterMessage =
+                acceptClusterMessage.getRequestClusterMessage();
+
+        int position = requestClusterMessage.getPosition();
+
+        if(position == 3 || position == 2){
+            //这两实际上是一种，只不过2的时候没有传递到LN去罢了
+            char relation1 = requestClusterMessage.getRelationFromNode0ToNode1();
+            char relation2 = requestClusterMessage.getRelationFromNode1ToNode2();
+
+            NodeInfo info0 = requestClusterMessage.getNodeInfoOf(0);
+            NodeInfo info1 = requestClusterMessage.getNodeInfoOf(1);
+            NodeInfo info2 = requestClusterMessage.getNodeInfoOf(2);
+
+            int xSendId = info0.getCurNodeTrueId();
+            int xEgoTreeId = info0.getCurNodeEgoId();
+
+            int ySendId = info1.getCurNodeTrueId();
+            int yEgoTreeId = info1.getCurNodeEgoId();
+
+            int zSendId = info2.getCurNodeTrueId();
+            int zEgoTreeId = info2.getCurNodeEgoId();
+
+            // X
+            EntryGetter entryGetterForX = (EntryGetter)Tools.getNodeByID(xSendId);
+            assert entryGetterForX != null;
+            SendEntry entryForX = entryGetterForX.getCorrespondingEntry(xEgoTreeId, largeId);
+            // Y
+            EntryGetter entryGetterForY = (EntryGetter)Tools.getNodeByID(ySendId);
+            assert entryGetterForY != null;
+            SendEntry entryForY = entryGetterForY.getCorrespondingEntry(yEgoTreeId, largeId);
+            // Z
+            EntryGetter entryGetterForZ = (EntryGetter)Tools.getNodeByID(zSendId);
+            assert entryGetterForZ != null;
+            SendEntry entryForZ = entryGetterForZ.getCorrespondingEntry(zEgoTreeId, largeId);
+
+
+            if( (relation1 == 'l' && relation2 == 'l') ||
+                    (relation1 == 'r' && relation2 == 'r')){
+                /*
+
+                    2      z                   y
+                          / \                /   \
+                   1     y   D              x     z
+                        / \                / \   / \
+                  0    x   C     -->      A  B  C  D
+                      / \
+                     A   B
+
+
+                    2      z                   y
+                          / \                /   \
+                   1     A   y              z     x
+                            / \            / \   / \
+                  0        B   x    -->   A  B  C  D
+                              / \
+                             C   D
+              */
+                boolean conditionOneFlag = (relation1 == 'l' && relation2 == 'l' );
+
+
+                Queue<RoutingMessage> messageQueue = entryForZ.getRoutingMessageQueue();
+                Queue<RoutingMessage> messageQueueTmp = new LinkedList<>();
+
+                while(!messageQueue.isEmpty()){
+                    RoutingMessage message = messageQueue.poll();
+                    if(!message.isUpForward())
+                    {
+                        if(conditionOneFlag){
+                            if(message.getDestination() <= yEgoTreeId){
+                                message.setSpecialHop(yEgoTreeId);
+                            }
+                        }
+                        else{
+                            if(message.getDestination() >= yEgoTreeId){
+                                message.setSpecialHop(yEgoTreeId);
+                            }
+                        }
+                    }
+                    messageQueueTmp.add(message);
+                }
+
+                messageQueue.addAll(messageQueueTmp);
+            }
+            else if( (relation1 == 'l' && relation2 == 'r') ||
+                    ( relation1 == 'r' && relation2 == 'l' ) )
+            {
+                /*
+                    2      z                   x
+                          / \                /   \
+                   1     A   y              z     y
+                            / \            / \   / \
+                  0        x   B    -->   A  C  D  B
+                          / \
+                         C   D
+              */
+               /*
+                    2      z                   x
+                          / \                /   \
+                   1     y   D              y     z
+                        / \                / \   / \
+                  0    A   x       -->    A  B  C  D
+                          / \
+                         B   C
+              */
+                boolean conditionOneFlag =  (relation1 == 'l' && relation2 == 'r');
+
+                // for z
+                Queue<RoutingMessage> messageQueueForZ = entryForZ.getRoutingMessageQueue();
+                Queue<RoutingMessage> messageQueueTmp = new LinkedList<>();
+
+                while(!messageQueueForZ.isEmpty()){
+                    RoutingMessage message = messageQueueForZ.poll();
+                    if(!message.isUpForward())
+                    {
+                        if(conditionOneFlag){
+                            if(message.getDestination() >= xEgoTreeId){
+                                message.setSpecialHop(xEgoTreeId);
+                            }
+                        }
+                        else{
+                            if(message.getDestination() <= xEgoTreeId){
+                                message.setSpecialHop(xEgoTreeId);
+                            }
+                        }
+                    }
+                    messageQueueTmp.add(message);
+                }
+
+                messageQueueForZ.addAll(messageQueueTmp);
+
+                // for y
+                Queue<RoutingMessage> messageQueueForY = entryForY.getRoutingMessageQueue();
+                Queue<RoutingMessage> messageQueueTmp2 = new LinkedList<>();
+
+                while(!messageQueueForY.isEmpty()){
+                    RoutingMessage message = messageQueueForY.poll();
+                    if(!message.isUpForward())
+                    {
+                        if(conditionOneFlag){
+                            if(message.getDestination() <= xEgoTreeId){
+                                message.setSpecialHop(xEgoTreeId);
+                            }
+                        }
+                        else{
+                            if(message.getDestination() >= xEgoTreeId){
+                                message.setSpecialHop(xEgoTreeId);
+                            }
+                        }
+                    }
+                    messageQueueTmp2.add(message);
+                }
+                messageQueueForY.addAll(messageQueueTmp2);
+            }
+            else{
+                Tools.fatalError("At least one of relations is wrong!!!!!!!!!!");
+            }
+
+        }
+        else if(position == 1){
+            char relation = requestClusterMessage.getRelationFromNode0ToNode1();
+
+            NodeInfo info0 = requestClusterMessage.getNodeInfoOf(0);
+            NodeInfo info1 = requestClusterMessage.getNodeInfoOf(1);
+
+            int xSendId = info0.getCurNodeTrueId();
+            int xEgoTreeId = info0.getCurNodeEgoId();
+
+            int ySendId = info1.getCurNodeTrueId();
+            int yEgoTreeId = info1.getCurNodeEgoId();
+
+            // X
+            EntryGetter entryGetterForX = (EntryGetter)Tools.getNodeByID(xSendId);
+            assert entryGetterForX != null;
+            SendEntry entryForX = entryGetterForX.getCorrespondingEntry(xEgoTreeId, largeId);
+            // Y
+            EntryGetter entryGetterForY = (EntryGetter)Tools.getNodeByID(ySendId);
+            assert entryGetterForY != null;
+            SendEntry entryForY = entryGetterForY.getCorrespondingEntry(yEgoTreeId, largeId);
+
+
+            /*
+                          /                 /
+                         y                *x
+                        / \               / \
+                      *x   C     -->     A   y
+                      / \                   / \
+                     A   B                 B   C
+
+                          /                 /
+                         y                *x
+                        / \               / \
+                       C   x     -->     y   B
+                          / \           / \
+                         A   B         C   A
+              */
+
+            boolean conditionOneFlag = (relation == 'l');
+
+
+            Queue<RoutingMessage> messageQueue = entryForY.getRoutingMessageQueue();
+            Queue<RoutingMessage> messageQueueTmp = new LinkedList<>();
+
+            while(!messageQueue.isEmpty()){
+                RoutingMessage message = messageQueue.poll();
+                if(!message.isUpForward())
+                {
+                    if(conditionOneFlag){
+                        if(message.getDestination() <= xEgoTreeId){
+                            message.setSpecialHop(xEgoTreeId);
+                        }
+                    }
+                    else{
+                        if(message.getDestination() >= xEgoTreeId){
+                            message.setSpecialHop(xEgoTreeId);
+                        }
+                    }
+                }
+                messageQueueTmp.add(message);
+            }
+            messageQueue.addAll(messageQueueTmp);
+        }
     }
 
 

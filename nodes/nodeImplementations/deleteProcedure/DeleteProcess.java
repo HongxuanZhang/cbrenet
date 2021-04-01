@@ -31,7 +31,7 @@ public class DeleteProcess {
         deleteEntry.initGotMap();
 
         // send DPM to its neighbor.
-        List<Integer> egoIdTargetList = deleteEntry.getAllSendIds();
+        List<Integer> egoIdTargetList = deleteEntry.getAllEgoTreeIdOfNeighbors();
         for(int targetId : egoIdTargetList){
             if(deleteEntry.whetherReceivedConfirmMessageFrom(targetId)){
                 continue;
@@ -246,6 +246,53 @@ public class DeleteProcess {
 
     }
 
+
+    private void setInsertedEntry(SendEntry sendEntry, int helpedId, int largeId){
+        /*
+         *@description 该函数用于将Entry设定入结点中 可能是inserted node，也可能是AN
+         *@parameters  [sendEntry, helpedId, largeId]
+         *@return  void
+         *@author  Zhang Hongxuan
+         *@create time  2021/3/31
+         */
+        List<Integer> ids = sendEntry.getAllEgoTreeIdOfNeighbors();
+        int auxiliaryId = sendEntry.getAuxiliaryId();
+        // 为 inserted node (or an )设定Entry
+        int parentEgoTreeId = -1;
+        int parentSendId = -1;
+        int leftChildEgoTreeId = -1;
+        int leftChildSendId = -1;
+        int rightChildEgoTreeId = -1;
+        int rightChildSendId = -1;
+
+        for(int id : ids){
+            char relation = sendEntry.getRelationShipOf(id);
+            switch (relation){
+                case 'p':
+                    parentEgoTreeId = id;
+                    parentSendId = sendEntry.getSendIdOfParent();
+                    break;
+                case 'l':
+                    leftChildEgoTreeId = id;
+                    leftChildSendId = sendEntry.getSendIdOfLeftChild();
+                    break;
+                case 'r':
+                    rightChildEgoTreeId = id;
+                    rightChildSendId = sendEntry.getSendIdOfRightChild();
+                    break;
+            }
+        }
+
+        EntryGetter entryGetter = (EntryGetter)Tools.getNodeByID(auxiliaryId);
+        entryGetter.addSendEntry(helpedId, largeId, parentEgoTreeId, leftChildEgoTreeId, rightChildEgoTreeId);
+
+        SendEntry insertedEntry = entryGetter.getCorrespondingEntry(helpedId, largeId);
+        insertedEntry.setSendIdOfParent(parentSendId);
+        insertedEntry.setSendIdOfLeftChild(leftChildSendId);
+        insertedEntry.setSendIdOfRightChild(rightChildSendId);
+    }
+
+
     private boolean sendDeleteFinishMessage(SendEntry sendEntry, int largeId, int helpedId, Node node){
         /*
          *@description 清空DCMList, 发送DFM
@@ -264,7 +311,7 @@ public class DeleteProcess {
 
         // 清空DCM
         sendEntry.clearConfirmMessageList();
-        List<Integer> ids = sendEntry.getAllSendIds();
+        List<Integer> ids = sendEntry.getAllEgoTreeIdOfNeighbors();
 
         boolean insertFlag = false;
         if(sendEntry instanceof AuxiliarySendEntry){
@@ -286,6 +333,10 @@ public class DeleteProcess {
                     sendFlag = false;
                 }
             }
+
+
+            // todo 日后考虑用分布式的方式实现一次
+            this.setInsertedEntry(sendEntry, helpedId, largeId);
 
         }
         else{

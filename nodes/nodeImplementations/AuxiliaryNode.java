@@ -22,20 +22,6 @@ import sinalgo.nodes.messages.Message;
 
 public class AuxiliaryNode extends AuxiliaryNodeMessageQueueLayer{
 
-
-    private void takeEgoTreeNodeBack(){
-        /**
-         *@description Use this method to call the corresponding communication node back
-         *@parameters  []
-         *@return  void
-         *@author  Zhang Hongxuan
-         *@create time  2021/3/19
-         */
-
-
-
-    }
-
     private void executeRoutingMessage(RoutingMessage routingMessage){
         Message payload = routingMessage.getPayload();
         if(payload instanceof LargeInsertMessage){

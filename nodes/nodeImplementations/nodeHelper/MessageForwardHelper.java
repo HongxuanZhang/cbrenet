@@ -28,7 +28,7 @@ public class MessageForwardHelper {
 
             if(routingMessage.getSpecialHopFlag()){
                 // when nextHop flag is true, we need a special forward
-                int currentParentId = entryGetter.getParentOf(helpedId, largeId);
+                int currentParentId = entryGetter.getEgoTreeIdOfParent(helpedId, largeId);
                 if(currentParentId != -1){
 
                     if(currentParentId == routingMessage.getSpecialHop()){
@@ -56,19 +56,19 @@ public class MessageForwardHelper {
                 if(!routingMessage.isUpForward()){
                     // if not upForward, the message would send to the child
                     if (helpedId < destination) {
-                        int rightChild = entryGetter.getRightChildOf(helpedId, largeId);
+                        int rightChild = entryGetter.getEgoTreeIdOfRightChild(helpedId, largeId);
                         if(entryGetter.sendTo(rightChild, routingMessage)){
                             sendFlag = true;
                         }
                     } else if (destination < helpedId) {
-                        int leftChild = entryGetter.getLeftChildOf(helpedId, largeId);
+                        int leftChild = entryGetter.getEgoTreeIdOfLeftChild(helpedId, largeId);
                         if(entryGetter.sendTo(leftChild, routingMessage)){
                             sendFlag = true;
                         }
                     }
                 }
                 else{
-                    int parentId = entryGetter.getParentOf(helpedId, largeId);
+                    int parentId = entryGetter.getEgoTreeIdOfParent(helpedId, largeId);
                     if(entryGetter.sendTo(parentId, routingMessage)){
                         sendFlag = true;
                     }
@@ -78,13 +78,13 @@ public class MessageForwardHelper {
                 LargeInsertMessage insertMessageTmp = (LargeInsertMessage) message;
                 int target = insertMessageTmp.getTarget();
                 if(target > ID){
-                    int rightChild = entryGetter.getRightChildOf(helpedId, largeId);
+                    int rightChild = entryGetter.getEgoTreeIdOfRightChild(helpedId, largeId);
                     if(entryGetter.sendTo(rightChild, routingMessage)){
                         sendFlag = true;
                     }
                 }
                 else{
-                    int leftChild = entryGetter.getLeftChildOf(helpedId, largeId);
+                    int leftChild = entryGetter.getEgoTreeIdOfLeftChild(helpedId, largeId);
                     if(entryGetter.sendTo(leftChild, routingMessage)){
                         sendFlag = true;
                     }
@@ -94,7 +94,7 @@ public class MessageForwardHelper {
             else if(message instanceof DeleteRequestMessage){
                 DeleteRequestMessage deleteRequestMessageTmp = (DeleteRequestMessage) message;
                 if(ID != deleteRequestMessageTmp.getDst()){
-                    int parentId = entryGetter.getParentOf(helpedId, largeId);
+                    int parentId = entryGetter.getEgoTreeIdOfParent(helpedId, largeId);
                     if(entryGetter.sendTo(parentId, routingMessage)){
                         sendFlag = true;
                     }
@@ -104,19 +104,19 @@ public class MessageForwardHelper {
                 if(!routingMessage.isUpForward()){
                     // if not upForward, the message would send to the child
                     if (ID < destination) {
-                        int rightChild = entryGetter.getRightChildOf(helpedId,largeId);
+                        int rightChild = entryGetter.getEgoTreeIdOfRightChild(helpedId,largeId);
                         if(entryGetter.sendTo(rightChild, routingMessage)){
                             sendFlag = true;
                         }
                     } else if (destination < ID) {
-                        int leftChild = entryGetter.getLeftChildOf(helpedId,largeId);
+                        int leftChild = entryGetter.getEgoTreeIdOfLeftChild(helpedId,largeId);
                         if(entryGetter.sendTo(leftChild, routingMessage)){
                             sendFlag = true;
                         }
                     }
                 }
                 else{
-                    int parentId = entryGetter.getParentOf(helpedId,largeId);
+                    int parentId = entryGetter.getEgoTreeIdOfParent(helpedId,largeId);
                     if(entryGetter.sendTo(parentId, routingMessage)){
                         sendFlag = true;
                     }

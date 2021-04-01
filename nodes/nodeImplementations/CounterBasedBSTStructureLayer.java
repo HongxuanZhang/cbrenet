@@ -179,7 +179,7 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
 
     // Getter & Setter
 
-    private int getNeighbor(int largeId, char relation){
+    private int getNeighborEgoTreeId(int largeId, char relation){
         /**
          *@description This method only get egoTreeID, remember that use egoTreeID to get SendID!!
          *@parameters  [largeId, relation]
@@ -205,7 +205,7 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
         }
     }
 
-    private void setNeighbor(int largeId, char relation, int nodeId, boolean egoTreeFlag){
+    private void setNeighborEgoTreeIdOrSendId(int largeId, char relation, int nodeId, boolean egoTreeFlag){
         /**
          *@description
          *@parameters  [largeId, relation, nodeId, egoTreeFlag]
@@ -255,27 +255,27 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
 
     // These three methods only set egoTreeId
     public void setParent(int largeId ,int parent) {
-        this.setNeighbor(largeId, 'p',parent, true);
+        this.setNeighborEgoTreeIdOrSendId(largeId, 'p',parent, true);
     }
 
     public void setLeftChild(int largeId,int leftChild) {
-        this.setNeighbor(largeId, 'l',leftChild, true);
+        this.setNeighborEgoTreeIdOrSendId(largeId, 'l',leftChild, true);
     }
 
     public void setRightChild(int largeId, int rightChild) {
-        this.setNeighbor(largeId, 'r',rightChild, true);
+        this.setNeighborEgoTreeIdOrSendId(largeId, 'r',rightChild, true);
     }
 
-    public int getParentOf(int helpedId, int largeId) {
-        return this.getNeighbor(largeId,'p');
+    public int getEgoTreeIdOfParent(int helpedId, int largeId) {
+        return this.getNeighborEgoTreeId(largeId,'p');
     }
 
-    public int getLeftChildOf(int helpedId, int largeId) {
-        return this.getNeighbor(largeId,'l');
+    public int getEgoTreeIdOfLeftChild(int helpedId, int largeId) {
+        return this.getNeighborEgoTreeId(largeId,'l');
     }
 
-    public int getRightChildOf(int helpedId, int largeId) {
-        return this.getNeighbor(largeId, 'r');
+    public int getEgoTreeIdOfRightChild(int helpedId, int largeId) {
+        return this.getNeighborEgoTreeId(largeId, 'r');
     }
 
 }

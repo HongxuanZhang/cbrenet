@@ -32,6 +32,13 @@ public class RoutingMessage extends NetworkMessage {
 
 
     public void setSpecialHop(int id){
+        /*
+         *@description  This id should be ego-tree id
+         *@parameters  [id]
+         *@return  void
+         *@author  Zhang Hongxuan
+         *@create time  2021/4/1
+         */
         if(id<0){
             Tools.fatalError("The next hop id of routing message can not be less than 0!");
         }

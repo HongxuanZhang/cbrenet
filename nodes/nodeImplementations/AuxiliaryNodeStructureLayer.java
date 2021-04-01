@@ -143,7 +143,7 @@ public abstract class AuxiliaryNodeStructureLayer extends Node implements EntryG
         }
     }
 
-    public int getLeftChildOf(int helpedId, int largeId){
+    public int getEgoTreeIdOfLeftChild(int helpedId, int largeId){
         AuxiliarySendEntry entry = this.getCorrespondingEntry(helpedId, largeId);
         if(entry != null){
             return entry.getEgoTreeIdOfLeftChild();
@@ -153,7 +153,7 @@ public abstract class AuxiliaryNodeStructureLayer extends Node implements EntryG
         }
     }
 
-    public int getRightChildOf(int helpedId, int largeId){
+    public int getEgoTreeIdOfRightChild(int helpedId, int largeId){
         AuxiliarySendEntry entry = this.getCorrespondingEntry(helpedId, largeId);
         if(entry != null){
             return entry.getEgoTreeIdOfRightChild();
@@ -163,7 +163,7 @@ public abstract class AuxiliaryNodeStructureLayer extends Node implements EntryG
         }
     }
 
-    public int getParentOf(int helpedId, int largeId){
+    public int getEgoTreeIdOfParent(int helpedId, int largeId){
         AuxiliarySendEntry entry = this.getCorrespondingEntry(helpedId, largeId);
         if(entry != null){
             return entry.getEgoTreeIdOfParent();

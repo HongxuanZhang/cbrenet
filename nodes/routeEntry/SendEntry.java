@@ -31,6 +31,11 @@ public class SendEntry {
     int sendIdOfRightChild;
 
 
+    // todo
+    boolean entryExistFlag; // 设定为False 当收到Ln变小的message时
+    public void setEntryExistFlag(boolean entryExistFlag) {
+        this.entryExistFlag = entryExistFlag;
+    }
 
 
     // rotation part
@@ -109,6 +114,11 @@ public class SendEntry {
             return false;
         }
 
+        if(!this.entryExistFlag){
+            return false;
+        }
+
+
         if(this.egoTreeRoot){
             return false; // 结点都是Ego-Tree的root了还想着去哪呢。。
         }
@@ -131,7 +141,11 @@ public class SendEntry {
             return false;
         }
 
-        if(this.checkNeighborDeleting()){
+        if(!this.entryExistFlag){
+            return false;
+        }
+
+        if(this.checkNeighborDeleting()) {
             // three links should all be available
             return false;
         }
@@ -256,6 +270,8 @@ public class SendEntry {
         this.egoTreeRoot = false;
         this.rotationAbleFlag = true;
 
+        this.entryExistFlag = true;
+
         this.rotationAbleCountDown = 20;
 
         this.sendFlagOfParent = true;
@@ -349,7 +365,7 @@ public class SendEntry {
 
     private boolean whetherReceivedConfirmMessageFromTheList(int egoTreeId){
         for(DeleteConfirmMessage confirmMessage : this.confirmMessageList){
-            if(confirmMessage.getSrcId() == egoTreeId){
+            if(confirmMessage.getSrcEgoTreeId() == egoTreeId){
                 return true;
             }
         }
@@ -366,7 +382,7 @@ public class SendEntry {
          */
         this.gotConfirmMessageMap = new HashMap<>();
 
-        List<Integer> ids = this.getAllSendIds();
+        List<Integer> ids = this.getAllEgoTreeIdOfNeighbors();
         for(int id : ids){
             this.gotConfirmMessageMap.put(id, this.whetherReceivedConfirmMessageFromTheList(id));
         }
@@ -524,7 +540,7 @@ public class SendEntry {
 
 
     public boolean setDeleteConfirmMessage(DeleteConfirmMessage deleteConfirmMessage){
-        int src = deleteConfirmMessage.getSrcId();
+        int src = deleteConfirmMessage.getSrcEgoTreeId();
         if(this.gotConfirmMessageMap.containsKey(src)) {
             this.gotConfirmMessageMap.replace(src, false, true);
         }
@@ -672,12 +688,34 @@ public class SendEntry {
         }
     }
 
+    public void changeChildFromOldToNew(int oldEgoTreeIdOfTheChangeChild, int newEgoTreeId, int newSendId){
+        /*
+         *@description  Called in the rotation.
+         *@parameters  [oldEgoTreeIdOfTheChangeChild, newEgoTreeId, newSendId]
+         *@return  void
+         *@author  Zhang Hongxuan
+         *@create time  2021/4/1
+         */
+        assert oldEgoTreeIdOfTheChangeChild >= 0;
 
+        char relation = this.getRelationShipOf(oldEgoTreeIdOfTheChangeChild);
+
+        assert relation == 'l' || relation == 'r';
+
+        if(relation == 'l'){
+            this.setEgoTreeIdOfLeftChild(newEgoTreeId);
+            this.setSendIdOfLeftChild(newSendId);
+        }
+        else{
+            this.setEgoTreeIdOfRightChild(newEgoTreeId);
+            this.setSendIdOfRightChild(newSendId);
+        }
+    }
 
 
     // Getter & Setter
 
-    public List<Integer> getAllSendIds(){
+    public List<Integer> getAllEgoTreeIdOfNeighbors(){
         List<Integer> results = new LinkedList<>();
         if(this.egoTreeIdOfParent > 0){
             results.add(this.egoTreeIdOfParent);

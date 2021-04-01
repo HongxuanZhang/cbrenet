@@ -2,14 +2,14 @@ package projects.cbrenet.nodes.messages.deletePhaseMessages;
 
 public class DeleteConfirmMessage extends DeleteBaseMessage{
 
-    final private int srcId;
+    final private int srcEgoTreeId;
 
-    public DeleteConfirmMessage(int largeId, int targetId, int srcId){
+    public DeleteConfirmMessage(int largeId, int targetId, int srcEgoTreeId){
         super(largeId, targetId);
-        this.srcId = srcId;
+        this.srcEgoTreeId = srcEgoTreeId;
     }
 
-    public int getSrcId() {
-        return srcId;
+    public int getSrcEgoTreeId() {
+        return srcEgoTreeId;
     }
 }
