@@ -2,8 +2,6 @@ package projects.cbrenet.nodes.nodeImplementations;
 
 import projects.cbrenet.nodes.tableEntry.Request;
 import projects.cbrenet.nodes.messages.CbRenetMessage;
-import projects.cbrenet.nodes.messages.SDNMessage.RPCSdnMessage;
-import projects.cbrenet.nodes.messages.SDNMessage.RequestMessage;
 import sinalgo.configuration.Configuration;
 import sinalgo.nodes.messages.Message;
 import sinalgo.tools.Tools;
@@ -64,13 +62,17 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
         return waitAllDeleteRequestMessage;
     }
 
+    // 大结点变小时使用到， 当然也可能不会有大结点变小
     public void setWaitAllDeleteRequestMessage(){
         this.waitAllDeleteRequestMessage = true;
     }
-
+    // 大结点删除后重置
     public void resetWaitAllDeleteRequestMessage(){
         this.waitAllDeleteRequestMessage = false;
     }
+
+
+
 
     // DRM related part
     private HashMap<Integer, Boolean> egoTreeDeleteMap;
@@ -86,7 +88,8 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
         return egoTreeDeleteMap;
     }
 
-    private HashSet<Integer> unPreparedDeleteNode; //  only use in this Layer. only use to check whether all node
+    private HashSet<Integer> unPreparedDeleteNode;
+    //  only use in this Layer. only use to check whether all node
     // are prepared
 
     public void addEgoTreeNodeToDeleteMap(int smallNodeId){
@@ -155,6 +158,11 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
     }
 
     // DRM related part finished
+
+
+
+
+
 
     @Override
     public void init() {
@@ -233,7 +241,8 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
 
     }
 
-    public void clearPartners(boolean changeToSmall)
+
+    public void clearSomePartnersSinceSelfLargeFlagChange(boolean changeToSmall)
     {
         /**
          *@description
@@ -258,23 +267,9 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
         }
     }
 
-    // TODO 这两可能没啥用
-    public void changeLargePartnerToSmall(int id){
-        if(this.largeNodes.containsKey(id)){
-            this.largeNodes.remove(id);
-        }
-    }
-
-    public void changeSmallPartnerToLarge(int id){
-        if(this.smallNodes.containsKey(id)){
-            this.smallNodes.remove(id);
-        }
-    }
-    // TODO 要不考虑删除
 
 
-
-
+    // todo 想想要不要删掉
     public void changeLargeFlag(){
         /**
          *@description this function is used to change a large node small or opposite
@@ -302,6 +297,35 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
         }
     }
 
+
+    // todo 收到Message的也更新一下哈
+    public void updatePartnerOrder(Request request){
+        /**
+         *@description use this method when the sender send a message or a receiver receives a message
+         *@parameters  [request]
+         *@return  void
+         *@author  Zhang Hongxuan
+         *@create time  2021/2/6
+         */
+        int Id1 = request.dstId;
+        int Id2 = request.srcId;
+        int p_id = this.ID == Id1 ? Id2 : Id1;
+        if(smallNodes.containsKey(p_id)){
+            smallNodes.get(p_id);
+        }
+        else{
+            largeNodes.get(p_id);
+        }
+    }
+
+
+    public LinkedHashMap<Integer, Integer> getCommunicateSmallNodes() {
+        return smallNodes;
+    }
+
+    public LinkedHashMap<Integer, Integer> getCommunicateLargeNodes() {
+        return largeNodes;
+    }
 
     public boolean checkCommunicateSatisfaction(int src, int dst){
         if(src != this.ID) {
@@ -335,30 +359,4 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
     }
 
 
-    public void updatePartnerOrder(Request request){
-        /**
-         *@description use this method when the sender send a message or a receiver receives a message
-         *@parameters  [request]
-         *@return  void
-         *@author  Zhang Hongxuan
-         *@create time  2021/2/6
-         */
-        int Id1 = request.dstId;
-        int Id2 = request.srcId;
-        int p_id = this.ID == Id1 ? Id2 : Id1;
-        if(smallNodes.containsKey(p_id)){
-            smallNodes.get(p_id);
-        }
-        else{
-            largeNodes.get(p_id);
-        }
-    }
-
-    public LinkedHashMap<Integer, Integer> getCommunicateSmallNodes() {
-        return smallNodes;
-    }
-
-    public LinkedHashMap<Integer, Integer> getCommunicateLargeNodes() {
-        return largeNodes;
-    }
 }

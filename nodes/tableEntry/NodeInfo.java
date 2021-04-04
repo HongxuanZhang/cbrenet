@@ -1,4 +1,4 @@
-package projects.cbrenet.nodes.messages.controlMessage;
+package projects.cbrenet.nodes.tableEntry;
 
 public class NodeInfo {
 

@@ -13,7 +13,7 @@ import sinalgo.tools.Tools;
  * CBNetLayer
  * This layer is used to send the message
  */
-public abstract class CounterBasedNetLayer  {
+public abstract class CounterBasedNetLayer extends LinkLayer  {
 	
 	private boolean recvCBNetMessage;
 	private int sourceID;

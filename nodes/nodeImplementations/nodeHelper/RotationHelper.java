@@ -2,7 +2,7 @@ package projects.cbrenet.nodes.nodeImplementations.nodeHelper;
 
 import projects.cbrenet.nodes.messages.RoutingMessage;
 import projects.cbrenet.nodes.messages.controlMessage.AcceptClusterMessage;
-import projects.cbrenet.nodes.messages.controlMessage.NodeInfo;
+import projects.cbrenet.nodes.tableEntry.NodeInfo;
 import projects.cbrenet.nodes.messages.controlMessage.RequestClusterMessage;
 import projects.cbrenet.nodes.nodeImplementations.CounterBasedBSTLayer;
 import projects.cbrenet.nodes.routeEntry.SendEntry;

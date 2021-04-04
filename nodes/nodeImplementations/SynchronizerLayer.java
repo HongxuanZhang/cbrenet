@@ -1,9 +1,9 @@
 package projects.cbrenet.nodes.nodeImplementations;
 
 /**
- * SynchronizerLayer TODO : reduce the number of time slots
+ * SynchronizerLayer TODO : maybe we want to change the network to be synchronized
  */
-public abstract class SynchronizerLayer extends LinkLayer {
+public abstract class SynchronizerLayer{
 
     private int MAX_TIMESLOT = 12;
     private int timeslot;
@@ -17,13 +17,13 @@ public abstract class SynchronizerLayer extends LinkLayer {
         return this.round;
     }
 
-    @Override
-    public void init() {
-        super.init();
-        this.timeslot = 0;
-    }
+//    @Override
+//    public void init() {
+////        super.init();
+//        this.timeslot = 0;
+//    }
 
-    @Override
+//    @Override
     public void postStep() {
         
         switch (this.timeslot) {

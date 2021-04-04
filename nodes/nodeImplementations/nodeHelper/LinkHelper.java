@@ -7,6 +7,8 @@ import sinalgo.tools.Tools;
 
 public class LinkHelper {
 
+    boolean realLink = false;
+
 
     // change link p l r, 这里就要考虑Auxiliary Node的问题了
     // 调用这个函数的时候，基本上也就是Delete过程或者Rotation过程了
@@ -14,19 +16,19 @@ public class LinkHelper {
     // may mainly used in rotation
 
     // delete 的时候如果用到AN，就调用这个method
-    public boolean changeLeftChildTo(int largeId, int egoTreeId, int trueId, int helpedId, EntryGetter entryGetter, Node helpedNode){
-        return this.changeLinkTo(largeId, egoTreeId, trueId, 'l', helpedId, entryGetter, helpedNode);
+    public boolean changeLeftChildTo(int largeId, int egoTreeId, int sendId, int helpedId, EntryGetter entryGetter, Node helpedNode){
+        return this.changeLinkTo(largeId, egoTreeId, sendId, 'l', helpedId, entryGetter, helpedNode);
     }
-    public boolean changeRightChildTo(int largeId, int egoTreeId, int trueId, int helpedId, EntryGetter entryGetter, Node helpedNode){
-        return this.changeLinkTo(largeId, egoTreeId, trueId, 'r', helpedId, entryGetter, helpedNode);
+    public boolean changeRightChildTo(int largeId, int egoTreeId, int sendId, int helpedId, EntryGetter entryGetter, Node helpedNode){
+        return this.changeLinkTo(largeId, egoTreeId, sendId, 'r', helpedId, entryGetter, helpedNode);
     }
-    public boolean changeParentTo(int largeId, int egoTreeId, int trueId, int helpedId, EntryGetter entryGetter, Node helpedNode){
-        return this.changeLinkTo(largeId, egoTreeId, trueId, 'p', helpedId, entryGetter, helpedNode);
+    public boolean changeParentTo(int largeId, int egoTreeId, int sendId, int helpedId, EntryGetter entryGetter, Node helpedNode){
+        return this.changeLinkTo(largeId, egoTreeId, sendId, 'p', helpedId, entryGetter, helpedNode);
     }
 
 
     // todo 这三个可能没有必要继续保留
-    public boolean changeLeftChildTo(int largeId, int egoTreeId, int helpedId, EntryGetter entryGetter, Node node){
+    private boolean changeLeftChildTo(int largeId, int egoTreeId, int helpedId, EntryGetter entryGetter, Node node){
 
         // 原来的思路是先remove再add
         // remove the previous connection
@@ -36,7 +38,7 @@ public class LinkHelper {
         }
         return false;
     }
-    public boolean changeRightChildTo(int largeId, int egoTreeId, int helpedId, EntryGetter entryGetter, Node node){
+    private boolean changeRightChildTo(int largeId, int egoTreeId, int helpedId, EntryGetter entryGetter, Node node){
         // remove the previous connection
         if(this.removeLinkToRightChild(largeId, helpedId, entryGetter, node)){
             // update current left child and create edge
@@ -44,7 +46,7 @@ public class LinkHelper {
         }
         return false;
     }
-    public boolean changeParentTo(int largeId, int egoTreeId, int helpedId, EntryGetter entryGetter, Node node){
+    private boolean changeParentTo(int largeId, int egoTreeId, int helpedId, EntryGetter entryGetter, Node node){
         // remove the previous connection
         //int largeId,int helpedId, EntryGetter entryGetter, Node node
         if(this.removeLinkToParent(largeId, helpedId, entryGetter, node)){
@@ -125,8 +127,11 @@ public class LinkHelper {
                 // update current left child and create edge
                 Node node = Tools.getNodeByID(trueId);
                 if(node != null){
+                    // 先change了sendId 然后又change了egoTreeID
                     if(this.changeSendIdInRouteTable(largeId, relation, trueId, helpedId, entryGetter)){
-                        helpedNode.addConnectionTo(node);
+                        if(realLink){
+                            helpedNode.addConnectionTo(node);
+                        }
 
                         SendEntry sendEntry = entryGetter.getCorrespondingEntry(helpedId, largeId);
 
@@ -248,6 +253,10 @@ public class LinkHelper {
          *@author  Zhang Hongxuan
          *@create time  2021/3/16
          */
+        if(!realLink){
+            return true;
+        }
+
         if(nodeId < 0){
             return false;
         }
@@ -296,6 +305,7 @@ public class LinkHelper {
         }
         return this.removeLinkTo(id,node);
     }
+
 
     private boolean removeParentInRouteTable(int largeId, int helpedId, EntryGetter entryGetter){
         return this.removeNeighborInRouteTable(largeId,'p', helpedId, entryGetter);
@@ -378,6 +388,11 @@ public class LinkHelper {
          *@create time  2021/2/20
          */
         // make sure only the parent remove the link
+        if(!realLink)
+        {
+            return true;
+        }
+
         if(nodeId < 0){
             return false;
         }

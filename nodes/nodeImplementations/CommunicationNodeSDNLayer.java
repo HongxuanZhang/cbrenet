@@ -25,7 +25,6 @@ public abstract class CommunicationNodeSDNLayer extends LargeSmallNodeLayer{
          *@author  Zhang Hongxuan
          *@create time  2021/2/6
          */
-        int dst = request.dstId;
         RequestMessage requestMessage = new RequestMessage(request);
         this.sendDirect(requestMessage, Tools.getNodeByID(this.getSDNId()));
     }

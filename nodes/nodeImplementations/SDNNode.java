@@ -52,8 +52,6 @@ public class SDNNode extends Node {
     // statistic
     private int largeNodeNum;
 
-    private Queue<RPCSdnMessage> rpcQueue;
-
 
     private HashMap<Integer, Integer> cpNumber;
 
@@ -73,7 +71,6 @@ public class SDNNode extends Node {
     @Override
     public void init() {
 
-        this.rpcQueue = new LinkedList<>();
 
         this.allNodeIds = new ArrayList<>();
 
@@ -103,21 +100,13 @@ public class SDNNode extends Node {
     }
 
     public void receiveMessage(Message msg) {
-        if (msg instanceof RPCSdnMessage) {
-            this.rpcQueue.add((RPCSdnMessage) msg);
-            return;
-        }
+
     }
 
     @Override
     public void handleMessages(Inbox inbox) {
         for (Message message : inbox) {
-            if (message instanceof RPCSdnMessage) {
-                RPCSdnMessage sdnMessage = (RPCSdnMessage) message;
-                this.receiveMessage(sdnMessage);
-                // todo
-            }
-            else if(message instanceof RequestMessage){
+            if(message instanceof RequestMessage){
                 Request request = ((RequestMessage) message).unsatisfiedRequest;
                 Request wantToRemove = ((RequestMessage) message).wantToRemove;
 
@@ -435,11 +424,6 @@ public class SDNNode extends Node {
             oldLarge.add(id);
             this.cp_smallNodes.replace(large_id, oldLarge);
         }
-    }
-
-
-    public Queue<RPCSdnMessage> getRpcQueue() {
-        return rpcQueue;
     }
 
 

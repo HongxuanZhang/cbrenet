@@ -22,7 +22,7 @@ public class TriggerNodeOperation extends Timer {
     public void fire() {
 
         CBNetNode srcnode = (CBNetNode) Tools.getNodeByID(src);
-        srcnode.newMessage(dst);
+        srcnode.newRequestCome(dst);
 
         CustomGlobal.mustGenerateSplay = true;
     }

@@ -14,14 +14,17 @@ import projects.defaultProject.DataCollection;
 /**
  * CBNetNode
  */
-public class CBNetNode extends RotationLayer {
+public class CBNetNode extends CounterBasedNetLayer {
 
     private DataCollection data = DataCollection.getInstance();
 
-    // to break ties in priority
-    private Random rand = Tools.getRandomNumberGenerator();
-
     private Queue<Request> bufferRequest;
+
+    @Override
+    public void preStep() {
+        super.preStep();
+        this.communicateAccordingToRequests();
+    }
 
     @Override
     public void init() {
@@ -30,62 +33,41 @@ public class CBNetNode extends RotationLayer {
     }
 
     @Override
-    public void updateState() {
-        super.updateState();
+    public void postStep() {
+        super.postStep();
+    }
+
+    // 加个接口，这里每一回合都要调用的
+    public void communicateAccordingToRequests() {
         Queue<Request> unsatisfiedRequest = new LinkedList<>();
         while(!this.bufferRequest.isEmpty()) {
-            Request rq = this.bufferRequest.poll();
-
-            CbRenetMessage msg = new CbRenetMessage(rq.srcId, rq.dstId, bigFlag,largeId,Global.currentTime + rand.nextDouble());
-
-            boolean src = this.isNodeSmall(rq.srcId);
-            boolean dst = this.isNodeSmall(rq.dstId);
-            if(this.checkCommunicationRequest(rq)){
-                if(src && dst){
-                    // small & small
-                    this.sendCBNetMessage(-1, false,
-                            rq.dstId,Global.currentTime + rand.nextDouble());
-                }
-                else if(!src && !dst){
-                    // big & big
-                    this.sendCBNetMessage(-1, false,
-                            rq.dstId,Global.currentTime + rand.nextDouble());
-                }
-                else{
-                    if(!src){
-                        // src node is big
-                        this.sendCBNetMessage(rq.srcId, true,
-                                rq.dstId,Global.currentTime + rand.nextDouble());
-                    }
-                    else{
-                        // dst node is big
-                        this.sendCBNetMessage(rq.dstId, true,
-                                rq.dstId,Global.currentTime + rand.nextDouble());
-                    }
-                }
-                this.newMessageSent();
-                this.data.addSequence(rq.srcId - 1, rq.dstId - 1);
+            Request request = this.bufferRequest.poll();
+            if(this.sendMessageAccordingToRequest(request)){
+                unsatisfiedRequest.add(request);
             }
             else{
-                unsatisfiedRequest.add(rq);
-                // send message to SDN to solve this question
-                this.sendDirect(new , Tools.getNodeByID(this.sdnId));
+                this.updatePartnerOrder(request);
             }
         }
         this.bufferRequest.addAll(unsatisfiedRequest);
     }
 
-    public void newMessage(int dst) {
-        Request splay = new Request(ID, dst);
-        this.bufferRequest.add(splay);
+
+
+
+    public void newRequestCome(int dst) {
+        /*
+         *@description  A global timer trigger will tell the node when a new
+         *              request come, and add it to the buffer
+         *@parameters  [dst]
+         *@return  void
+         *@author  Zhang Hongxuan
+         *@create time  2021/4/4
+         */
+        Request request = new Request(ID, dst);
+        this.bufferRequest.add(request);
     }
 
-    @Override
-    public void ackCBNetMessageReceived(CbRenetMessage msg) {
-//        this.state = States.PASSIVE;
-        msg.finalTime = this.getCurrentRound();
-        this.communicationCompleted(msg);
-    }
 
     public void newMessageSent() {
         

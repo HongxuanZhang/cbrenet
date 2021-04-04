@@ -1,6 +1,5 @@
 package projects.cbrenet.nodes.messages.controlMessage;
 
-import projects.cbrenet.nodes.tableEntry.CBInfo;
 //import projects.cbrenet.nodes.tableEntry.CBRenetNodeInfo;
 
 
@@ -10,7 +9,6 @@ import projects.cbrenet.nodes.tableEntry.CBInfo;
 public class AcceptClusterMessage extends AcceptOrRejectBaseMessage {
 
     private double priority;
-    private CBInfo info;
 
     RequestClusterMessage requestClusterMessage;
 
@@ -31,10 +29,6 @@ public class AcceptClusterMessage extends AcceptOrRejectBaseMessage {
         return priority;
     }
 
-    public CBInfo getInfo() {
-        return info;
-    }
-
     public int getPosition() {
         return position;
     }
@@ -45,10 +39,6 @@ public class AcceptClusterMessage extends AcceptOrRejectBaseMessage {
 
     public void setPriority(double priority) {
         this.priority = priority;
-    }
-
-    public void setInfo(CBInfo info) {
-        this.info = info;
     }
 
     public void setPosition(int position) {

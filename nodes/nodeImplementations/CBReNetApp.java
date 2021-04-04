@@ -2,10 +2,8 @@ package projects.cbrenet.nodes.nodeImplementations;
 
 import java.awt.Color;
 import java.awt.Graphics;
-import java.util.HashMap;
 
 import projects.cbrenet.nodes.messages.CbRenetMessage;
-import projects.cbrenet.nodes.tableEntry.CBInfo;
 import projects.defaultProject.DataCollection;
 import sinalgo.gui.transformation.PositionTransformation;
 
@@ -24,26 +22,6 @@ public class CBReNetApp extends CBNetNode {
     this.data.incrementActiveSplays();
   }
 
-  @Override
-  public void clusterCompletedBottomUp(int largeId, HashMap<String, CBInfo> cluster) {
-    super.clusterCompletedBottomUp(largeId, cluster);
-
-    this.data.incrementActiveClusters();
-  }
-
-  @Override
-  public void clusterCompletedTopDown(int largeId, HashMap<String, CBInfo> cluster) {
-    super.clusterCompletedTopDown(largeId, cluster);
-
-    this.data.incrementActiveClusters();
-  }
-
-  @Override
-  public void targetNodeFound(CBInfo target) {
-    super.targetNodeFound(target);
-
-    this.data.incrementActiveClusters();
-  }
 
   @Override
   public void communicationCompleted(CbRenetMessage msg) {

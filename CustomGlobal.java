@@ -1,22 +1,17 @@
 package projects.cbrenet;
 
-import java.awt.Color;
-import java.awt.Graphics;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
 import projects.cbrenet.nodes.nodeImplementations.AuxiliaryNode;
 import projects.cbrenet.nodes.nodeImplementations.CBReNetApp;
-import projects.cbrenet.nodes.nodeImplementations.CbRenetBinarySearchTreeLayer;
 import projects.cbrenet.nodes.nodeImplementations.SDNApp;
 import projects.cbrenet.nodes.timers.TriggerNodeOperation;
-import projects.defaultProject.BalancedTreeTopology;
 import projects.defaultProject.DataCollection;
 import projects.defaultProject.RequestQueue;
 import projects.defaultProject.TreeConstructor;
 import sinalgo.configuration.Configuration;
-import sinalgo.gui.transformation.PositionTransformation;
 import sinalgo.nodes.Node;
 import sinalgo.runtime.AbstractCustomGlobal;
 import sinalgo.tools.Tools;

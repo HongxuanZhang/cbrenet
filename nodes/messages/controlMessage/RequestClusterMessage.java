@@ -1,5 +1,6 @@
 package projects.cbrenet.nodes.messages.controlMessage;
 
+import projects.cbrenet.nodes.tableEntry.NodeInfo;
 import sinalgo.nodes.messages.Message;
 
 import java.util.HashMap;

@@ -19,7 +19,7 @@ import java.util.*;
  * But we notice large node to
  * */
 
-public abstract class LinkLayer extends MessageQueueLayer{
+public abstract class LinkLayer extends MessageSendLayer{
 
     DeleteProcess deleteProcess = new DeleteProcess();
 
@@ -260,7 +260,7 @@ public abstract class LinkLayer extends MessageQueueLayer{
             this.receivedStatusChangedId = Math.max(this.receivedStatusChangedId, statusTmp);
 
             if(changeId == this.ID){
-                this.clearPartners(smallFlag);
+                this.clearSomePartnersSinceSelfLargeFlagChange(smallFlag);
                 if(!smallFlag){
                     // small -> large, The DRM must sent ASAP!
                     for(int largeId : this.getCommunicateLargeNodes().keySet()){

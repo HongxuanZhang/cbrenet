@@ -5,6 +5,7 @@ import projects.cbrenet.nodes.nodeImplementations.AuxiliaryNode;
 import projects.cbrenet.nodes.nodeImplementations.AuxiliaryNodeMessageQueueLayer;
 import projects.cbrenet.nodes.nodeImplementations.MessageSendLayer;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
+import projects.cbrenet.nodes.tableEntry.NodeInfo;
 import sinalgo.nodes.Node;
 import sinalgo.tools.Tools;
 

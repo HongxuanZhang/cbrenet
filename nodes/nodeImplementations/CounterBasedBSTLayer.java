@@ -21,41 +21,8 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
 
     // basic field part
 
-
-    // only use in the root node of Ego-Tree(large node): largeParent is the largeNode of the ego-tree
-    private HashSet<Integer> largeParent;
-
-    // only used in the small nodes and the small node that changing into large.
-    private HashMap<Integer, Boolean> isRoots; // indicate whether the node is the root of ego tree under the large Node
-
     // The insertMessageExecuteFlags use to direct what to do when receive a LIM.
     private HashMap<Integer, Boolean> insertMessageExecuteFlags;
-
-
-
-
-
-    // Getter & Setter
-    public HashSet<Integer> getLargeParent() {
-        return largeParent;
-    }
-    public void addLargeParent(int largeParent) {
-        this.isRoots.put(largeParent, true);
-        this.largeParent.add(largeParent);
-    }
-
-
-    public boolean isRoot(int largeId) {
-        return this.isRoots.getOrDefault(largeId, false);
-    }
-    public void setRoot(int largeId, boolean isRoot) {
-        this.isRoots.put(largeId, isRoot);
-    }
-
-    // call unsetRoot in make Large
-    public void unsetRoot() {
-        this.isRoots = new HashMap<>();
-    }
 
 
 
@@ -66,6 +33,7 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
         return this.insertMessageExecuteFlags.getOrDefault(largeId, false);
     }
 
+    // todo 收到LIM or LinkMessage时，做这件事
     public void addInsertMessageExecuteFlags(int largeId){
         /**
          *@description Only use this method when LIM or LinkMessage received by a ego-tree node.
@@ -74,7 +42,7 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
          *@author  Zhang Hongxuan
          *@create time  2021/3/8
          */
-        // Why True?
+        // Why default value is True?
         // Check the method checkInsertMessageExecuteFlags, the default value is false.
         // When a node inserted into a tree completely (both p and children), execute this method!
         this.insertMessageExecuteFlags.put(largeId, true);
@@ -94,135 +62,19 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
 
 
 
-
-    // todo
-    // leaf part, check whether have l or r child
-
-//    public boolean isLeaf(int largeId) {
-//        // judge whether it is a leaf under the tree of largeId
-//        return !(this.hasLeftChild(largeId) || this.hasRightChild(largeId));
-//    }
-//
-//    public boolean hasLeftChild(int largeId) {
-//        // we may have to change them since some large nodes may exist in the ego-tree
-//        int left = -1;
-//        if(!this.largeFlag){
-//            left = this.leftChildren.getOrDefault(largeId, null);
-//        }
-//        return left != -1;
-//    }
-//
-//    public boolean hasRightChild(int largeId) {
-//        int right = -1;
-//        if(!this.largeFlag){
-//            right = this.rightChildren.getOrDefault(largeId, null);
-//        }
-//        return right != -1;
-//    }
-
-    // leaf part finish
-
-
-    private boolean isConnectedTo(CounterBasedBSTLayer node) {
-        return this.outgoingConnections.contains(this, node) && node.outgoingConnections
-                .contains(node, this);
-    }
-
-
-
-    // Add Link Part
-
-    private void addBidirectionalLinkTo(CounterBasedBSTLayer node) {
-        if (node != null) {
-            this.outgoingConnections.add(this, node, false);
-            node.outgoingConnections.add(node, this, false);
-        }
-    }
-
-
+    // fixme 把它改进Entry中即可
     public void addBidirectionalLinkToRootNode(int largeId, int id){
+        // 这个函数，建树时要用的
         CounterBasedBSTLayer node = (CounterBasedBSTLayer) Tools.getNodeByID(id);
         this.addBidirectionalLinkTo(node);
         this.setRootSendId(id);
         if(node != null){
-            node.addLargeParent(largeId);
+           // node.addLargeParent(largeId);
         }
         else{
             Tools.fatalError("The ego tree's root of the large node " + largeId + " is empty!!");
         }
     }
-
-//
-//    // Add Link Part Finished!
-//
-//
-//
-//
-//
-//    public void removeBidirectionalLinkToLeftChild(int largeId, int id){
-//        CounterBasedBSTLayer node = (CounterBasedBSTLayer) Tools.getNodeByID(id);
-//        if(!this.removeLeftChildInRouteTable(largeId)){
-//            return;
-//        }
-//        this.removeBidirectionalLinkTo(id);
-//        if (node != null) {
-//            node.removeParentInRouteTable(largeId);
-//        }
-//    }
-//
-//
-//    public void removeBidirectionalLinkToRightChild(int largeId, int id){
-//        CounterBasedBSTLayer node = (CounterBasedBSTLayer) Tools.getNodeByID(id);
-//        // NOTE that this check can not replaced by the link connected!
-//        if(!this.removeRightChildInRouteTable(largeId)){
-//            return;
-//        }
-//        this.removeBidirectionalLinkTo(id);
-//        if (node != null) {
-//            node.removeParentInRouteTable(largeId);
-//        }
-//    }
-//
-//
-//    /**
-//     * Remove a link to a node that is not null.
-//     *
-//     */
-//    private void removeBidirectionalLinkTo(int nodeId) {
-//        /**
-//         *@description This method remove bidirectional edge!!!
-//         *             And LinkMessage only remove one side of the edge
-//         *@parameters  [nodeId]
-//         *@return  void
-//         *@author  Zhang Hongxuan
-//         *@create time  2021/2/20
-//         */
-//        // make sure only the parent remove the link
-//        if(nodeId == -1){
-//            return;
-//        }
-//        CounterBasedBSTLayer node = (CounterBasedBSTLayer) Tools.getNodeByID(nodeId);
-//        if(node == null){
-//            return;
-//        }
-//        if (this.isConnectedTo(node)) {
-//            this.outgoingConnections.remove(this, node);
-//            node.outgoingConnections.remove(node, this);
-//        }
-//        else {
-//            Tools.fatalError("Trying to remove a non-existing connection to node " + ID);
-//        }
-//    }
-
-
-
-    // send message part
-    public abstract boolean sendToParent(int largeId, RoutingMessage msg);
-
-    public abstract boolean sendToLeftChild(int largeId, RoutingMessage msg);
-
-    public abstract boolean sendToRightChild(int largeId, RoutingMessage msg);
-    // send message part finish
 
 
     @Override
@@ -233,6 +85,7 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
         this.insertMessageExecuteFlags = new HashMap<>();
 
     }
+
 
 
 
@@ -493,6 +346,11 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
     @Override
     public void neighborhoodChange() {
         // nothing to do
+    }
+
+    @Override
+    public void postStep() {
+        this.doInPostRound();
     }
 
     @Override
