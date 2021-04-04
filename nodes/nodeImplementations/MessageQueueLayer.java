@@ -96,7 +96,7 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
          *@author  Zhang Hongxuan
          *@create time  2021/3/1
          */
-        Set<Integer> largeIds = this.routeTable.keySet();
+        Set<Integer> largeIds = this.routeTableInEgoTree.keySet();
 
         for(int largeId : largeIds){
 

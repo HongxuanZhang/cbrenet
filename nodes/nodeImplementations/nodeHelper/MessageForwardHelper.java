@@ -21,7 +21,7 @@ public class MessageForwardHelper {
             // which means need to transfer in the large id's tree
 
             // Very Important!!
-            boolean sendFlag = false;
+            boolean alreadySendFlag = false;
             // Note that every message can not send in this turn must store in the routingMessageQueue to
             // send it in the next turn;
 
@@ -58,19 +58,19 @@ public class MessageForwardHelper {
                     if (helpedId < destination) {
                         int rightChild = entryGetter.getEgoTreeIdOfRightChild(helpedId, largeId);
                         if(entryGetter.sendTo(rightChild, routingMessage)){
-                            sendFlag = true;
+                            alreadySendFlag = true;
                         }
                     } else if (destination < helpedId) {
                         int leftChild = entryGetter.getEgoTreeIdOfLeftChild(helpedId, largeId);
                         if(entryGetter.sendTo(leftChild, routingMessage)){
-                            sendFlag = true;
+                            alreadySendFlag = true;
                         }
                     }
                 }
                 else{
                     int parentId = entryGetter.getEgoTreeIdOfParent(helpedId, largeId);
                     if(entryGetter.sendTo(parentId, routingMessage)){
-                        sendFlag = true;
+                        alreadySendFlag = true;
                     }
                 }
             }
@@ -80,13 +80,13 @@ public class MessageForwardHelper {
                 if(target > ID){
                     int rightChild = entryGetter.getEgoTreeIdOfRightChild(helpedId, largeId);
                     if(entryGetter.sendTo(rightChild, routingMessage)){
-                        sendFlag = true;
+                        alreadySendFlag = true;
                     }
                 }
                 else{
                     int leftChild = entryGetter.getEgoTreeIdOfLeftChild(helpedId, largeId);
                     if(entryGetter.sendTo(leftChild, routingMessage)){
-                        sendFlag = true;
+                        alreadySendFlag = true;
                     }
                 }
 
@@ -96,7 +96,7 @@ public class MessageForwardHelper {
                 if(ID != deleteRequestMessageTmp.getDst()){
                     int parentId = entryGetter.getEgoTreeIdOfParent(helpedId, largeId);
                     if(entryGetter.sendTo(parentId, routingMessage)){
-                        sendFlag = true;
+                        alreadySendFlag = true;
                     }
                 }
             }
@@ -106,19 +106,19 @@ public class MessageForwardHelper {
                     if (ID < destination) {
                         int rightChild = entryGetter.getEgoTreeIdOfRightChild(helpedId,largeId);
                         if(entryGetter.sendTo(rightChild, routingMessage)){
-                            sendFlag = true;
+                            alreadySendFlag = true;
                         }
                     } else if (destination < ID) {
                         int leftChild = entryGetter.getEgoTreeIdOfLeftChild(helpedId,largeId);
                         if(entryGetter.sendTo(leftChild, routingMessage)){
-                            sendFlag = true;
+                            alreadySendFlag = true;
                         }
                     }
                 }
                 else{
                     int parentId = entryGetter.getEgoTreeIdOfParent(helpedId,largeId);
                     if(entryGetter.sendTo(parentId, routingMessage)){
-                        sendFlag = true;
+                        alreadySendFlag = true;
                     }
                 }
             }
@@ -127,12 +127,12 @@ public class MessageForwardHelper {
             }
 
 
-            if(!sendFlag){
+            if(!alreadySendFlag){
                 // can not send for some reason
                 Tools.warning("A routing message contains " + message.getClass() + " can not send for some reason " +
                         "has been add into rMQ");
             }
-            return sendFlag;
+            return alreadySendFlag;
         }
         else{
             Tools.fatalError("A RoutingMessage do not have largeId but sent to AuxiliaryNode!");

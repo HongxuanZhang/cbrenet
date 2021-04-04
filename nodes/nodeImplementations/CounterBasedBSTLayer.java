@@ -143,7 +143,7 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
     public void addBidirectionalLinkToRootNode(int largeId, int id){
         CounterBasedBSTLayer node = (CounterBasedBSTLayer) Tools.getNodeByID(id);
         this.addBidirectionalLinkTo(node);
-        this.setRootNodeId(id);
+        this.setRootSendId(id);
         if(node != null){
             node.addLargeParent(largeId);
         }

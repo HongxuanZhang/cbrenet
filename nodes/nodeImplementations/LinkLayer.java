@@ -3,9 +3,6 @@ package projects.cbrenet.nodes.nodeImplementations;
 import projects.cbrenet.nodes.messages.SDNMessage.*;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteRequestMessage;
 import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteBaseMessage;
-import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteConfirmMessage;
-import projects.cbrenet.nodes.messages.deletePhaseMessages.DeletePrepareMessage;
-import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteFinishMessage;
 import projects.cbrenet.nodes.nodeImplementations.deleteProcedure.DeleteProcess;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
 import sinalgo.nodes.Node;
@@ -208,7 +205,7 @@ public abstract class LinkLayer extends MessageQueueLayer{
 
 
     private void tryToDeleteInPostRound(){
-        Set<Integer> largeIds = this.routeTable.keySet();
+        Set<Integer> largeIds = this.routeTableInEgoTree.keySet();
 
         for(int largeId : largeIds){
             SendEntry correspondingEntry = this.getCorrespondingEntry(-1,largeId);

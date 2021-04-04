@@ -18,52 +18,58 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
 
     // only used in the large node. root node id is the id of the node which connect to the large node directly!
     // Even we have SendEntry, we still need this field as the link to the Ego-Tree(LN).
-    private int rootNodeId = -1;
-    // rootNodeId can be used as SendID actually, since LN do not need a egoTreeID.
-
+    private int rootSendId = -1;
+    private int rootEgoTreeId = -1;
     private boolean rootNodeSendFlag = true;
 
     // root node id & send Flag getter & setter
     public void setRootNodeSendFlag(boolean rootNodeSendFlag) {
         this.rootNodeSendFlag = rootNodeSendFlag;
     }
-
     public boolean isRootNodeSendFlag() {
         return rootNodeSendFlag;
     }
-
-    public int getRootNodeId() {
-        return this.rootNodeId;
+    public int getRootSendId() {
+        return this.rootSendId;
+    }
+    public void setRootSendId(int rootSendId) {
+        this.rootSendId = rootSendId;
+    }
+    public int getRootEgoTreeId() {
+        return rootEgoTreeId;
+    }
+    public void setRootEgoTreeId(int rootEgoTreeId) {
+        this.rootEgoTreeId = rootEgoTreeId;
     }
 
-    public void setRootNodeId(int rootNodeId) {
-        this.rootNodeId = rootNodeId;
-    }
+
+    // todo 关于这一部分的调用，在forwardMessage里没有相关的部分
+    // FixMe
 
 
 
-
-    HashMap<Integer, SendEntry> routeTable;  // 指示着当前的结点在 Ego-Tree(largeId)中的情况
+    // used in the Ego-Tree's node.
+    HashMap<Integer, SendEntry> routeTableInEgoTree;  // 指示着当前的结点在 Ego-Tree(largeId)中的情况
     // largeId, SendEntry
 
 
 
     public SendEntry getCorrespondingEntry(int helpedId, int largeId){
-        return this.routeTable.getOrDefault(largeId,null);
+        return this.routeTableInEgoTree.getOrDefault(largeId,null);
     }
 
     public void removeCorrespondingEntry(int helpedId, int largeId){
-        this.routeTable.remove(largeId);
+        this.routeTableInEgoTree.remove(largeId);
     }
 
     public void addSendEntry(int helpedId, int largeId, int parent, int leftChild, int rightChild){
         SendEntry entry = new SendEntry(parent, leftChild, rightChild);
-        this.routeTable.put(largeId, entry);
+        this.routeTableInEgoTree.put(largeId, entry);
     }
 
     public void removeSendEntry(int helpedId, int largeId){
-        if(this.routeTable.containsKey(largeId)){
-            this.routeTable.remove(largeId);
+        if(this.routeTableInEgoTree.containsKey(largeId)){
+            this.routeTableInEgoTree.remove(largeId);
         }
         else{
             Tools.warning("The BST node want to delete entry whose largeId: " +
@@ -107,7 +113,7 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
             // Which indicate that this node is the node that send the rt message, it need
             // a special forwarding mechanism
 
-            int rootID = this.getRootNodeId();
+            int rootID = this.getRootSendId();
 
             if(rootID < 0){
                 Tools.warning("LN" + this.ID + " need to send a forwarding message, " +
@@ -249,7 +255,7 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
                         break;
                 }
             }
-            this.routeTable.put(largeId, entry);
+            this.routeTableInEgoTree.put(largeId, entry);
         }
     }
 

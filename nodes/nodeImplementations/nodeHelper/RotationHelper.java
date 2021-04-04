@@ -4,6 +4,7 @@ import projects.cbrenet.nodes.messages.RoutingMessage;
 import projects.cbrenet.nodes.messages.controlMessage.AcceptClusterMessage;
 import projects.cbrenet.nodes.messages.controlMessage.NodeInfo;
 import projects.cbrenet.nodes.messages.controlMessage.RequestClusterMessage;
+import projects.cbrenet.nodes.nodeImplementations.CounterBasedBSTLayer;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
 import sinalgo.tools.Tools;
 
@@ -413,29 +414,49 @@ public class RotationHelper {
                 Tools.fatalError("At least one of relations is wrong!!!!!!!!!!");
             }
 
+            this.changeRoutingMessageDestination(acceptClusterMessage);
+
+
             // set and unset root, and change most upper node's child
-            // todo parent可以最后设置，
             if(lNFlag){
+                CounterBasedBSTLayer counterBasedBSTLayer = (CounterBasedBSTLayer)Tools.getNodeByID(pSendId);
+
+                assert pEgoTreeId == pSendId && counterBasedBSTLayer != null;
+                // 作为LN， 这两总该是一样的吧！
+
                 // means the upper node is root
                 if(relation1 == 'l' && relation2 == 'l'){
                     entryForZ.setEgoTreeRoot(false);
                     entryForY.setEgoTreeRoot(true);
+
+                    counterBasedBSTLayer.setRootEgoTreeId(yEgoTreeId);
+                    counterBasedBSTLayer.setRootSendId(ySendId);
+
                 }
                 else if(relation1 == 'r' && relation2 == 'r'){
                     entryForZ.setEgoTreeRoot(false);
                     entryForY.setEgoTreeRoot(true);
+
+                    counterBasedBSTLayer.setRootEgoTreeId(yEgoTreeId);
+                    counterBasedBSTLayer.setRootSendId(ySendId);
                 }
                 else if(relation1 == 'l' && relation2 == 'r'){
                     entryForZ.setEgoTreeRoot(false);
                     entryForX.setEgoTreeRoot(true);
+
+                    counterBasedBSTLayer.setRootEgoTreeId(xEgoTreeId);
+                    counterBasedBSTLayer.setRootSendId(xSendId);
                 }
                 else if(relation1 == 'r' && relation2 == 'l'){
                     entryForZ.setEgoTreeRoot(false);
                     entryForX.setEgoTreeRoot(true);
+
+                    counterBasedBSTLayer.setRootEgoTreeId(xEgoTreeId);
+                    counterBasedBSTLayer.setRootSendId(xSendId);
                 }
             }
 
-            // set most upper node 's child
+            // set most upper node 's child, 4-size cluster situation
             if(position == 3){
                 // set B's parent to y
                 if(pEgoTreeId>0){
@@ -445,7 +466,6 @@ public class RotationHelper {
                         Tools.warning("Check what happen in  Rotation Helper whey c have ego tree id but no entry");
                     }
                     else{
-
                         if(relation1 == 'l' && relation2 == 'l'){
                             //set from z to y
                             entryForP.changeChildFromOldToNew
@@ -490,7 +510,6 @@ public class RotationHelper {
 
             int ySendId = info1.getCurNodeTrueId();
             int yEgoTreeId = info1.getCurNodeEgoId();
-
 
 
             int pEgoTreeId = requestClusterMessage.getTheMostUpperEgoTreeId();
@@ -600,22 +619,30 @@ public class RotationHelper {
                 }
 
             }
+            this.changeRoutingMessageDestination(acceptClusterMessage);
 
-            // set most upper node's child
-            // todo 设置父亲的
 
-            // set root change
+
             if(requestClusterMessage.isLnFlag()){
+                // set root change
                 entryForX.setEgoTreeRoot(true);
                 entryForY.setEgoTreeRoot(false);
+
+
+                // set most upper node's child
+                CounterBasedBSTLayer counterBasedBSTLayer = (CounterBasedBSTLayer)Tools.getNodeByID(pSendId);
+
+                assert pEgoTreeId == pSendId && counterBasedBSTLayer != null;
+
+                counterBasedBSTLayer.setRootEgoTreeId(xEgoTreeId);
+                counterBasedBSTLayer.setRootSendId(xSendId);
+
             }
             else{
                 Tools.warning("In position 1 rotation, it must have the Ln node as upper node ");
             }
 
         }
-
-
 
     }
 
