@@ -10,10 +10,13 @@ public class DeleteFinishMessage extends DeleteBaseMessage{
 
     final private int trueId;
 
-    public DeleteFinishMessage(int largeId, int deleteTarget, int egoTreeId, int trueId) {
+    final private int targetEgoTreeId;
+
+    public DeleteFinishMessage(int largeId, int deleteTarget, int egoTreeId, int trueId, int targetEgoTreeId) {
         super(largeId, deleteTarget);
         this.egoTreeId = egoTreeId;
         this.trueId = trueId;
+        this.targetEgoTreeId = targetEgoTreeId;
     }
 
     public int getEgoTreeId() {
@@ -24,4 +27,7 @@ public class DeleteFinishMessage extends DeleteBaseMessage{
         return trueId;
     }
 
+    public int getTargetEgoTreeId() {
+        return targetEgoTreeId;
+    }
 }

@@ -19,7 +19,7 @@ public class AcceptOrRejectBaseMessage extends Message {
 
     @Override
     public Message clone() {
-        return null;
+        return this;
     }
 
     public int getLargeId() {

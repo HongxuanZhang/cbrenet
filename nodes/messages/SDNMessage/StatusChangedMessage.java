@@ -38,6 +38,15 @@ public class StatusChangedMessage extends Message
 
     @Override
     public Message clone() {
-        return null;
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return "StatusChangedMessage{" +
+                "statusChangedNodeId=" + statusChangedNodeId +
+                ", uniqueStatusId=" + uniqueStatusId +
+                ", smallFlag=" + smallFlag +
+                '}';
     }
 }

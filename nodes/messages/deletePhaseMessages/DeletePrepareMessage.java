@@ -8,6 +8,8 @@ public class DeletePrepareMessage extends DeleteBaseMessage implements Comparabl
 
     private Relation relation = Relation.itself;
 
+    private int sendTargetEgoTreeId = -1;
+
     public DeletePrepareMessage(int largeId, int deleteTarget, double t){
         super(largeId, deleteTarget);
         this.t = t;
@@ -69,5 +71,13 @@ public class DeletePrepareMessage extends DeleteBaseMessage implements Comparabl
 
     public double getT() {
         return t;
+    }
+
+    public int getSendTargetEgoTreeId() {
+        return sendTargetEgoTreeId;
+    }
+
+    public void setSendTargetEgoTreeId(int sendTargetEgoTreeId) {
+        this.sendTargetEgoTreeId = sendTargetEgoTreeId;
     }
 }

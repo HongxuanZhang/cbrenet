@@ -16,22 +16,24 @@ public class DeleteMessage extends StatusRelatedMessage {
 
     private final boolean allFlag;
 
-    private int auxiliaryNodeId;
+    private final int auxiliaryNodeId;
 
 
 
-    public DeleteMessage(int dst, int largeId, int uniqueStatusId){
+    public DeleteMessage(int dst, int largeId, int uniqueStatusId, int auxiliaryNodeId){
         super(uniqueStatusId);
         this.dst = dst;
         this.largeId = largeId;
         this.allFlag = false;
+        this.auxiliaryNodeId = auxiliaryNodeId;
     }
 
-    public DeleteMessage(int dst, boolean allFlag, int largeId, int uniqueStatusId){
+    public DeleteMessage(int dst, boolean allFlag, int largeId, int uniqueStatusId, int auxiliaryNodeId){
         super(uniqueStatusId);
         this.dst = dst;
         this.largeId = largeId;
         this.allFlag = allFlag;
+        this.auxiliaryNodeId = auxiliaryNodeId;
     }
 
     public int getDst() {
@@ -50,12 +52,19 @@ public class DeleteMessage extends StatusRelatedMessage {
         return auxiliaryNodeId;
     }
 
-    public void setAuxiliaryNodeId(int auxiliaryNodeId) {
-        this.auxiliaryNodeId = auxiliaryNodeId;
-    }
-
     @Override
     public Message clone() {
         return this;
+    }
+
+    @Override
+    public String toString() {
+        return "DeleteMessage{" +
+                "dst=" + dst +
+                ", largeId=" + largeId +
+                ", allFlag=" + allFlag +
+                ", auxiliaryNodeId=" + auxiliaryNodeId +
+                ", uniqueStatusId=" + uniqueStatusId +
+                '}';
     }
 }

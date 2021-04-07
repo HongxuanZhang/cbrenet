@@ -15,12 +15,19 @@ public abstract class AuxiliaryNodeStructureLayer extends Node implements EntryG
 
     LinkHelper linkHelper = new LinkHelper();
 
-
     public Queue<RoutingMessage> cycleRoutingMessage = new LinkedList<>();
 
     private HashMap<Integer, HashMap<Integer, AuxiliarySendEntry>> routeTable;
     // Note that the key is helpedId, and the inner key is largeId.
     //  helpedId 15,   LN 3,    p, l, r  ;
+
+
+    public void init(){
+        this.routeTable = new HashMap<>();
+        this.cycleRoutingMessage = new LinkedList<>();
+    }
+
+
 
     public HashMap<Integer, HashMap<Integer, AuxiliarySendEntry>> getRouteTable(){
         return this.routeTable;
@@ -57,6 +64,9 @@ public abstract class AuxiliaryNodeStructureLayer extends Node implements EntryG
                 boolean sendFlag = entry.getSendFlag(egoTreeTargetID);
                 if(sendFlag){
                     routingMessage.setNextHop(egoTreeTargetID); // when the node is sure that the message would be sent, change it !
+
+                    System.out.println("Node " + this.ID + " send a routing message to it self (cycle route)");
+
                     this.cycleRoutingMessage.add(routingMessage);
                     return true;
                 }
@@ -72,7 +82,11 @@ public abstract class AuxiliaryNodeStructureLayer extends Node implements EntryG
                 boolean sendFlag = entry.getSendFlag(egoTreeTargetID);
                 if(sendFlag){
                     routingMessage.setNextHop(egoTreeTargetID); // when the node is sure that the message would be sent, change it !
-                    this.send(routingMessage,Tools.getNodeByID(egoTreeTargetID));
+
+                    System.out.println("Node " + this.ID + " send a routing message to " + targetID + "" +
+                            " in the egoTree(" +largeId+"), it egoTree id is " + egoTreeTargetID);
+
+                    this.send(routingMessage,Tools.getNodeByID(targetID));
                     return true;
                 }
                 else{

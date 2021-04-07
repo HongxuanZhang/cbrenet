@@ -36,7 +36,7 @@ public class AuxiliaryRequestMessage extends Message {
 
     @Override
     public Message clone() {
-        return null;
+        return this;
     }
 
 

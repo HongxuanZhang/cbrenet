@@ -37,6 +37,6 @@ public class DeleteRequestMessage extends Message {
 
     @Override
     public Message clone() {
-        return null;
+        return this;
     }
 }

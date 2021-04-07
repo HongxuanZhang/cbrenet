@@ -54,7 +54,7 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
     // Send message which in the Queue
     private void sendMessageInQueue(){
         /**
-         *@description //todo call this in the EVERY postRound
+         *@description
          *@parameters  []
          *@return  void
          *@author  Zhang Hongxuan

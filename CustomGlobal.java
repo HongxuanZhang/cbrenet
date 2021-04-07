@@ -24,8 +24,6 @@ public class CustomGlobal extends AbstractCustomGlobal {
 
   // simulation
   public int numNodes = 30;
-  public ArrayList<CBReNetApp> tree = null;
-  public ArrayList<CBReNetApp> allNodes = null;
   public CBReNetApp controller = null;
   public TreeConstructor treeTopology = null;
   public RequestQueue requestQueue;
@@ -45,8 +43,6 @@ public class CustomGlobal extends AbstractCustomGlobal {
   @Override
   public boolean hasTerminated() {
     if (this.data.getCompletedRequests() >= MAX_REQ) {
-      CBReNetApp node = (CBReNetApp) Tools.getNodeByID(1);
-      this.data.addTotalTime(node.getCurrentRound());
       this.data.printRotationData();
       this.data.printRoutingData();
       return true;
@@ -64,6 +60,7 @@ public class CustomGlobal extends AbstractCustomGlobal {
 
       if (Configuration.hasParameter("input")) {
         input = Configuration.getStringParameter("input");
+
       }
 
       if (Configuration.hasParameter("output")) {
@@ -84,6 +81,11 @@ public class CustomGlobal extends AbstractCustomGlobal {
       System.out.println("Missing configuration parameters");
     }
 
+    System.out.println(input);
+    System.out.println(output);
+    System.out.println(lambda);
+    System.out.println(parac);
+
     // Set Log Path
     this.data.setPath(output);
 
@@ -98,29 +100,33 @@ public class CustomGlobal extends AbstractCustomGlobal {
     /*
      * create the nodes and constructs the tree topology
      */
-    this.tree = new ArrayList<CBReNetApp>();
-    this.allNodes = new ArrayList<>();
-
-    SDNApp sdn = new SDNApp(10);
-    sdn.finishInitializationWithDefaultModels(true);
 
 
-    AuxiliaryNode auxiliaryNode = new AuxiliaryNode();
-    auxiliaryNode.finishInitializationWithDefaultModels(true);
-    sdn.setAuxiliaryNodeId(auxiliaryNode.ID);
 
 
-    List<Node> nodes = new ArrayList<>();
+    List<CBReNetApp> nodes = new ArrayList<>();
 
 
     for (int i = 0; i < numNodes; i++) {
         CBReNetApp n = new CBReNetApp();
         n.finishInitializationWithDefaultModels(true);
-        this.allNodes.add(n);
-        n.setSDNId(sdn.ID);
-        sdn.addNodeId(n.ID);
         nodes.add(n);
+        System.out.println("Create communicate node " + n.ID);
     }
+
+    SDNApp sdn = new SDNApp(parac);
+    sdn.finishInitializationWithDefaultModels(true);
+    sdn.setConstCAndThreshold(parac);
+
+    AuxiliaryNode auxiliaryNode = new AuxiliaryNode();
+    auxiliaryNode.finishInitializationWithDefaultModels(true);
+    sdn.setAuxiliaryNodeId(auxiliaryNode.ID);
+
+    for(CBReNetApp n: nodes){
+      n.setSDNId(sdn.ID);
+      sdn.addCommunicateNodeId(n.ID);
+    }
+
 
 
     // 整个完全图进来吧
@@ -145,7 +151,7 @@ public class CustomGlobal extends AbstractCustomGlobal {
   public void preRound() {
 
       if (mustGenerateSplay && this.requestQueue.hasNextRequest()) {
-        // 使用点阴的，，我们也这么做吧。。。 todo 遏制新Request产生。可以帮助我们跑出实验数据
+        // 使用点阴的，，我们也这么做吧。。。
         mustGenerateSplay = false;
 
         double u = random.nextDouble();
@@ -154,6 +160,8 @@ public class CustomGlobal extends AbstractCustomGlobal {
         if (x <= 0) {
           x = 1;
         }
+
+        System.out.println("------------------------ A NEW REQUEST --------------------------");
 
         Tuple<Integer, Integer> r = this.requestQueue.getNextRequest();
         TriggerNodeOperation ted = new TriggerNodeOperation(r.first, r.second);   //此处设置了一条信息，是request的source 和 destination间的

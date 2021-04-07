@@ -17,13 +17,46 @@ public class LinkHelper {
 
     // delete 的时候如果用到AN，就调用这个method
     public boolean changeLeftChildTo(int largeId, int egoTreeId, int sendId, int helpedId, EntryGetter entryGetter, Node helpedNode){
-        return this.changeLinkTo(largeId, egoTreeId, sendId, 'l', helpedId, entryGetter, helpedNode);
+        boolean result = this.changeLinkTo(largeId, egoTreeId, sendId, 'l',
+                helpedId, entryGetter, helpedNode);
+        if(result == true){
+            System.out.println("Node " + helpedNode.ID + " change " + helpedId + "'s left child in egoTree(" + largeId + ") to" +
+                    " EgoTreeId: " + egoTreeId + " and SendId:" + sendId);
+        }
+        else{
+            System.out.println("Node " + helpedNode.ID + " want to  change " + helpedId + "'s left child in egoTree(" + largeId + ")to" +
+                    " EgoTreeId: " + egoTreeId + " and SendId:" + sendId + " but failed!!!");
+        }
+        return result;
+
     }
     public boolean changeRightChildTo(int largeId, int egoTreeId, int sendId, int helpedId, EntryGetter entryGetter, Node helpedNode){
-        return this.changeLinkTo(largeId, egoTreeId, sendId, 'r', helpedId, entryGetter, helpedNode);
+
+        boolean result = this.changeLinkTo(largeId, egoTreeId, sendId, 'r',
+                helpedId, entryGetter, helpedNode);
+        if(result == true){
+            System.out.println("Node " + helpedNode.ID + " change " + helpedId + "'s right child in egoTree(" + largeId + ") to" +
+                    " EgoTreeId: " + egoTreeId + " and SendId:" + sendId);
+        }
+        else{
+            System.out.println("Node " + helpedNode.ID + " want to  change " + helpedId + "'s right child in egoTree(" + largeId + ") to" +
+                    " EgoTreeId: " + egoTreeId + " and SendId:" + sendId + " but failed!!!");
+        }
+        return result;
+
     }
     public boolean changeParentTo(int largeId, int egoTreeId, int sendId, int helpedId, EntryGetter entryGetter, Node helpedNode){
-        return this.changeLinkTo(largeId, egoTreeId, sendId, 'p', helpedId, entryGetter, helpedNode);
+        boolean result = this.changeLinkTo(largeId, egoTreeId, sendId, 'p',
+                helpedId, entryGetter, helpedNode);
+        if(result == true){
+            System.out.println("Node " + helpedNode.ID + " change " + helpedId + "'s parent in egoTree(" + largeId + ") to" +
+                    " EgoTreeId: " + egoTreeId + " and SendId:" + sendId);
+        }
+        else{
+            System.out.println("Node " + helpedNode.ID + " want to  change " + helpedId + "'s parent in egoTree(" + largeId + ") to" +
+                    " EgoTreeId: " + egoTreeId + " and SendId:" + sendId + " but failed!!!");
+        }
+        return result;
     }
 
 
@@ -169,6 +202,8 @@ public class LinkHelper {
 
     public boolean addLinkToLeftChild(int largeId, int egoTreeId, int sendId, int helpedId, EntryGetter entryGetter, Node node){
         if(this.addLeftChildInRouteTable(largeId, egoTreeId, sendId ,helpedId, entryGetter)){
+            System.out.println("Node " + node.ID + " add " + helpedId + "'s left child in egoTree(" + largeId + ") to" +
+                    " EgoTreeId: " + egoTreeId + " and SendId:" + sendId);
             return this.addLinkTo(egoTreeId, node);
         }
         else{
@@ -180,6 +215,8 @@ public class LinkHelper {
 
     public boolean addLinkToRightChild(int largeId, int egoTreeId, int sendId, int helpedId, EntryGetter entryGetter, Node node){
         if(this.addRightChildInRouteTable(largeId, egoTreeId, sendId, helpedId, entryGetter)){
+            System.out.println("Node " + node.ID + " add " + helpedId + "'s right child in egoTree(" + largeId + ") to" +
+                    " EgoTreeId: " + egoTreeId + " and SendId:" + sendId);
             return this.addLinkTo(egoTreeId, node);
         }
         else{
@@ -189,8 +226,10 @@ public class LinkHelper {
         }
     }
 
-    public boolean addLinkToParent(int largeId, int egoTreeId, int sendID ,int helpedId, EntryGetter entryGetter, Node node){
-        if(this.addParentInRouteTable(largeId, egoTreeId, sendID, helpedId, entryGetter)){
+    public boolean addLinkToParent(int largeId, int egoTreeId, int sendId ,int helpedId, EntryGetter entryGetter, Node node){
+        if(this.addParentInRouteTable(largeId, egoTreeId, sendId, helpedId, entryGetter)){
+            System.out.println("Node " + node.ID + " add " + helpedId + "'s parent in egoTree(" + largeId + ") to" +
+                    " EgoTreeId: " + egoTreeId + " and SendId:" + sendId);
             return this.addLinkTo(egoTreeId, node);
         }
         else{
@@ -286,6 +325,9 @@ public class LinkHelper {
         if(!this.removeParentInRouteTable(largeId, helpedId, entryGetter)){
             return false;
         }
+        System.out.println("Node " + node.ID + " remove " + helpedId + "'s parent" +
+                " in egoTree(" + largeId + ")" );
+
         return this.removeLinkTo(id, node);
     }
 
@@ -295,6 +337,8 @@ public class LinkHelper {
         if(!this.removeRightChildInRouteTable(largeId, helpedId, entryGetter)){
             return false;
         }
+        System.out.println("Node " + node.ID + " remove " + helpedId + "'s right child" +
+                " in egoTree(" + largeId + ")" );
         return this.removeLinkTo(id, node);
     }
 
@@ -303,6 +347,8 @@ public class LinkHelper {
         if(!this.removeLeftChildInRouteTable(largeId, helpedId, entryGetter)){
             return false;
         }
+        System.out.println("Node " + node.ID + " remove " + helpedId + "'s left child" +
+                " in egoTree(" + largeId + ")" );
         return this.removeLinkTo(id,node);
     }
 

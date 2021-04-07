@@ -32,16 +32,21 @@ public abstract class LargeSmallNodeLayer extends Node {
     }
 
     public void changeNodeStatus(int id, boolean smallStatus){
-        this.globalSmallNodesMap.replace(id, smallStatus);
-//        if(smallStatus){
-//            if(this.largeIds.contains(id)){
-//                this.largeIds.remove
-//            }
-//        }
+        if(this.globalSmallNodesMap.containsKey(id)){
+            this.globalSmallNodesMap.replace(id, smallStatus);
+        }
+        else{
+            this.globalSmallNodesMap.put(id,smallStatus);
+        }
+
+        if(id == this.ID){
+            this.largeFlag = !smallStatus;
+        }
+
     }
 
     public boolean isNodeSmall(int id){
-        return this.globalSmallNodesMap.get(id);
+        return this.globalSmallNodesMap.getOrDefault(id, true);
     }
 
     public HashSet<Integer> getLargeIds() {

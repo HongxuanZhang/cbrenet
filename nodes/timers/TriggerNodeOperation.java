@@ -24,7 +24,6 @@ public class TriggerNodeOperation extends Timer {
         CBNetNode srcnode = (CBNetNode) Tools.getNodeByID(src);
         srcnode.newRequestCome(dst);
 
-        CustomGlobal.mustGenerateSplay = true;
     }
 
 }

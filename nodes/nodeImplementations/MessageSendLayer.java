@@ -6,6 +6,7 @@ import projects.cbrenet.nodes.messages.SDNMessage.LargeInsertMessage;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteRequestMessage;
 import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteBaseMessage;
 import projects.cbrenet.nodes.messages.deletePhaseMessages.DeletePrepareMessage;
+import projects.cbrenet.nodes.routeEntry.SendEntry;
 import projects.cbrenet.nodes.tableEntry.Request;
 import sinalgo.nodes.messages.Message;
 import sinalgo.runtime.Global;
@@ -20,21 +21,23 @@ public abstract class MessageSendLayer extends MessageQueueLayer{
     // send message part,
     // The first one : s-s l-l
     // The second one : l-s s-l
-    public boolean sendMessageAccordingToRequest(Request request) {
+    public boolean sendMessageAccordingToRequest(Request request, boolean tellSDN) {
         /**
          *@description This method is used to deal with request.
          *               It call sendEgoTreeMessage and sendNonEgoTreeMessage
-         *@parameters  [request]
+         *@parameters  [request, tellSDN]
          *@return  boolean
          *@author  Zhang Hongxuan
          *@create time  2021/3/5
          */
         // 过渡态中的结点是不可能通过CP检测的
         if(!this.checkCommunicateSatisfaction(request)){
-            // todo，现在是一直会告诉SDN，这样真的好吗？
-            this.tellSDNUnsatisfiedRequest(request);
+            if(tellSDN){
+                this.tellSDNUnsatisfiedRequest(request);
+            }
             return false;
         }
+
 
         boolean dstLargeCPFlag = this.getCommunicateLargeNodes().containsKey(request.dstId);
 
@@ -77,6 +80,9 @@ public abstract class MessageSendLayer extends MessageQueueLayer{
 
 
     public void sendNonEgoTreeMessage(int dst, Message msg){
+        System.out.println("Node " + this.ID + " In send non ego-tree message, " +
+                "the message is "+msg.toString());
+
         if(this.checkCommunicateSatisfaction(this.ID, dst)){
             this.send(msg, Tools.getNodeByID(dst));
         }
@@ -86,6 +92,7 @@ public abstract class MessageSendLayer extends MessageQueueLayer{
     }
 
 
+    // 对于所有向下传播的 RoutingMessage ,务必设置 NextHop
 
     @Override
     public void sendEgoTreeMessage(int largeId, int dst, Message msg){
@@ -108,26 +115,31 @@ public abstract class MessageSendLayer extends MessageQueueLayer{
          *@author  Zhang Hongxuan
          *@create time  2021/3/1
          */
-
+        System.out.println("Node " + this.ID + " In send ego-tree message, " +
+                "the message is "+msg.toString());
         if (dst == ID) {
             this.receiveMessage(msg);
             return;
         }
         boolean upForward = false;
 
+        int rootEgoTreeId = -1;
 
         if(msg instanceof DeleteRequestMessage)
         {
             upForward = true;
         }
         else if(msg instanceof LargeInsertMessage){
+            rootEgoTreeId = this.getRootEgoTreeId();
             upForward = false;
         }
         else if (msg instanceof CbRenetMessage){
-            if(this.getCommunicateLargeNodes().containsKey(dst)){
+            if(this.getCommunicateLargeNodes().containsKey(dst) && !this.largeFlag){
                 upForward = true;
             }
-            else if(this.getCommunicateSmallNodes().containsKey(dst)){
+            else if(this.getCommunicateSmallNodes().containsKey(dst) && this.largeFlag){
+                // 大结点发消息时，将routingMessage中的NextHop 直接设置好发送（在sendTo里会用到（
+                rootEgoTreeId = this.getRootEgoTreeId(); // 这个要用做helpedId的，辅助结点需要这个！！
                 upForward = false;
             }
             else{
@@ -145,6 +157,9 @@ public abstract class MessageSendLayer extends MessageQueueLayer{
 
         RoutingMessage routingMessage = new RoutingMessage(this.ID, dst, msg, largeId, upForward);
 
+        if(rootEgoTreeId > 0){
+            routingMessage.setNextHop(rootEgoTreeId);
+        }
 
         if(this.forwardMessage(routingMessage)){
             // When DRM sent, the corresponding CP should be removed! No message would be sent after this!
@@ -172,6 +187,17 @@ public abstract class MessageSendLayer extends MessageQueueLayer{
         assert msg instanceof DeleteBaseMessage;
 
         RoutingMessage routingMessage = new RoutingMessage(this.ID, dst, msg, largeId, upward);
+
+//        if(!upward){
+//            SendEntry entry = this.getCorrespondingEntry(this.ID, largeId);
+//            if(dst > this.ID){
+//                routingMessage.setNextHop(entry.getEgoTreeIdOfRightChild());
+//            }
+//            else{
+//                routingMessage.setNextHop(entry.getEgoTreeIdOfLeftChild());
+//            }
+//        }
+        routingMessage.setNextHop(this.ID);
 
         if(!this.forwardMessage(routingMessage)){
             this.addInRoutingMessageQueue(routingMessage);

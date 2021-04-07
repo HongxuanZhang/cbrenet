@@ -35,6 +35,8 @@ public class CbRenetMessage extends NetworkMessage implements Comparable<CbRenet
 
     public CbRenetMessage(int src, int dst, double priority) {
         super(src, dst);
+        this.src = src;
+        this.dst = dst;
         this.largeIdFlag = false;
         this.largeId = -1;
         this.priority = priority;
@@ -42,19 +44,12 @@ public class CbRenetMessage extends NetworkMessage implements Comparable<CbRenet
         this.init();
     }
 
-    public CbRenetMessage(int src, int dst, boolean largeIdFlag, int largeId, double priority){
-        super(src, dst);
-        this.largeIdFlag = largeIdFlag;
-        this.largeId = largeId;
-        this.priority = priority;
-
-        this.init();
-
-    }
 
     public CbRenetMessage(int src, int dst, boolean largeIdFlag, int largeId, double priority,
                           boolean upForward){
         super(src, dst);
+        this.src = src;
+        this.dst = dst;
         this.largeIdFlag = largeIdFlag;
         this.largeId = largeId;
         this.priority = priority;
@@ -184,4 +179,12 @@ public class CbRenetMessage extends NetworkMessage implements Comparable<CbRenet
         }
     }
 
+    @Override
+    public String toString() {
+        return "CbRenetMessage{" +
+                "upForward=" + upForward +
+                ", src=" + src +
+                ", dst=" + dst +
+                '}';
+    }
 }

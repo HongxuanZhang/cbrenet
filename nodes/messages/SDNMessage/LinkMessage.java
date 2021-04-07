@@ -97,4 +97,16 @@ public class LinkMessage extends StatusRelatedMessage {
     public Message clone() {
         return this;
     }
+
+    @Override
+    public String toString(){
+        if(relationships != null){
+            return "The largeId is " + this.largeId + " " +
+                    "" + this.relationships.toString() + " " +
+                    "" + ", link to" + this.targets.toString();
+        }
+        else{
+            return "The largeId is " + this.largeId + " Link to " + this.targets.toString();
+        }
+    }
 }

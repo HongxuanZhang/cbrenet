@@ -16,6 +16,20 @@ import java.util.HashMap;
 
 public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLayer implements EntryGetter {
 
+
+    public void init(){
+        super.init();
+        this.rootEgoTreeId = -1;
+        this.rootSendId = -1;
+        this.rootNodeSendFlag = true;
+
+        this.routeTableInEgoTree = new HashMap<>();
+    }
+
+
+
+
+
     // only used in the large node. root node id is the id of the node which connect to the large node directly!
     // Even we have SendEntry, we still need this field as the link to the Ego-Tree(LN).
     private int rootSendId = -1;
@@ -37,19 +51,29 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
     }
     public int getRootEgoTreeId() {
         return rootEgoTreeId;
-    }
+    } // 有用吗？ 有用的， 需要作为helpedId 被 辅助的根节点使用
     public void setRootEgoTreeId(int rootEgoTreeId) {
         this.rootEgoTreeId = rootEgoTreeId;
     }
 
 
-    // todo 关于这一部分的调用，在forwardMessage里没有相关的部分
-    // FixMe
+    public void addLinkToRootNode(int largeId, int id){
+        // 这个函数，建树时要用的
+        if(largeId < 0){
+            Tools.fatalError("The ego tree's root of the large" +
+                    " node " + largeId + " is smaller than 0.");
+        }
+        this.setRootEgoTreeId(id);
+        this.setRootSendId(id);
+    }
+
+
+
 
 
 
     // used in the Ego-Tree's node.
-    HashMap<Integer, SendEntry> routeTableInEgoTree;  // 指示着当前的结点在 Ego-Tree(largeId)中的情况
+    HashMap<Integer, SendEntry> routeTableInEgoTree = new HashMap<>();  // 指示着当前的结点在 Ego-Tree(largeId)中的情况
     // largeId, SendEntry
 
 
@@ -102,7 +126,7 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
          */
 
         if(egoTreeTargetID < 0){
-            Tools.fatalError("In sendTo method of CBBST node" + this.ID
+            Tools.warning("In sendTo method of CBBST node" + this.ID
                     + ", the egoTreeTargetID < 0 !");
             return false;
         }
@@ -121,17 +145,14 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
                 return false;
             }
 
-            if(rootID != egoTreeTargetID){
-                Tools.fatalError("LN" + this.ID + " need to send a forwarding message, " +
-                        "but the rootNodeId is not equal to the egoTreeId provided by the node " + rootID + " &" +
-                        " " + egoTreeTargetID );
-                return false;
-            }
-
             if(this.outgoingConnections.contains(this, Tools.getNodeByID(rootID))){
                 boolean sendFlag = this.rootNodeSendFlag;
                 if(sendFlag){
-                    routingMessage.setNextHop(rootID); // when the node is sure that the message would be sent, change it !
+                    routingMessage.setNextHop(egoTreeTargetID); // when the node is sure that the message would be sent, change it !
+
+                    System.out.println("Node " + this.ID + " send a routing message to " + rootID + "" +
+                            " in the egoTree(" +largeId+"), which is the root.");
+
                     this.send(routingMessage,Tools.getNodeByID(rootID));
                     return true;
                 }
@@ -157,6 +178,10 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
                 boolean sendFlag = entry.getSendFlag(egoTreeTargetID);
                 if(sendFlag){
                     routingMessage.setNextHop(egoTreeTargetID); // when the node is sure that the message would be sent, change it !
+
+                    System.out.println("Node " + this.ID + " send a routing message to " + targetID + "" +
+                            " in the egoTree(" +largeId+"), egoTreeId is " + egoTreeTargetID);
+
                     this.send(routingMessage,Tools.getNodeByID(targetID));
                     return true;
                 }

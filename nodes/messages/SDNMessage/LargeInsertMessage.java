@@ -15,7 +15,8 @@ import sinalgo.nodes.messages.Message;
 
 public class LargeInsertMessage extends StatusRelatedMessage {
 
-    final private int auxiliaryNodeId; // the auxiliary node which SDN allocate
+    private int auxiliaryNodeId; // the auxiliary node which SDN allocate,
+    // now the node could come back
 
     final private int target;          // which would be inserted to the ego-Tree(largeId)
     final private int largeId;
@@ -26,11 +27,10 @@ public class LargeInsertMessage extends StatusRelatedMessage {
 
     private boolean leftFlag = false; // set by the parent , indicate that whether the target node is leftChild
 
-    public LargeInsertMessage(int target, int largeID, int auxiliaryNodeId, int uniqueStatusId){
+    public LargeInsertMessage(int target, int largeID, int uniqueStatusId){
         super(uniqueStatusId);
         this.largeId = largeID;
         this.target = target;
-        this.auxiliaryNodeId = auxiliaryNodeId;
     }
 
     public void setLeftFlag(boolean leftFlag) {
@@ -53,6 +53,10 @@ public class LargeInsertMessage extends StatusRelatedMessage {
         return largeId;
     }
 
+    public void setAuxiliaryNodeId(int auxiliaryNodeId) {
+        this.auxiliaryNodeId = auxiliaryNodeId;
+    }
+
     public void setLeafId(int leafId) {
         this.leafId = leafId;
     }
@@ -72,5 +76,19 @@ public class LargeInsertMessage extends StatusRelatedMessage {
 
     public void setInserted() {
         this.inserted = true;
+    }
+
+
+    @Override
+    public String toString() {
+        return "LargeInsertMessage{" +
+                "auxiliaryNodeId=" + auxiliaryNodeId +
+                ", target=" + target +
+                ", largeId=" + largeId +
+                ", leafId=" + leafId +
+                ", inserted=" + inserted +
+                ", leftFlag=" + leftFlag +
+                ", uniqueStatusId=" + uniqueStatusId +
+                '}';
     }
 }

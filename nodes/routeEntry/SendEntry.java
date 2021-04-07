@@ -280,6 +280,9 @@ public class SendEntry {
 
         this.routingMessageQueue = new LinkedList<>();
 
+        this.highestDPMChangeBit = true;
+        this.curHighestDPM = null;
+
         this.deletePrepareMessagePriorityQueue = new PriorityQueue<>();
 
         this.gotConfirmMessageMap = new HashMap<>();
@@ -287,7 +290,7 @@ public class SendEntry {
         this.auxiliaryId = -1;
 
 
-        this.deleteFlag = true;
+        this.deleteFlag = false;
         this.deletingFlagOfItSelf = false;
         this.deletingFlagOfParent = false;
         this.deletingFlagOfLeftChild = false;
@@ -397,13 +400,15 @@ public class SendEntry {
          *@author  Zhang Hongxuan
          *@create time  2021/3/21
          */
-        return (!this.deletingFlagOfParent) && (!this.deletingFlagOfRightChild) && (!this.deletingFlagOfLeftChild);
+        return (this.deletingFlagOfParent) || (this.deletingFlagOfRightChild) || (this.deletingFlagOfLeftChild);
     }
 
 
     boolean deleteFlag;
     // when delete flag is ture, it means the node would try to delete itself every round
     // and would not accept adjust.
+    boolean highestDPMChangeBit;
+    DeletePrepareMessage curHighestDPM;
 
 
     PriorityQueue<DeletePrepareMessage> deletePrepareMessagePriorityQueue;
@@ -420,10 +425,19 @@ public class SendEntry {
 
     // Every round
     public DeletePrepareMessage getDeletePrepareMessageFromPriorityQueue(){
-        if(this.requestClusterMessagePriorityQueue.isEmpty()){
+        if(this.deletePrepareMessagePriorityQueue.isEmpty()){
             return null;
         }
-        return this.deletePrepareMessagePriorityQueue.poll();
+        DeletePrepareMessage highestDPMTmp = this.deletePrepareMessagePriorityQueue.peek();
+        if(highestDPMTmp.equals(this.curHighestDPM)){
+            this.highestDPMChangeBit = false;
+            return null;
+        }
+        else{
+            this.curHighestDPM = highestDPMTmp;
+            this.highestDPMChangeBit = true;
+            return highestDPMTmp;
+        }
     }
 
     private void deleteCorrespondingDeletePrepareMessageInPriorityQueue(int largeId, int deleteTarget){
@@ -458,84 +472,6 @@ public class SendEntry {
 
     public void setDeletePrepareMessageOfMine(DeletePrepareMessage deletePrepareMessageOfMine) {
         this.deletePrepareMessageOfMine = deletePrepareMessageOfMine;
-        // 下面这一部分的代码是用来进行三项并行删除的，但是三项并行删除很难实现，问题有点大，不好做，先放一放
-//        char relation = this.getRelationShipOf(target);
-//
-//        if(relation == 'w'){
-//            // 说明是自己发送的，要设置到自己身上
-//            int numTmp = 0;
-//
-//            DeletePrepareMessage[] deletePrepareMessages = {this.deletePrepareMessageOfParent, this.deletePrepareMessageOfRightChild,
-//                    this.deletePrepareMessageOfLeftChild};
-//
-//
-//            for(int i = 0; i<3;i++){
-//                // 快速方式，说明之前已经有比不过的了
-//                if(numTmp < i){
-//                    break;
-//                }
-//                DeletePrepareMessage message = deletePrepareMessages[i];
-//                if(message != null){
-//                    if(i == 0){
-//                        if(deletePrepareMessageOfMine.compareTo(message) <= 0){
-//                            numTmp += 1;
-//                        }
-//                    }
-//                    else{
-//                        // 与两个孩子结点的请求比，如果相等，需要优先执行孩子结点的请求
-//                        if(deletePrepareMessageOfMine.compareTo(message) < 0){
-//                            numTmp += 1;
-//                        }
-//                    }
-//                }
-//                else{
-//                    numTmp += 1;
-//                }
-//            }
-//
-//
-//            if(numTmp == 3){
-//                this.deletePrepareMessageOfMine = deletePrepareMessageOfMine;
-//
-//                this.deletePrepareMessageOfParent = null;
-//                this.deletePrepareMessageOfLeftChild = null;
-//                this.deletePrepareMessageOfRightChild = null;
-//            }
-//        }
-//        else{
-//            //'r' 'l' 'p'
-//            boolean setFlag = false;
-//            if(this.deletePrepareMessageOfMine != null){
-//                if(relation == 'p'){
-//                    if(deletePrepareMessageOfMine.compareTo(this.deletePrepareMessageOfMine) < 0){
-//                        setFlag = true;
-//                    }
-//                }
-//                else{
-//                    if(deletePrepareMessageOfMine.compareTo(this.deletePrepareMessageOfMine) < 0){
-//                        setFlag = true;
-//                    }
-//                }
-//            }
-//            else{
-//                setFlag = true;
-//            }
-//
-//            if(setFlag){
-//                switch (relation){
-//                    case 'p':
-//                        this.deletePrepareMessageOfParent = deletePrepareMessageOfMine;
-//                        break;
-//                    case 'l':
-//                        this.deletePrepareMessageOfLeftChild = deletePrepareMessageOfMine;
-//                        break;
-//                    case 'r':
-//                        this.deletePrepareMessageOfRightChild = deletePrepareMessageOfMine;
-//                        break;
-//                }
-//                this.deletePrepareMessageOfMine = null;
-//            }
-//        }
     }
 
 
@@ -543,6 +479,8 @@ public class SendEntry {
         int src = deleteConfirmMessage.getSrcEgoTreeId();
         if(this.gotConfirmMessageMap.containsKey(src)) {
             this.gotConfirmMessageMap.replace(src, false, true);
+            System.out.println("SendEntry: Receive a DCM from " + src);
+
         }
         else{
             Tools.warning("The node receive a DeleteConfirmMessage but not from a node expected!");

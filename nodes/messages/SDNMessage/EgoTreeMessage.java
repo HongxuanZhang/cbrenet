@@ -24,6 +24,13 @@ public class EgoTreeMessage extends StatusRelatedMessage {
 
     @Override
     public Message clone() {
-        return null;
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return "EgoTreeMessage{" +
+                "egoTreeNodes=" + egoTreeNodes +
+                '}';
     }
 }

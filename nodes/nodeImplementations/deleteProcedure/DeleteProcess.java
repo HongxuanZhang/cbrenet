@@ -37,14 +37,18 @@ public class DeleteProcess {
                 continue;
             }
             DeletePrepareMessage deletePrepareMessage1 = new DeletePrepareMessage(deletePrepareMessage);
+            deletePrepareMessage1.setSendTargetEgoTreeId(targetId);
             char relation = deleteEntry.getRelationShipOf(targetId);
             switch (relation){
                 case 'p':
                     deletePrepareMessage1.setRelation(Relation.child);
+                    break;
                 case 'l':
                     deletePrepareMessage1.setRelation(Relation.parent);
+                    break;
                 case 'r':
                     deletePrepareMessage1.setRelation(Relation.parent);
+                    break;
             }
             this.sendDeleteBaseMessage(deletePrepareMessage1, largeId, deleteEntry, targetId, helpedId, node);
         }
@@ -68,7 +72,7 @@ public class DeleteProcess {
         if(deleteEntry.isDeletingFlagOfItSelf()){
             return;
         }
-
+        deleteEntry.setDeletingFlagOfItSelf(true);
         DeletePrepareMessage deletePrepareMessage = new DeletePrepareMessage
                 (largeId, helpedId, Tools.getGlobalTime());
 
@@ -82,32 +86,43 @@ public class DeleteProcess {
         //deleteEntry.setDeletePrepareMessageOfMine(deletePrepareMessage);
 
         deleteEntry.initGotMap();
+
+        System.out.println("Delete Process: Node " + helpedId + " start to delete!");
+
     }
 
 
     public void getHighestPriorityDeletePrepareMessage(SendEntry deleteEntry, int helpedId, Node node){
         /*
          *@description Execute this method in EVERY post round. Even the node has not received the DeleteMessage yet!
-         *@parameters  [deleteEntry, helpedId, node]
+         *              这个函数是用于回复DPM的。
+         * @parameters  [deleteEntry, helpedId, node]
          *@return  void
          *@author  Zhang Hongxuan
          *@create time  2021/3/21
          */
 
+
         DeletePrepareMessage deletePrepareMessageToDealWith = deleteEntry.getDeletePrepareMessageFromPriorityQueue();
+
+
 
         if(deletePrepareMessageToDealWith == null){
             return;
         }
 
+
+
+        int largeId = deletePrepareMessageToDealWith.getLargeId();
         // check whether this is itself 's DPM
         if(deletePrepareMessageToDealWith.equals(deleteEntry.getDeletePrepareMessageOfMine())){
             // 执行的时候调试一下看这里是否正确执行
-            int largeId = deletePrepareMessageToDealWith.getLargeId();
 
             if(!deleteEntry.checkNeighborDeleting()){
-                deleteEntry.setDeletingFlagOfItSelf(true);
+
                 this.sendDeletePrepareMessage(deleteEntry, deletePrepareMessageToDealWith, largeId, helpedId, node);
+                System.out.println("Delete Process: Send a DPM from " + helpedId + " " +
+                        "in the ego-tree of " + largeId);
             }
             else{
                 // 还有邻居在做删除，再等等。
@@ -118,6 +133,8 @@ public class DeleteProcess {
             // 为什么可以直接发送DCM而不用担心冲突呢？
             // 因为冲突只可能发生在这条边上，但是按照规定对方先进行删除，那自己需要等待的DCM对方不会发给自己，自己就一直等着。。
             this.confirmNeighborsDeleteRequest(deletePrepareMessageToDealWith, deleteEntry, helpedId, node);
+            System.out.println("Delete Process: Send a DCM from " + helpedId + " " +
+                    "" + "to " + deletePrepareMessageToDealWith.getDeleteTarget() + " in the ego-tree of " + largeId);
         }
         deleteEntry.receiveOrSetDeletePrepareMessage(deletePrepareMessageToDealWith);
     }
@@ -146,22 +163,27 @@ public class DeleteProcess {
 
         DeleteConfirmMessage confirmMessage = new DeleteConfirmMessage(largeId, deleteTarget, helpedId);
 
-        // 确认并且通过某一个邻居在做deleting
-        deleteEntry.targetStartDeleting(deleteTarget);
-
         this.sendDeleteBaseMessage(confirmMessage, largeId, deleteEntry, deleteTarget, helpedId, node);
+
+        // 确认并且通过某一个邻居在做deleting
+        // corresponding deleting flag & send flag
+        deleteEntry.targetStartDeleting(deleteTarget);
     }
 
 
 
 
     // send DBM
-    private boolean sendDeleteBaseMessage(DeleteBaseMessage message, int largeId, SendEntry deleteEntry, int targetId, int helpedId, Node node){
+    private boolean sendDeleteBaseMessage(DeleteBaseMessage message, int largeId, SendEntry deleteEntry,
+                                          int targetId, int helpedId, Node node){
         boolean upward = false;
         if(deleteEntry.getRelationShipOf(targetId) == 'p'){
             upward = true;
         }
         if(node instanceof MessageSendLayer){
+            System.out.println("Delete process: In node "+ helpedId + " a " +
+                    "message " + message.getClass().getSimpleName() + " send to " + targetId + " " +
+                    "in the ego-tree of " + largeId );
             return ((MessageSendLayer)node).sendEgoTreeMessage(largeId, targetId,
                     message, upward);
         }
@@ -169,6 +191,8 @@ public class DeleteProcess {
             return ((AuxiliaryNodeMessageQueueLayer)node).sendEgoTreeMessage(largeId, targetId,
                     message, upward, helpedId);
         }
+
+
         Tools.fatalError("The node call DeleteProcess should be the instance of one Nodes");
         return false;
     }
@@ -194,7 +218,16 @@ public class DeleteProcess {
         return sendEntry.setDeleteConfirmMessage(deleteConfirmMessage);
     }
 
-    private void receiveAndExecuteDeleteFinishMessage(SendEntry sendEntry, Node node, DeleteFinishMessage deleteFinishMessage, int helpedId){
+    private void receiveAndExecuteDeleteFinishMessage(SendEntry sendEntry, Node node, DeleteFinishMessage
+            deleteFinishMessage, int changingEntryId){
+        /*
+         *@description
+         *@parameters  [sendEntry, node, deleteFinishMessage, changingEntryId]
+         *              changingEntryId 就相当于 AN里的 helpedId.
+         *@return  void
+         *@author  Zhang Hongxuan
+         *@create time  2021/4/6
+         */
         int deleteTarget = deleteFinishMessage.getDeleteTarget();
         int largeId = deleteFinishMessage.getLargeId();
 
@@ -214,7 +247,7 @@ public class DeleteProcess {
                 }
                 else if(node instanceof AuxiliaryNode){
                     AuxiliaryNode auxiliaryNode = (AuxiliaryNode) node;
-                    auxiliaryNode.changeParentTo(largeId, egoTreeId, trueId, helpedId);
+                    auxiliaryNode.changeParentTo(largeId, egoTreeId, trueId, changingEntryId);
                 }
                 break;
             case 'l':
@@ -224,7 +257,7 @@ public class DeleteProcess {
                 }
                 else if(node instanceof AuxiliaryNode){
                     AuxiliaryNode auxiliaryNode = (AuxiliaryNode) node;
-                    auxiliaryNode.changeLeftChildTo(largeId, egoTreeId, trueId, helpedId);
+                    auxiliaryNode.changeLeftChildTo(largeId, egoTreeId, trueId, changingEntryId);
                 }
                 break;
             case 'r':
@@ -234,7 +267,7 @@ public class DeleteProcess {
                 }
                 else if(node instanceof AuxiliaryNode){
                     AuxiliaryNode auxiliaryNode = (AuxiliaryNode) node;
-                    auxiliaryNode.changeRightChildTo(largeId, egoTreeId, trueId, helpedId);
+                    auxiliaryNode.changeRightChildTo(largeId, egoTreeId, trueId, changingEntryId);
                 }
                 break;
             default:
@@ -325,9 +358,13 @@ public class DeleteProcess {
             // Need AN to help or AN want the node back!
             int auxiliaryId = sendEntry.getAuxiliaryId();
 
-            DeleteFinishMessage deleteFinishMessage = new DeleteFinishMessage(largeId, helpedId, helpedId, auxiliaryId);
+            // if a LIM call a node back, then the helpedId should equal to auxiliaryId
+
             for(int dstId : ids)
             {
+                DeleteFinishMessage deleteFinishMessage = new DeleteFinishMessage(largeId, helpedId, helpedId
+                        , auxiliaryId, dstId);
+
                 if(!this.sendDeleteBaseMessage(deleteFinishMessage, largeId,
                         sendEntry, dstId, helpedId, node)){
                     sendFlag = false;
@@ -348,10 +385,12 @@ public class DeleteProcess {
                 int sendIdOfNeighbor1 = sendEntry.getSendIdOf(neighbor1);
                 int sendIdOfNeighbor2 = sendEntry.getSendIdOf(neighbor2);
 
-                DeleteFinishMessage deleteFinishMessageTo2 = new DeleteFinishMessage(largeId, helpedId, neighbor1, sendIdOfNeighbor1);
-                DeleteFinishMessage deleteFinishMessageTo1 = new DeleteFinishMessage(largeId, helpedId, neighbor2, sendIdOfNeighbor2);
+                DeleteFinishMessage deleteFinishMessageTo2 = new DeleteFinishMessage(largeId, helpedId,
+                        neighbor1, sendIdOfNeighbor1, neighbor2);
+                DeleteFinishMessage deleteFinishMessageTo1 = new DeleteFinishMessage(largeId, helpedId,
+                        neighbor2, sendIdOfNeighbor2, neighbor1);
 
-                if(! this.sendDeleteBaseMessage(deleteFinishMessageTo2, largeId,
+                if(!this.sendDeleteBaseMessage(deleteFinishMessageTo2, largeId,
                         sendEntry, neighbor2, helpedId, node)){
                     sendFlag = false;
                 }
@@ -363,7 +402,8 @@ public class DeleteProcess {
             else if(ids.size() == 1){
                 // no need to create any link
                 int neighbor1 = ids.get(0);
-                DeleteFinishMessage deleteFinishMessageTo1 = new DeleteFinishMessage(largeId, helpedId, -1, -1);
+                DeleteFinishMessage deleteFinishMessageTo1 = new DeleteFinishMessage(largeId, helpedId,
+                        -1, -1, neighbor1);
                 if(this.sendDeleteBaseMessage(deleteFinishMessageTo1, largeId,
                         sendEntry, neighbor1, helpedId, node)){
                     sendFlag = false;
@@ -395,20 +435,27 @@ public class DeleteProcess {
          */
         int largeId = msg.getLargeId();
         int helpedId = msg.getDeleteTarget();
+
         if(msg instanceof DeletePrepareMessage){
             SendEntry entry = entryGetter.getCorrespondingEntry(helpedId, largeId);
+            int targetEgoTreeId = ((DeletePrepareMessage) msg).getSendTargetEgoTreeId();
             this.receiveDeletePrepareMessage(entry,(DeletePrepareMessage) msg);
+            System.out.println("Delete Process : Ego Node " + targetEgoTreeId + " received a DPM " +
+                    "from " + msg.getDeleteTarget() + ", in the ego-tree of " + largeId);
         }
         else if(msg instanceof DeleteConfirmMessage){
             SendEntry entry = entryGetter.getCorrespondingEntry(helpedId,largeId);
             if(this.receiveDeleteConfirmMessage(entry, (DeleteConfirmMessage)msg)){
+                System.out.println("Delete Process : Ego Node " + helpedId + " got all DCM," +
+                        " in the ego-tree of " + largeId);
                 return this.sendDeleteFinishMessage(entry,largeId, helpedId, node);
                 // Remember to remove Entry outside
             }
         }
         else if(msg instanceof DeleteFinishMessage){
+            int targetId = ((DeleteFinishMessage) msg).getTargetEgoTreeId();
             SendEntry entry = entryGetter.getCorrespondingEntry(helpedId,largeId);
-            this.receiveAndExecuteDeleteFinishMessage(entry, node, (DeleteFinishMessage)msg, helpedId);
+            this.receiveAndExecuteDeleteFinishMessage(entry, node, (DeleteFinishMessage)msg, targetId);
         }
         return false;
     }

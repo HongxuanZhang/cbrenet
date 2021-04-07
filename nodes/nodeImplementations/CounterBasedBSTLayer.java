@@ -2,14 +2,11 @@ package projects.cbrenet.nodes.nodeImplementations;
 
 import projects.cbrenet.nodes.messages.CbRenetMessage;
 import projects.cbrenet.nodes.messages.RoutingMessage;
-import projects.cbrenet.nodes.messages.SDNMessage.DeleteMessage;
-import projects.cbrenet.nodes.messages.SDNMessage.EgoTreeMessage;
-import projects.cbrenet.nodes.messages.SDNMessage.LinkMessage;
-import projects.cbrenet.nodes.messages.SDNMessage.StatusChangedMessage;
+import projects.cbrenet.nodes.messages.SDNMessage.*;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteEgoTreeRequestMessage;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteRequestMessage;
-import projects.cbrenet.nodes.messages.SDNMessage.LargeInsertMessage;
 import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteBaseMessage;
+import projects.cbrenet.nodes.routeEntry.SendEntry;
 import sinalgo.configuration.WrongConfigurationException;
 import sinalgo.nodes.messages.Inbox;
 import sinalgo.nodes.messages.Message;
@@ -25,18 +22,44 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
     private HashMap<Integer, Boolean> insertMessageExecuteFlags;
 
 
+    @Override
+    public void init() {
+
+        super.init();
+
+        // Insert Message Queue
+        this.insertMessageQueue = new LinkedList<RoutingMessage>();
+        this.insertMessageExecuteFlags = new HashMap<>();
+
+    }
+
+
 
 
 
     // LIM execution part
     public boolean checkInsertMessageExecuteFlags(int largeId){
-        return this.insertMessageExecuteFlags.getOrDefault(largeId, false);
+        if(!this.insertMessageExecuteFlags.getOrDefault(largeId, false)){
+            return false;
+        }
+        else{
+            // pass the LIM test, but the node may involve in deleting or rotation.
+            SendEntry entry = this.getCorrespondingEntry(-1, largeId);
+            if(entry == null){
+                Tools.fatalError("We are checking whether should execute LIM, Entry should not be null!");
+                return false;
+            }
+            if(entry.isDeleteFlag()){
+                return false;
+            }
+            return true;
+        }
     }
 
-    // todo 收到LIM or LinkMessage时，做这件事
     public void addInsertMessageExecuteFlags(int largeId){
         /**
          *@description Only use this method when LIM or LinkMessage received by a ego-tree node.
+         *              收到LIM or LinkMessage时，做这件事
          *@parameters  [largeId]
          *@return  void
          *@author  Zhang Hongxuan
@@ -45,7 +68,14 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
         // Why default value is True?
         // Check the method checkInsertMessageExecuteFlags, the default value is false.
         // When a node inserted into a tree completely (both p and children), execute this method!
-        this.insertMessageExecuteFlags.put(largeId, true);
+        if(this.insertMessageExecuteFlags.containsKey(largeId)){
+            if(!this.insertMessageExecuteFlags.get(largeId)){
+                this.insertMessageExecuteFlags.put(largeId, true);
+            }
+        }
+        else{
+            this.insertMessageExecuteFlags.put(largeId, true);
+        }
     }
 
     // Only use for the node in the ego-tree. Only use for LIM
@@ -60,31 +90,6 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
     // LIM part finished!
 
 
-
-
-    // fixme 把它改进Entry中即可
-    public void addBidirectionalLinkToRootNode(int largeId, int id){
-        // 这个函数，建树时要用的
-        CounterBasedBSTLayer node = (CounterBasedBSTLayer) Tools.getNodeByID(id);
-        this.addBidirectionalLinkTo(node);
-        this.setRootSendId(id);
-        if(node != null){
-           // node.addLargeParent(largeId);
-        }
-        else{
-            Tools.fatalError("The ego tree's root of the large node " + largeId + " is empty!!");
-        }
-    }
-
-
-    @Override
-    public void init() {
-
-        // Insert Message Queue
-        this.insertMessageQueue = new LinkedList<RoutingMessage>();
-        this.insertMessageExecuteFlags = new HashMap<>();
-
-    }
 
 
 
@@ -150,16 +155,16 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
         }
         if(!forwardedFlag) {
             // has reached the leaf, create link to the target
-            this.addConnectionTo(Tools.getNodeByID(target));
             if (leftFlag) {
-                this.setLeftChild(largeId, target);
+                this.addLinkToLeftChild(largeId, target, target);
                 insertMessage.setLeftFlag(true);
             }
             else{
-                this.setRightChild(largeId, target);
+                this.addLinkToRightChild(largeId, target, target);
                 insertMessage.setLeftFlag(false);
             }
             insertMessage.setLeafId(this.ID);
+            // fixme bug. 如果当前结点要删除或者调整呢？？
             this.send(insertMessage, Tools.getNodeByID(target));
         }
         return true;
@@ -248,6 +253,10 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
                     else{
                         // not InsertMessage and not get destination
                         // only need to forward
+                        if(payload instanceof CbRenetMessage){
+                            ((CbRenetMessage) payload).incrementRouting();
+                        }
+
                         if(!this.forwardMessage(routingMessageTmp)){
                             ((MessageQueueLayer)this).addInRoutingMessageQueue(routingMessageTmp);
                         }
@@ -258,6 +267,7 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
                 CbRenetMessage cm = (CbRenetMessage) msg;
                 int destination = cm.getDestination();
                 if(destination == this.ID){
+                    cm.incrementRouting();
                     this.receiveMessage(msg);
                 }
                 else{
@@ -266,9 +276,6 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
                 }
             }
             else if(msg instanceof StatusChangedMessage){
-                this.receiveMessage(msg);
-            }
-            else if(msg instanceof EgoTreeMessage){
                 this.receiveMessage(msg);
             }
             else if(msg instanceof LargeInsertMessage){
@@ -298,27 +305,13 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
                     Tools.fatalError("A LargeInsertMessage has been sent to a wrong node. Please Check what happened!");
                 }
             }
-            else if(msg instanceof LinkMessage){
-                this.receiveMessage(msg);
-            }
-            else if(msg instanceof DeleteMessage){
+            else if(msg instanceof StatusRelatedMessage){
                 this.receiveMessage(msg);
             }
             else {
                 this.receiveMessage(msg);
             }
         }
-    }
-
-
-    protected void sendForwardMessage(int dst, Message msg) {
-        if (dst == this.ID) {
-            this.receiveMessage(msg);
-            return;
-        }
-        int largeId = -1;
-        RoutingMessage rt = new RoutingMessage(this.ID, dst, msg, largeId, );
-        forwardMessage(rt);
     }
 
 
@@ -332,6 +325,8 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
     public abstract void receiveMessage(Message msg);
 
     // abstract method part finish
+
+
 
 
     //  override method in the Node
@@ -375,12 +370,19 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
         while(!this.insertMessageQueue.isEmpty()){
             RoutingMessage routingMessage = insertMessageQueue.poll();
             if(! this.executeLargeInsertMessage(routingMessage)){
+                int largeId = routingMessage.getLargeId();
+                SendEntry entry = this.getCorrespondingEntry(-1, largeId);
+                if(entry.isDeleteFlag()){
+                    this.sendTo(entry.getEgoTreeIdOfParent(), routingMessage);
+                }
                 unexecutedQueue.add(routingMessage);
             }
         }
         this.insertMessageQueue.addAll(unexecutedQueue);
 
         // LIM part finished!
+
+
 
     }
 

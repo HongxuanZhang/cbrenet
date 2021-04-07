@@ -3,6 +3,7 @@ package projects.cbrenet.nodes.nodeImplementations;
 import java.awt.Color;
 import java.awt.Graphics;
 
+import projects.cbrenet.CustomGlobal;
 import projects.cbrenet.nodes.messages.CbRenetMessage;
 import projects.defaultProject.DataCollection;
 import sinalgo.gui.transformation.PositionTransformation;
@@ -12,7 +13,6 @@ import sinalgo.gui.transformation.PositionTransformation;
  */
 public class CBReNetApp extends CBNetNode {
 
-  private boolean msgSent = false;
   private DataCollection data = DataCollection.getInstance();
 
   @Override
@@ -22,33 +22,25 @@ public class CBReNetApp extends CBNetNode {
     this.data.incrementActiveSplays();
   }
 
+  @Override
+  public void init(){
+      super.init();
+  }
+
+  public CBReNetApp(){
+      super();
+      this.init();
+  }
+
+
 
   @Override
   public void communicationCompleted(CbRenetMessage msg) {
-    super.communicationCompleted(msg);
-
-    this.msgSent = true;
-    this.data.addRotations(msg.getRotations());
-    this.data.addRouting(msg.getRouting());
-    this.data.addThroughput(this.getCurrentRound());
-    this.data.addRoundsPerSplay(msg.finalTime - msg.initialTime);
-    this.data.incrementCompletedRequests();
-  }
-
-  @Override
-  public void posRound() {
-    super.posRound();
-
-    if (ID == 1) {
-      this.data.addNumOfActiveSplays();
-      this.data.addNumOfActiveClusters();
-      this.data.resetActiveClusters();
-    }
-
-    if (this.msgSent) {
-      this.msgSent = false;
-      this.data.decrementActiveSplays();
-    }
+      super.communicationCompleted(msg);
+      CustomGlobal.mustGenerateSplay = true;
+      this.data.addRouting(msg.getRouting());
+      this.data.addRoundsPerSplay(msg.finalTime - msg.initialTime);
+      this.data.incrementCompletedRequests();
   }
 
   @Override

@@ -40,16 +40,9 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
             if(this.isNodeSmall(id)){
                 smallNodes.put(id, id);
             }
-
-            //TODO
-//            判断是必须判断的！ 否则问题只会更加严重！！！
-//
-//            解决这个问题的关键似乎只有一个，那就是globalStatusId!!!!
-//
-//
-//            如果当前就是大结点，但是SDN把他变小了，且SCM还没到这里怎么办呢？？？？？？？
-//
-//            现在诚进退失据，如果不在此做判断，存在可能携带变大内容的SCM先到，而后才ETM才到，导致变大了的node加进来。。。
+            else{
+                Tools.warning("CPLayer: 有几个想加入Ego-Tree的结点，还是大的，说不定SDN忘了发送了");
+            }
         }
     }
 
@@ -102,7 +95,7 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
          *@create time  2021/3/3
          */
         if(this.egoTreeDeleteMap.containsKey(smallNodeId)){
-            Tools.warning("Need to add small node id to " + this.ID + "'s ego-tree, but it already store in the egoTreeDeleteMap, " +
+            Tools.warning("CPLayer: Need to add small node id to " + this.ID + "'s ego-tree, but it already store in the egoTreeDeleteMap, " +
                     " please check whether it has been cleared last time!");
             return;
         }
@@ -124,12 +117,12 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
                 this.egoTreeDeleteMap.remove(smallNodeId);
             }
             else{
-                Tools.fatalError("In removeEgoTreeNodeFromDeleteMap, the " +
+                Tools.fatalError("CPLayer: In removeEgoTreeNodeFromDeleteMap, the " +
                         "small node " + smallNodeId +" is not prepared to delete");
             }
         }
         else{
-            Tools.fatalError("The small node id " + smallNodeId +" is not in the" +
+            Tools.fatalError("CPLayer: The small node id " + smallNodeId +" is not in the" +
                     " removeEgoTreeNodeFromDeleteMap");
         }
     }
@@ -148,7 +141,7 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
             this.unPreparedDeleteNode.remove(smallNodeId);
         }
         else{
-            Tools.warning("The " + smallNodeId + " node are prepared to delete in the ego tree of " + this.ID + "" +
+            Tools.warning("CPLayer: The " + smallNodeId + " node are prepared to delete in the ego tree of " + this.ID + "" +
                     ", but it not contains in the egoTreeDeleteMap!");
         }
     }
@@ -190,7 +183,7 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
             this.largeNodes.remove(id);
         }
         else{
-            Tools.warning("Want to remove an non-existing communication partner " + id);
+            System.err.println("CPLayer: Want to remove an non-existing communication partner " + id);
         }
     }
 
@@ -201,7 +194,7 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
                 this.largeNodes.put(id, id);
             }
             else{
-                Tools.warning("Want to add exist cp "+ id +" in to " + this.ID +"'s co");
+                Tools.warning("CPLayer: Want to add exist cp "+ id +" in to " + this.ID +"'s big cp");
             }
         }
         else{
@@ -209,7 +202,7 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
                 this.smallNodes.put(id, id);
             }
             else{
-                Tools.warning("Want to add exist cp "+ id +" in to " + this.ID +"'s co");
+                Tools.warning("CPLayer: Want to add exist cp "+ id +" in to " + this.ID +"'s small cp");
             }
         }
     }
@@ -217,7 +210,7 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
     public void addCommunicationPartner(int id, boolean largePartner){
         boolean idLargeFlag = !this.isNodeSmall(id);
         if(idLargeFlag != largePartner){
-            Tools.fatalError("In " + this.ID + " CP Layer, " +
+            Tools.fatalError("CPLayer: In " + this.ID + " CP Layer, " +
                     "the status of " + id + " the node know is different to the expected status");
 
         }
@@ -227,7 +220,7 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
                 this.largeNodes.put(id, id);
             }
             else{
-                Tools.warning("Want to add exist cp "+ id +" in to " + this.ID +"'s co");
+                Tools.warning("CPLayer: Want to add exist cp "+ id +" in to " + this.ID +"'s cp");
             }
         }
         else{
@@ -235,7 +228,7 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
                 this.smallNodes.put(id, id);
             }
             else{
-                Tools.warning("Want to add exist cp "+ id +" in to " + this.ID +"'s co");
+                Tools.warning("CPLayer: Want to add exist cp "+ id +" in to " + this.ID +"'s cp");
             }
         }
 
@@ -329,7 +322,7 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
 
     public boolean checkCommunicateSatisfaction(int src, int dst){
         if(src != this.ID) {
-            Tools.fatalError("This method must be called in a wrong way, the parameter src must equal to the ID of the " +
+            Tools.fatalError("CPLayer: This method must be called in a wrong way, the parameter src must equal to the ID of the " +
                     "node");
             return false;
         }
@@ -351,7 +344,7 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
             dst = messageTmp.getDst();
         }
         else{
-            Tools.fatalError("Message class MISSING! Add " + message.getClass() + " into MessageQueueLayer" );
+            Tools.fatalError("CPLayer: Message class MISSING! Add " + message.getClass() + " into MessageQueueLayer" );
             src = -100; // Whatever, make sure check won't return true;
             dst = -100;
         }

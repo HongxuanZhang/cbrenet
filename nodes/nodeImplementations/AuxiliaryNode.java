@@ -22,15 +22,19 @@ import sinalgo.nodes.messages.Message;
 
 public class AuxiliaryNode extends AuxiliaryNodeMessageQueueLayer{
 
+    public AuxiliaryNode(){
+        this.init();
+    }
+
     private void executeRoutingMessage(RoutingMessage routingMessage){
         Message payload = routingMessage.getPayload();
         if(payload instanceof LargeInsertMessage){
             // check whether this need to make the node return.
             int largeId = routingMessage.getLargeId();
+            ((LargeInsertMessage) payload).setAuxiliaryNodeId(this.ID);
             int helpedId = ((LargeInsertMessage) payload).getTarget();
             AuxiliarySendEntry entry = this.getCorrespondingEntry(helpedId, largeId);
             if(entry != null){
-
                 entry.setAuxiliaryId((LargeInsertMessage) payload);
                 this.deleteProcess.startDelete(entry, this, largeId, helpedId);
 
@@ -118,7 +122,7 @@ public class AuxiliaryNode extends AuxiliaryNodeMessageQueueLayer{
 
     @Override
     public void init() {
-
+        super.init();
     }
 
     @Override

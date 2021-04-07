@@ -5,6 +5,7 @@ import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteBaseMessage;
 import projects.cbrenet.nodes.nodeImplementations.deleteProcedure.DeleteProcess;
 import projects.cbrenet.nodes.nodeImplementations.nodeHelper.MessageForwardHelper;
 import projects.cbrenet.nodes.routeEntry.AuxiliarySendEntry;
+import projects.cbrenet.nodes.routeEntry.SendEntry;
 import sinalgo.nodes.messages.Message;
 import sinalgo.tools.Tools;
 
@@ -12,12 +13,17 @@ import java.util.*;
 
 public abstract class AuxiliaryNodeMessageQueueLayer extends AuxiliaryNodeStructureLayer {
 
+
     protected final DeleteProcess deleteProcess = new DeleteProcess();
 
     protected void doInPostRound() {
 
         // clear queue part and delete condition check
         HashMap<Integer, HashMap<Integer, AuxiliarySendEntry>> routeTableTmp = this.getRouteTable();
+
+        if(routeTableTmp == null){
+            return;
+        }
 
         Set<Integer> helpedIds = routeTableTmp.keySet();
 
@@ -71,6 +77,8 @@ public abstract class AuxiliaryNodeMessageQueueLayer extends AuxiliaryNodeStruct
 
         RoutingMessage routingMessage = new RoutingMessage(this.ID, dst, msg, largeId, upward);
 
+        routingMessage.setNextHop(helpedId);
+
         if(!this.forwardMessage(routingMessage)){
             this.addRoutingMessageToQueue(helpedId, routingMessage);
             return false;
@@ -94,10 +102,9 @@ public abstract class AuxiliaryNodeMessageQueueLayer extends AuxiliaryNodeStruct
          *@author Zhang Hongxuan
          *@create time  2021/3/14
          */
-        int helpedId = routingMessage.getNextHop();
         MessageForwardHelper helper = new MessageForwardHelper();
 
         // 为什么是helped id 呢？ 因为forwardMessage需要和第一位参数进行比较的来决定RoutingMessage该去哪的
-        return helper.forwardMessage(helpedId, this, routingMessage);
+        return helper.forwardMessage(this.ID, this, routingMessage);
     }
 }

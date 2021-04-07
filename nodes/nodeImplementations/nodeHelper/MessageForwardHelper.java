@@ -17,13 +17,24 @@ public class MessageForwardHelper {
         int largeId = routingMessage.getLargeId();
         int helpedId = routingMessage.getNextHop();
 
-        if(largeId != -1){
-            // which means need to transfer in the large id's tree
+
+
+
+        if(largeId >=0 ){// fixme largeId >=0
+            // which means need to transfer in the large id's tre
+
 
             // Very Important!!
             boolean alreadySendFlag = false;
             // Note that every message can not send in this turn must store in the routingMessageQueue to
             // send it in the next turn;
+
+
+            if(ID == largeId){
+                // the sender must set Next Hop already
+                return entryGetter.sendTo(helpedId, routingMessage);
+            }
+
 
 
             if(routingMessage.getSpecialHopFlag()){
@@ -33,6 +44,9 @@ public class MessageForwardHelper {
 
                     if(currentParentId == routingMessage.getSpecialHop()){
                         routingMessage.resetSpecialHop();
+
+                        System.out.println("Node " + ID + " send a routing message to " + currentParentId);
+
                         return entryGetter.sendTo(currentParentId, routingMessage);
                     }
                     else{
@@ -57,11 +71,17 @@ public class MessageForwardHelper {
                     // if not upForward, the message would send to the child
                     if (helpedId < destination) {
                         int rightChild = entryGetter.getEgoTreeIdOfRightChild(helpedId, largeId);
+                        System.out.println("Node " + ID + " send a routing message to right child " + rightChild + " in" +
+                                " egoTree(" + largeId + ") to help " + helpedId);
+
                         if(entryGetter.sendTo(rightChild, routingMessage)){
                             alreadySendFlag = true;
                         }
                     } else if (destination < helpedId) {
                         int leftChild = entryGetter.getEgoTreeIdOfLeftChild(helpedId, largeId);
+                        System.out.println("Node " + ID + " send a routing message to left child " + leftChild + " in" +
+                                " egoTree(" + largeId + ") to help " + helpedId);
+
                         if(entryGetter.sendTo(leftChild, routingMessage)){
                             alreadySendFlag = true;
                         }
@@ -69,6 +89,8 @@ public class MessageForwardHelper {
                 }
                 else{
                     int parentId = entryGetter.getEgoTreeIdOfParent(helpedId, largeId);
+                    System.out.println("Node " + ID + " send a routing message to parent " + parentId + " in" +
+                            " egoTree(" + largeId + ") to help "+ helpedId);
                     if(entryGetter.sendTo(parentId, routingMessage)){
                         alreadySendFlag = true;
                     }
@@ -77,7 +99,7 @@ public class MessageForwardHelper {
             else if(message instanceof LargeInsertMessage){
                 LargeInsertMessage insertMessageTmp = (LargeInsertMessage) message;
                 int target = insertMessageTmp.getTarget();
-                if(target > ID){
+                if(target > helpedId){
                     int rightChild = entryGetter.getEgoTreeIdOfRightChild(helpedId, largeId);
                     if(entryGetter.sendTo(rightChild, routingMessage)){
                         alreadySendFlag = true;
@@ -103,12 +125,12 @@ public class MessageForwardHelper {
             else if(message instanceof DeleteBaseMessage){
                 if(!routingMessage.isUpForward()){
                     // if not upForward, the message would send to the child
-                    if (ID < destination) {
+                    if (helpedId < destination) {
                         int rightChild = entryGetter.getEgoTreeIdOfRightChild(helpedId,largeId);
                         if(entryGetter.sendTo(rightChild, routingMessage)){
                             alreadySendFlag = true;
                         }
-                    } else if (destination < ID) {
+                    } else if (destination < helpedId) {
                         int leftChild = entryGetter.getEgoTreeIdOfLeftChild(helpedId,largeId);
                         if(entryGetter.sendTo(leftChild, routingMessage)){
                             alreadySendFlag = true;

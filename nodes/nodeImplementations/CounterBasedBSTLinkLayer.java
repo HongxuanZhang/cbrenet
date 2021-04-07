@@ -45,9 +45,6 @@ public abstract class CounterBasedBSTLinkLayer extends CounterBasedBSTStructureL
 
     // remove link p l r
 
-
-    /* Todo 下面这两个函数，需要小心多次调用以及误删的问题！*/
-
     // remove : delete corresponding link and set corresponding entry into -1;
 
     public boolean removeLinkToParent(int largeId){

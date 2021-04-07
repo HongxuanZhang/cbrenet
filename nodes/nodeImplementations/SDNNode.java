@@ -18,7 +18,7 @@ import java.util.List;
 
 /**
  * function of SDN is to control the Node big or small
- * Actually we just use sendDirect,
+ * Actually we just use send direct,
  * so there is no need to create links between SDN with other nodes
  * */
 
@@ -49,11 +49,13 @@ public class SDNNode extends Node {
     // false : big
     private HashMap<Integer, Boolean> smallStatusBits;
 
+    private HashMap<Integer, Integer> cpNumber;
+
+
     // statistic
     private int largeNodeNum;
 
 
-    private HashMap<Integer, Integer> cpNumber;
 
     // CP必须是对称的！！
     private HashMap<Integer, HashSet<Integer>> cp_smallNodes;
@@ -66,15 +68,26 @@ public class SDNNode extends Node {
         this.init();
         this.constC = constC;
         this.threshold = 4 * constC;
+
+        System.out.println("The SDN's configuration : constC :" +constC+ "," +
+                "threshold: " + threshold);
+
     }
+
+    public void setConstCAndThreshold(int constC){
+        this.constC = constC;
+        this.threshold = 4*constC;
+    }
+
 
     @Override
     public void init() {
-
-
+        // these three need to initialize in the network creating.
+        this.smallStatusBits = new HashMap<>();
         this.allNodeIds = new ArrayList<>();
-
         this.cpNumber = new HashMap<>();
+
+
         this.cp_smallNodes = new HashMap<>();
         this.cp_largeNodes = new HashMap<>();
 
@@ -87,8 +100,13 @@ public class SDNNode extends Node {
         this.globalStatusId = 0;
     }
 
-    public void addNodeId(int id){
+    public void addCommunicateNodeId(int id){
         this.allNodeIds.add(id);
+        this.smallStatusBits.put(id, true);
+        this.cpNumber.put(id,0);
+
+        this.cp_smallNodes.put(id, new HashSet<>());
+        this.cp_largeNodes.put(id, new HashSet<>());
     }
 
     public ArrayList<Integer> getAllNodeIds() {
@@ -96,11 +114,18 @@ public class SDNNode extends Node {
     }
 
     private boolean breakLargeThreshold(int num){
-        return this.threshold < num;
+        System.out.println("The test number in breakLargeThreshold: " + num);
+        return num > this.threshold ;
     }
 
     public void receiveMessage(Message msg) {
 
+    }
+
+    public void sendMessage(int id, Message message){
+        this.sendDirect(message, Tools.getNodeByID(id));
+        System.out.println("SDN: Send a " + message.getClass() + " to" +
+                " " + id + ", the content is : " + message.toString());
     }
 
     @Override
@@ -120,17 +145,18 @@ public class SDNNode extends Node {
                         targetSrc.add(request.dstId);
                         LinkMessage msgSrc = new LinkMessage(request.srcId, false, targetSrc,
                                 this.globalStatusId);
-                        sendDirect(msgSrc, Tools.getNodeByID(request.srcId));
+                        this.sendMessage(request.srcId, msgSrc);
 
                         // msg to dst
                         ArrayList<Integer> targetDst = new ArrayList<Integer>();
                         targetDst.add(request.srcId);
                         LinkMessage msgDst = new LinkMessage(request.dstId, false, targetDst,
                                 this.globalStatusId);
-                        sendDirect(msgDst, Tools.getNodeByID(request.dstId));
+                        this.sendMessage(request.dstId, msgSrc);
                     }
                     else{
                         // no need to execute
+                        System.out.println("SDN: A request has been satisfied ! ");
                     }
                 }
 
@@ -171,7 +197,7 @@ public class SDNNode extends Node {
                                 }
                                 switch (needToChangeLargeNumber){
                                     case 0:
-                                        Tools.fatalError("Some thing wrong happen in the SDN about dealing with Request");
+                                        Tools.fatalError("SDN: Some thing wrong happen in the SDN about dealing with Request");
                                         break;
                                     case 1:
                                         if(this.breakLargeThreshold(cp_src)){
@@ -199,9 +225,9 @@ public class SDNNode extends Node {
                                         targets2.add(srcId);
                                         LinkMessage linkMessage2 = new LinkMessage(dstId, true, targets2, this.globalStatusId);
 
+                                        this.sendMessage(srcId, linkMessage1);
+                                        this.sendMessage(dstId, linkMessage2);
 
-                                        sendDirect(linkMessage1, Tools.getNodeByID(srcId));
-                                        sendDirect(linkMessage2, Tools.getNodeByID(dstId));
                                         break;
                                 }
 
@@ -214,13 +240,16 @@ public class SDNNode extends Node {
                                 ArrayList<Integer> targetSrc = new ArrayList<Integer>();
                                 targetSrc.add(request.dstId);
                                 LinkMessage msgSrc = new LinkMessage(request.srcId, true, targetSrc, this.globalStatusId);
-                                sendDirect(msgSrc, Tools.getNodeByID(request.srcId));
+
 
                                 // msg to dst
-                                ArrayList<Integer> targetDst = new ArrayList<Integer>();
+                                ArrayList<Integer> targetDst = new ArrayList<>();
                                 targetDst.add(request.srcId);
                                 LinkMessage msgDst = new LinkMessage(request.dstId, true, targetDst, this.globalStatusId);
-                                sendDirect(msgDst, Tools.getNodeByID(request.dstId));
+
+                                this.sendMessage(srcId, msgSrc);
+                                this.sendMessage(dstId, msgDst);
+
                             }
                         }
                         else{
@@ -253,29 +282,32 @@ public class SDNNode extends Node {
                                     ArrayList<Integer> targets1 = new ArrayList<>();
                                     targets1.add(dstId);
                                     LinkMessage linkMessage1 = new LinkMessage(srcId, true, targets1, this.globalStatusId);
-                                    sendDirect(linkMessage1, Tools.getNodeByID(srcId));
 
                                     ArrayList<Integer> targets2 = new ArrayList<>();
                                     targets2.add(srcId);
                                     LinkMessage linkMessage2 = new LinkMessage(dstId, true, targets2, this.globalStatusId);
-                                    sendDirect(linkMessage2, Tools.getNodeByID(dstId));
+
+                                    this.sendMessage(srcId, linkMessage1);
+                                    this.sendMessage(dstId, linkMessage2);
+
                                     break;
                                 case 1:
                                     // Insert Message
                                     LargeInsertMessage largeInsertMessage;
                                     if(!smallFlagForSrc){
                                         // src node is large, and dst node is small
-                                        largeInsertMessage = new LargeInsertMessage(dstId, srcId, this.auxiliaryNodeId , this.globalStatusId);
-                                        sendDirect(largeInsertMessage, Tools.getNodeByID(srcId));
+                                        largeInsertMessage = new LargeInsertMessage(dstId, srcId, this.globalStatusId);
+                                        this.sendMessage(srcId, largeInsertMessage);
+
                                     }
                                     else{
                                         // dst node is large, and src node is small
-                                        largeInsertMessage = new LargeInsertMessage(srcId, dstId, this.auxiliaryNodeId , this.globalStatusId);
-                                        sendDirect(largeInsertMessage, Tools.getNodeByID(dstId));
+                                        largeInsertMessage = new LargeInsertMessage(srcId, dstId, this.globalStatusId);
+                                        this.sendMessage(dstId, largeInsertMessage);
                                     }
                                     break;
                                 case 0:
-                                    Tools.warning("There should be at least one large node, but do not!");
+                                    Tools.warning("SDN: There should be at least one large node, but do not!");
                                     break;
                             }
 
@@ -291,18 +323,16 @@ public class SDNNode extends Node {
                 if(deleteRequestMessage.isEgo_tree()){
                     // ready to delete
                     int wantToDeleteId = deleteRequestMessage.getWantToDeleteId();
-                    int largeId = deleteRequestMessage.getDst();
+                    int largeId = deleteRequestMessage.getSrc();
 
                     // send DeleteMessage not allFlag to the wantToDelete ego-tree node
                     //int dst, int largeId
-                    DeleteMessage deleteMessage = new DeleteMessage(wantToDeleteId, largeId, this.globalStatusId);
-                    this.sendDirect(deleteMessage, Tools.getNodeByID(wantToDeleteId));
-
+                    DeleteMessage deleteMessage = new DeleteMessage(wantToDeleteId, largeId, this.globalStatusId, this.auxiliaryNodeId);
+                    this.sendMessage(wantToDeleteId, deleteMessage);
                 }
                 else{
                     // not prepared to delete, should send to LN to tell LN remove CP
-                    int dst = deleteRequestMessage.getDst(); // which is the large node
-
+                    // this could remove actually
                 }
             }
             else if(message instanceof LargeInsertMessage){
@@ -312,10 +342,9 @@ public class SDNNode extends Node {
                 int largeNodeId = largeInsertMessageTmp.getLargeId();
                 if(!largeInsertMessageTmp.isInserted())
                 {
-                    Tools.fatalError("The LargeInsertMessage received by SDN node should have inserted bit set!");
+                    Tools.fatalError("SDN: The LargeInsertMessage received by SDN node should have inserted bit set!");
                 }
-
-                this.sendDirect(largeInsertMessageTmp, Tools.getNodeByID(largeNodeId));
+                this.sendMessage(largeNodeId, largeInsertMessageTmp);
             }
             else if(message instanceof DeleteEgoTreeRequestMessage){
                 DeleteEgoTreeRequestMessage deleteEgoTreeRequestMessage = (DeleteEgoTreeRequestMessage) message;
@@ -326,8 +355,8 @@ public class SDNNode extends Node {
                 for(int wantToDeleteId : egoTreeNodeIds){
                     //int dst, boolean allFlag, int largeId
                     DeleteMessage deleteMessage = new DeleteMessage(wantToDeleteId, true ,largeId,
-                            this.globalStatusId);
-                    this.sendDirect(deleteMessage, Tools.getNodeByID(wantToDeleteId));
+                            this.globalStatusId, this.auxiliaryNodeId);
+                    this.sendMessage(wantToDeleteId, deleteMessage);
                 }
             }
 
@@ -338,6 +367,14 @@ public class SDNNode extends Node {
     // add route
 
     private StatusChangedMessage getNewStatusChangeMessage(int id, boolean smallFlag){
+        /*
+         *@description Generate a new SCM and broadcast it !
+         *@parameters  [id, smallFlag]
+         *@return  projects.cbrenet.nodes.messages.SDNMessage.StatusChangedMessage
+         *@author  Zhang Hongxuan
+         *@create time  2021/4/5
+         */
+
         this.incrementGlobalStatusId();
         StatusChangedMessage changedMessage = new StatusChangedMessage(id, smallFlag, this.globalStatusId);
         this.broadCastToAllNode(changedMessage);
@@ -356,9 +393,9 @@ public class SDNNode extends Node {
 
         this.largeNodeNum++;
 
-//        this.incrementGlobalStatusId();
-//        StatusChangedMessage changedMessage = new StatusChangedMessage(id, false, this.globalStatusId);
-//        this.broadCastToAllNode(changedMessage);
+        //this.incrementGlobalStatusId();
+        //StatusChangedMessage changedMessage = new StatusChangedMessage(id, false, this.globalStatusId);
+        //this.broadCastToAllNode(changedMessage);
 
         this.getNewStatusChangeMessage(id, false);
 
@@ -374,9 +411,10 @@ public class SDNNode extends Node {
             this.cp_largeNodes.replace(small_id, oldLarge);
         }
 
+        // Also add L-L link here
         HashSet<Integer> largePartner = this.cp_largeNodes.get(id);
         for(int large_id : largePartner){
-            // remove from large_id node's small partner
+            // remove from large_id node's small partner, fixme but we did not send link message to create link!
             HashSet<Integer> oldSmall = this.cp_smallNodes.get(large_id);
             oldSmall.remove(id);
             this.cp_smallNodes.replace(large_id, oldSmall);
@@ -385,6 +423,20 @@ public class SDNNode extends Node {
             HashSet<Integer> oldLarge = this.cp_largeNodes.get(large_id);
             oldLarge.add(id);
             this.cp_largeNodes.replace(large_id, oldLarge);
+
+
+            // create L-L link
+            ArrayList<Integer> targets1 = new ArrayList<>();
+            targets1.add(id);
+            LinkMessage linkMessage1 = new LinkMessage(large_id, true, targets1, this.globalStatusId);
+
+            ArrayList<Integer> targets2 = new ArrayList<>();
+            targets2.add(large_id);
+            LinkMessage linkMessage2 = new LinkMessage(id, true, targets2, this.globalStatusId);
+
+            this.sendMessage(large_id, linkMessage1);
+            this.sendMessage(id, linkMessage2);
+
         }
     }
 
@@ -428,26 +480,37 @@ public class SDNNode extends Node {
 
 
     private boolean checkRequest(Request request, boolean needToSatisfy){
+
+
         int srcId = request.srcId;
         int dstId = request.dstId;
 
+        if(srcId == 11 && dstId == 15){
+            int ssadk = 1;
+        }
+
+        System.out.println("SDN : Checking request from " + srcId + " to " + dstId);
         HashSet<Integer> srcCorrespondingCpSet = this.smallStatusBits.get(dstId) ?
                 this.cp_smallNodes.get(srcId) : this.cp_largeNodes.get(srcId);
         HashSet<Integer> dstCorrespondingCpSet = this.smallStatusBits.get(srcId) ?
                 this.cp_smallNodes.get(dstId) : this.cp_largeNodes.get(dstId);
 
+        if(srcCorrespondingCpSet == null){
+            return true;
+        }
+
         // check
         // This is necessary because same request may send twice
         if(needToSatisfy){
             if(srcCorrespondingCpSet.contains(dstId)  && dstCorrespondingCpSet.contains(srcId)){
-                Tools.warning("The node send a  request but " + srcId + " and " + dstId + " already exists!");
+                System.out.println("SDN: The node send a  request but " + srcId + " and " + dstId + " already exists!");
                 return false;
             }
+            return true;
         }
         else{
-            // TODO 这里的判断条件或许存在问题，看后续情况决定怎么改吧
             if(!srcCorrespondingCpSet.contains(dstId)  || !dstCorrespondingCpSet.contains(srcId)){
-                Tools.fatalError("The node send a wantToRemove request but " + srcId + " and " + dstId + " are " +
+                Tools.fatalError("SDN: The node send a wantToRemove request but " + srcId + " and " + dstId + " are " +
                         "not partners!");
                 return false;
             }
@@ -472,15 +535,22 @@ public class SDNNode extends Node {
         HashSet<Integer> dstCorrespondingCpSet = this.smallStatusBits.get(srcId) ?
                 this.cp_smallNodes.get(dstId) : this.cp_largeNodes.get(dstId);
 
+        if(srcCorrespondingCpSet == null){
+            srcCorrespondingCpSet = new HashSet<>();
+        }
+        if(dstCorrespondingCpSet == null){
+            dstCorrespondingCpSet = new HashSet<>();
+        }
+
         // check
         // This is necessary because same request may send twice
         if(srcCorrespondingCpSet.contains(dstId)  && dstCorrespondingCpSet.contains(srcId)){
-            Tools.fatalError("The node send a  request but " + srcId + " and " + dstId + " already exists!");
+            Tools.fatalError("SDN: The node send a  request but " + srcId + " and " + dstId + " already exists!");
             return false;
         }
 
         if(srcCorrespondingCpSet.contains(dstId)  || dstCorrespondingCpSet.contains(srcId)){
-            Tools.fatalError("The node send a request but one of it " + srcId + " and " + dstId + " already exists! " +
+            Tools.fatalError("SDN: The node send a request but one of it " + srcId + " and " + dstId + " already exists! " +
                     "Which should never happen!!!!");
             return false;
         }
@@ -511,6 +581,9 @@ public class SDNNode extends Node {
         this.cpNumber.replace(srcId, srcCpNum);
         this.cpNumber.replace(dstId, dstCpNum);
 
+        System.out.println(srcCpNum);
+        System.out.println(dstCpNum);
+
         return true;
     }
 
@@ -534,7 +607,7 @@ public class SDNNode extends Node {
         // check
         // This is necessary because same request may send twice
         if(!srcCorrespondingCpSet.contains(dstId)  || !dstCorrespondingCpSet.contains(srcId)){
-            Tools.fatalError("The node send a wantToRemove request but " + srcId + " and " + dstId + " are " +
+            Tools.fatalError("SDN: The node send a wantToRemove request but " + srcId + " and " + dstId + " are " +
                     "not partners!");
             // Todo actually we need to make sure that the node send the message correctly based on the edge connection.
             return false;
@@ -570,9 +643,9 @@ public class SDNNode extends Node {
     }
 
 
-    private void broadCastToAllNode(Message message){
+    private void broadCastToAllNode(StatusChangedMessage message){
         for(int id : this.allNodeIds){
-            sendDirect(message, Tools.getNodeByID(id));
+            this.sendMessage(id, message);
         }
     }
 
@@ -581,7 +654,7 @@ public class SDNNode extends Node {
     private void createEgoTree(int largeNodeId){
         HashSet<Integer> small_cp = this.cp_smallNodes.getOrDefault(largeNodeId, null);
         if(small_cp == null){
-            Tools.fatalError("In createEgoTree of SDN, the small partner of " + largeNodeId + " is null" );
+            Tools.fatalError("SDN: In createEgoTree of SDN, the small partner of " + largeNodeId + " is null" );
             return;
         }
 
@@ -608,12 +681,14 @@ public class SDNNode extends Node {
         LinkMessage linkMessage = new LinkMessage(largeNodeId, true, largeNodeId, targets, relationships,
                 this.globalStatusId);
 
-        this.sendDirect(linkMessage, Tools.getNodeByID(largeNodeId));
+        this.sendMessage(largeNodeId, linkMessage);
 
+        System.out.println("Send Link Message to " + largeNodeId + " " +
+                "" + linkMessage.toString());
         // Ego Tree Message , contains the node which SDN send linkMessage to.
-        this.sendDirect(egoTreeMessage, Tools.getNodeByID(largeNodeId));
+        this.sendMessage(largeNodeId, egoTreeMessage);
 
-        createEgoTree(smallCpList, largeNodeId);
+        createEgoTree(smallCpList, largeNodeId, largeNodeId);
 
     }
 
@@ -623,7 +698,7 @@ public class SDNNode extends Node {
     }
 
 
-    private void createEgoTree(List<Integer> nodes, int largeNodeId){
+    private void createEgoTree(List<Integer> nodes, int largeNodeId, int parent){
 
         /**
          *@description
@@ -639,7 +714,7 @@ public class SDNNode extends Node {
         }
         int mid = len/2;
 
-        int parent = nodes.get(mid);
+        int curNode = nodes.get(mid);
 
         List<Integer> nodes1 = nodes.subList(0, mid);
         List<Integer> nodes2 = nodes.subList(mid+1, len);
@@ -648,14 +723,14 @@ public class SDNNode extends Node {
 
         getLeftChildAndRightChild(nodes1, nodes2, p);
 
-        System.out.println(parent + "\t" + p.l + "\t" + p.r);
-        this.sendEgoTreeLinkMessage(parent, p.l, p.r, largeNodeId);
+        System.out.println(curNode + "\t" + p.l + "\t" + p.r);
+        this.sendEgoTreeLinkMessage(curNode, parent, p.l, p.r, largeNodeId);
 
-        createEgoTree(nodes1, largeNodeId);
-        createEgoTree(nodes2, largeNodeId);
+        createEgoTree(nodes1, largeNodeId, curNode);
+        createEgoTree(nodes2, largeNodeId, curNode);
     }
 
-    private void sendEgoTreeLinkMessage(int parent, int l, int r, int largeNodeId){
+    private void sendEgoTreeLinkMessage(int curNodeId, int p, int l, int r, int largeNodeId){
         /**
          *@description send LinkMessage to create the ego-tree
          *@parameters  [parent, l, r] parent is parent, which would receive the LinkMessage, l : leftChild, r : rightChild
@@ -666,6 +741,11 @@ public class SDNNode extends Node {
         ArrayList<Integer> targets = new ArrayList<>();
         ArrayList<Character> relationships = new ArrayList<>();
         boolean targetsIsNull = true;
+        if(p > 0){
+            targets.add(p);
+            relationships.add('p');
+            targetsIsNull = false;
+        }
         if(l != -1){
             targets.add(l);
             relationships.add('l');
@@ -678,9 +758,13 @@ public class SDNNode extends Node {
         }
         if(!targetsIsNull){
             //dst, insertFlag, largeId, targets, relationships, statusId
-            LinkMessage linkMessage = new LinkMessage(parent, true, largeNodeId, targets, relationships,
+            LinkMessage linkMessage = new LinkMessage(curNodeId, true, largeNodeId, targets, relationships,
                     this.globalStatusId);
-            this.sendDirect(linkMessage, Tools.getNodeByID(parent));
+            this.sendMessage(curNodeId, linkMessage);
+            Tools.appendToOutput("Send Link Message to " + curNodeId + " " +
+                    "" + linkMessage.toString());
+            System.out.println("Send Link Message to " + curNodeId + " " +
+                    "" + linkMessage.toString());
         }
     }
 
