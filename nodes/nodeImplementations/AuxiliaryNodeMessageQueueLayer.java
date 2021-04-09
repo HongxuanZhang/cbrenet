@@ -3,7 +3,9 @@ package projects.cbrenet.nodes.nodeImplementations;
 import projects.cbrenet.nodes.messages.RoutingMessage;
 import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteBaseMessage;
 import projects.cbrenet.nodes.nodeImplementations.deleteProcedure.DeleteProcess;
+import projects.cbrenet.nodes.nodeImplementations.nodeHelper.ClusterHelper;
 import projects.cbrenet.nodes.nodeImplementations.nodeHelper.MessageForwardHelper;
+import projects.cbrenet.nodes.nodeImplementations.nodeHelper.SimpleClusterHelper;
 import projects.cbrenet.nodes.routeEntry.AuxiliarySendEntry;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
 import sinalgo.nodes.messages.Message;
@@ -15,6 +17,10 @@ public abstract class AuxiliaryNodeMessageQueueLayer extends AuxiliaryNodeStruct
 
 
     protected final DeleteProcess deleteProcess = new DeleteProcess();
+
+    //protected final ClusterHelper clusterHelper = ClusterHelper.getInstance();
+
+    protected final SimpleClusterHelper clusterHelper = SimpleClusterHelper.getInstance();
 
     protected void doInPostRound() {
 
@@ -62,6 +68,10 @@ public abstract class AuxiliaryNodeMessageQueueLayer extends AuxiliaryNodeStruct
                     if(entry.isDeleteConditionSatisfied()) {
                         this.deleteProcess.startDelete(entry, this, largeId, helpedId);
                     }
+
+                    deleteProcess.getHighestPriorityDeletePrepareMessage(entry, helpedId, this);
+
+                    clusterHelper.acceptClusterRequest(entry, largeId, helpedId, this);
 
                 }
             } else {

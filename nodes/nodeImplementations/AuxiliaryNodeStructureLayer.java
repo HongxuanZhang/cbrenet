@@ -1,8 +1,8 @@
 package projects.cbrenet.nodes.nodeImplementations;
 
 import projects.cbrenet.nodes.messages.RoutingMessage;
-import projects.cbrenet.nodes.nodeImplementations.nodeHelper.EntryGetter;
 import projects.cbrenet.nodes.nodeImplementations.nodeHelper.LinkHelper;
+import projects.cbrenet.nodes.nodeImplementations.nodeHelper.EntryGetter;
 import projects.cbrenet.nodes.routeEntry.AuxiliarySendEntry;
 import sinalgo.nodes.Node;
 import sinalgo.tools.Tools;
@@ -13,7 +13,7 @@ import java.util.Queue;
 
 public abstract class AuxiliaryNodeStructureLayer extends Node implements EntryGetter {
 
-    LinkHelper linkHelper = new LinkHelper();
+    LinkHelper linkHelper = LinkHelper.getInstance();
 
     public Queue<RoutingMessage> cycleRoutingMessage = new LinkedList<>();
 

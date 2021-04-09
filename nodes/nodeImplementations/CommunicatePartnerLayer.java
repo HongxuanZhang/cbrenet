@@ -194,7 +194,7 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
                 this.largeNodes.put(id, id);
             }
             else{
-                Tools.warning("CPLayer: Want to add exist cp "+ id +" in to " + this.ID +"'s big cp");
+                System.err.println("CPLayer: Want to add exist cp "+ id +" in to " + this.ID +"'s big cp");
             }
         }
         else{
@@ -202,7 +202,7 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
                 this.smallNodes.put(id, id);
             }
             else{
-                Tools.warning("CPLayer: Want to add exist cp "+ id +" in to " + this.ID +"'s small cp");
+                System.err.println("CPLayer: Want to add exist cp "+ id +" in to " + this.ID +"'s small cp");
             }
         }
     }
@@ -220,7 +220,7 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
                 this.largeNodes.put(id, id);
             }
             else{
-                Tools.warning("CPLayer: Want to add exist cp "+ id +" in to " + this.ID +"'s cp");
+                System.err.println("CPLayer: Want to add exist cp "+ id +" in to " + this.ID +"'s cp");
             }
         }
         else{
@@ -228,7 +228,7 @@ public abstract class CommunicatePartnerLayer extends CommunicationNodeSDNLayer{
                 this.smallNodes.put(id, id);
             }
             else{
-                Tools.warning("CPLayer: Want to add exist cp "+ id +" in to " + this.ID +"'s cp");
+                System.err.println("CPLayer: Want to add exist cp "+ id +" in to " + this.ID +"'s cp");
             }
         }
 

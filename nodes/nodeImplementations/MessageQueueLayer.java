@@ -18,6 +18,8 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
 
     private Queue<Message> messageQueue; // used by CbRenetMessage or other that do not need Ego tree
 
+    private Queue<RoutingMessage> routingMessageQueue;
+
     public void addInRoutingMessageQueue(RoutingMessage routingMessage){
         /**
          *@description called it when forwardMessage return false;
@@ -29,8 +31,7 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
         int largeId = routingMessage.getLargeId();
         SendEntry entry = this.getCorrespondingEntry(-1,largeId);
         if(entry == null){
-            Tools.fatalError("Something terrible happened! Want to add Routing message into the queue but " +
-                    "the corresponding entry is NULL!!!");
+            this.routingMessageQueue.add(routingMessage);
             return;
         }
         entry.addMessageIntoRoutingMessageQueue(routingMessage);
@@ -42,6 +43,7 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
         super.init();
 
         messageQueue = new LinkedList<>();
+        routingMessageQueue = new LinkedList<>();
     }
 
 
@@ -116,6 +118,23 @@ public abstract class MessageQueueLayer extends CounterBasedBSTLayer{
                 routingMessageQueue.addAll(routingMessageQueueTmp);
             }
         }
+
+
+
+
+        Queue<RoutingMessage> messageQueueTmp = new LinkedList<>();
+        while(!this.routingMessageQueue.isEmpty()){
+            RoutingMessage routingMessage = this.routingMessageQueue.poll();
+            assert routingMessage != null;
+            if(!this.forwardMessage(routingMessage)){
+                messageQueueTmp.add(routingMessage);
+            }
+
+        }
+        this.routingMessageQueue.addAll(messageQueueTmp);
+
+
+
     }
 
 

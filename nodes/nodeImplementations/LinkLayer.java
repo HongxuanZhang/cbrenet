@@ -2,8 +2,10 @@ package projects.cbrenet.nodes.nodeImplementations;
 
 import projects.cbrenet.nodes.messages.SDNMessage.*;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteRequestMessage;
+import projects.cbrenet.nodes.messages.controlMessage.clusterMessage.ClusterRelatedMessage;
 import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteBaseMessage;
 import projects.cbrenet.nodes.nodeImplementations.deleteProcedure.DeleteProcess;
+import projects.cbrenet.nodes.nodeImplementations.nodeHelper.ClusterHelper;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
 import sinalgo.nodes.Node;
 import sinalgo.nodes.messages.Message;
@@ -62,6 +64,9 @@ public abstract class LinkLayer extends MessageSendLayer{
                         case 'p':
                             this.addLinkToParent(largeId,id, id);
                             this.addCommunicationPartner(largeId,true);
+                            if(linkMessage.isParentIsLnFlag()){
+                                this.getCorrespondingEntry(this.ID,largeId).setEgoTreeRoot(true);
+                            }
                             break;
                         case 'l':
                             this.addLinkToLeftChild(largeId, id, id);
@@ -133,6 +138,9 @@ public abstract class LinkLayer extends MessageSendLayer{
                 CounterBasedBSTLayer parentNode = (CounterBasedBSTLayer) Tools.getNodeByID(parentId);
                 assert parentNode != null;
 
+                if(parentId == largeNodeId){
+                    parentNode.removeRootNode();
+                }
                 // Remove the link, this node don't want to be a part of ego-tree for some reason.
 
                 // parentNode.outgoingConnections.remove(parentNode, this);
@@ -152,6 +160,10 @@ public abstract class LinkLayer extends MessageSendLayer{
 
             this.addLinkToParent(largeNodeId, parentId, parentId);
             // The node still want to be a node of the ego-tree
+
+            if(parentId == largeNodeId){
+                this.getCorrespondingEntry(-1, largeNodeId).setEgoTreeRoot(true);
+            }
 
             // add CP
             this.addCommunicationPartner(largeNodeId);
@@ -187,7 +199,7 @@ public abstract class LinkLayer extends MessageSendLayer{
             this.executeEgoTreeMessage((EgoTreeMessage) statusRelatedMessage);
         }
         else{
-            Tools.warning("The StatusRelatedMessage in LinkLayer is "+ statusRelatedMessage.getClass());
+            Tools.warning("LinkLayer: The StatusRelatedMessage in LinkLayer is "+ statusRelatedMessage.getClass());
         }
     }
 
@@ -226,7 +238,13 @@ public abstract class LinkLayer extends MessageSendLayer{
             if(correspondingEntry.isQueueEmpty() && correspondingEntry.isDeleteFlag()){
                 this.deleteProcess.startDelete(correspondingEntry, this, largeId, this.ID);
             }
+
             deleteProcess.getHighestPriorityDeletePrepareMessage(correspondingEntry, this.ID, this);
+
+            clusterHelper.clusterRequest(correspondingEntry, largeId, this.ID, this);
+
+            // cluster
+            clusterHelper.acceptClusterRequest(correspondingEntry, largeId, this.ID, this);
         }
 
     }
@@ -276,8 +294,11 @@ public abstract class LinkLayer extends MessageSendLayer{
             if(changeId == this.ID){
                 this.clearSomePartnersSinceSelfLargeFlagChange(smallFlag);
                 if(!smallFlag){
+
+                    Set<Integer> keySet =  this.getCommunicateLargeNodes().keySet();
+                    List<Integer> keys = new ArrayList<>(keySet);
                     // small -> large, The DRM must sent ASAP!
-                    for(int largeId : this.getCommunicateLargeNodes().keySet()){
+                    for(int largeId : keys){
                         // int src, int dst, boolean ego_tree, int wantToDeleteId
                         DeleteRequestMessage drm = new DeleteRequestMessage(this.ID, largeId, true, this.ID);
 
@@ -299,9 +320,9 @@ public abstract class LinkLayer extends MessageSendLayer{
                             DeleteRequestMessage msgToLargeNode = new DeleteRequestMessage(this.ID, changeId, true, this.ID);
                             this.sendEgoTreeMessage(changeId, changeId, msgToLargeNode);
 
-                            // todo 下面这一段，或许可以删除！
-                            DeleteRequestMessage msgToSDN = new DeleteRequestMessage(this.ID, changeId, false, this.ID);
-                            this.sendDirect(msgToSDN, Tools.getNodeByID(this.getSDNId()));
+//                            // todo 下面这一段，或许可以删除！
+//                            DeleteRequestMessage msgToSDN = new DeleteRequestMessage(this.ID, changeId, false, this.ID);
+//                            this.sendDirect(msgToSDN, Tools.getNodeByID(this.getSDNId()));
                         }
                         else{
                             // l-l link
@@ -346,10 +367,15 @@ public abstract class LinkLayer extends MessageSendLayer{
             int helpedId = -1;
 
             if(this.deleteProcess.executeDeleteBaseMessage(deleteBaseMessage,
-                    this, this)){
+                    this, this, this.ID)){
                 // remove entry
                 this.removeCorrespondingEntry(helpedId, largeId);
             }
+        }
+        else if(msg instanceof ClusterRelatedMessage){
+
+            this.clusterHelper.receiveClusterRelatedMessage((ClusterRelatedMessage) msg, this,this, this.ID);
+
         }
     }
 

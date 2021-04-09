@@ -1,4 +1,4 @@
-package projects.cbrenet.nodes.messages.controlMessage;
+package projects.cbrenet.nodes.messages.controlMessage.clusterMessage;
 
 //import projects.cbrenet.nodes.tableEntry.CBRenetNodeInfo;
 

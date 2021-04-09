@@ -1,11 +1,11 @@
 package projects.cbrenet.nodes.nodeImplementations;
 
+import projects.cbrenet.CustomGlobal;
 import projects.cbrenet.nodes.messages.CbRenetMessage;
 import projects.cbrenet.nodes.messages.RoutingMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.LargeInsertMessage;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteRequestMessage;
 import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteBaseMessage;
-import projects.cbrenet.nodes.messages.deletePhaseMessages.DeletePrepareMessage;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
 import projects.cbrenet.nodes.tableEntry.Request;
 import sinalgo.nodes.messages.Message;
@@ -16,13 +16,14 @@ import java.util.Random;
 
 public abstract class MessageSendLayer extends MessageQueueLayer{
 
-    private Random rand = Tools.getRandomNumberGenerator(); // used to generate priority of the CbRenetMessage
+    private final Random rand = Tools.getRandomNumberGenerator(); // used to generate priority of the CbReNetMessage
 
     // send message part,
     // The first one : s-s l-l
     // The second one : l-s s-l
+
     public boolean sendMessageAccordingToRequest(Request request, boolean tellSDN) {
-        /**
+        /*
          *@description This method is used to deal with request.
          *               It call sendEgoTreeMessage and sendNonEgoTreeMessage
          *@parameters  [request, tellSDN]
@@ -96,7 +97,7 @@ public abstract class MessageSendLayer extends MessageQueueLayer{
 
     @Override
     public void sendEgoTreeMessage(int largeId, int dst, Message msg){
-        /**
+        /*
          *@description The method only used to send a message in the ego-tree
          *          *  The method would generate a routing message to wrap up the msg
          *             Not only send the Request Message , but also other message can be sent
@@ -110,7 +111,7 @@ public abstract class MessageSendLayer extends MessageQueueLayer{
          *@parameters  [largeId, dst, msg]
          *              msg could be DeleteRequestMessage (Send from the node in ego-tree)
          *                           LargeInsertMessage
-         *                           CbRenetMessage  这个比较特殊，这个在Request层面就已经判断过了
+         *                           CbReNetMessage  这个比较特殊，这个在Request层面就已经判断过了
          *@return  void
          *@author  Zhang Hongxuan
          *@create time  2021/3/1
@@ -135,6 +136,15 @@ public abstract class MessageSendLayer extends MessageQueueLayer{
         }
         else if (msg instanceof CbRenetMessage){
             if(this.getCommunicateLargeNodes().containsKey(dst) && !this.largeFlag){
+
+
+                SendEntry entry = this.getCorrespondingEntry(-1, largeId);
+
+                if(entry != null) {
+                    entry.incrementCounter(); // 发送时，自增一次
+                    entry.setRotationAbleFlag(true);
+                }
+
                 upForward = true;
             }
             else if(this.getCommunicateSmallNodes().containsKey(dst) && this.largeFlag){
@@ -148,7 +158,7 @@ public abstract class MessageSendLayer extends MessageQueueLayer{
 
             if(upForward != ((CbRenetMessage)msg).isUpForward()){
                 Tools.fatalError("The upForward in routing message " +
-                        "should equal to the cbrenetmessage!!!");
+                        "should equal to the CbReNetMessage!!!");
             }
         }
         else{
@@ -188,15 +198,6 @@ public abstract class MessageSendLayer extends MessageQueueLayer{
 
         RoutingMessage routingMessage = new RoutingMessage(this.ID, dst, msg, largeId, upward);
 
-//        if(!upward){
-//            SendEntry entry = this.getCorrespondingEntry(this.ID, largeId);
-//            if(dst > this.ID){
-//                routingMessage.setNextHop(entry.getEgoTreeIdOfRightChild());
-//            }
-//            else{
-//                routingMessage.setNextHop(entry.getEgoTreeIdOfLeftChild());
-//            }
-//        }
         routingMessage.setNextHop(this.ID);
 
         if(!this.forwardMessage(routingMessage)){

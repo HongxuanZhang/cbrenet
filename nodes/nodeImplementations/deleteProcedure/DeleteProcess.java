@@ -2,6 +2,7 @@ package projects.cbrenet.nodes.nodeImplementations.deleteProcedure;
 
 // 放一些AuxiliaryNode 和 CBBSTNode 都需要的代码
 
+import projects.cbrenet.CustomGlobal;
 import projects.cbrenet.nodes.messages.deletePhaseMessages.*;
 import projects.cbrenet.nodes.nodeImplementations.AuxiliaryNode;
 import projects.cbrenet.nodes.nodeImplementations.AuxiliaryNodeMessageQueueLayer;
@@ -11,6 +12,7 @@ import projects.cbrenet.nodes.nodeImplementations.nodeHelper.EntryGetter;
 import projects.cbrenet.nodes.routeEntry.AuxiliarySendEntry;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
 import sinalgo.nodes.Node;
+import sinalgo.runtime.Global;
 import sinalgo.tools.Tools;
 
 import java.util.List;
@@ -72,6 +74,11 @@ public class DeleteProcess {
         if(deleteEntry.isDeletingFlagOfItSelf()){
             return;
         }
+
+        CustomGlobal.deleteNum ++ ;
+        System.out.println("Node "+ node.ID + " corresponding helpedId is "+ helpedId + " start a delete process in " +
+                "the egoTree(" + largeId + "), deleteNum is " + CustomGlobal.deleteNum );
+
         deleteEntry.setDeletingFlagOfItSelf(true);
         DeletePrepareMessage deletePrepareMessage = new DeletePrepareMessage
                 (largeId, helpedId, Tools.getGlobalTime());
@@ -102,15 +109,21 @@ public class DeleteProcess {
          *@create time  2021/3/21
          */
 
+        assert !(node instanceof CounterBasedBSTLayer) || node.ID == helpedId;
 
         DeletePrepareMessage deletePrepareMessageToDealWith = deleteEntry.getDeletePrepareMessageFromPriorityQueue();
-
-
 
         if(deletePrepareMessageToDealWith == null){
             return;
         }
 
+        // delete 与 cluster 之间的一次妥协
+        if(CustomGlobal.adjustNum != 0){
+            System.err.println("A node need to join in delete but some node is clustering!!!");
+            deleteEntry.resetCurHighestDPM();
+            // 暂不处理，等待
+            return;
+        }
 
 
         int largeId = deletePrepareMessageToDealWith.getLargeId();
@@ -234,6 +247,14 @@ public class DeleteProcess {
         int egoTreeId = deleteFinishMessage.getEgoTreeId();
         int trueId = deleteFinishMessage.getTrueId();
 
+        if(node.ID == largeId){
+            // which means this is the large node
+            assert  sendEntry == null;
+            ((CounterBasedBSTLayer)node).setRootSendId(trueId);
+            ((CounterBasedBSTLayer)node).setRootEgoTreeId(egoTreeId);
+            return;
+        }
+
         char relation = sendEntry.getRelationShipOf(deleteTarget);
 
         // must call unset here, because the follow code would change the ego tree id of its neighbor
@@ -280,10 +301,10 @@ public class DeleteProcess {
     }
 
 
-    private void setInsertedEntry(SendEntry sendEntry, int helpedId, int largeId){
+    private void setInsertedEntry(SendEntry sendEntry, int helpedId, int largeId, boolean rootFlag){
         /*
          *@description 该函数用于将Entry设定入结点中 可能是inserted node，也可能是AN
-         *@parameters  [sendEntry, helpedId, largeId]
+         *@parameters  [sendEntry, helpedId, largeId, rootFlag]
          *@return  void
          *@author  Zhang Hongxuan
          *@create time  2021/3/31
@@ -323,6 +344,9 @@ public class DeleteProcess {
         insertedEntry.setSendIdOfParent(parentSendId);
         insertedEntry.setSendIdOfLeftChild(leftChildSendId);
         insertedEntry.setSendIdOfRightChild(rightChildSendId);
+
+        insertedEntry.setEgoTreeRoot(rootFlag);
+
     }
 
 
@@ -373,7 +397,7 @@ public class DeleteProcess {
 
 
             // todo 日后考虑用分布式的方式实现一次
-            this.setInsertedEntry(sendEntry, helpedId, largeId);
+            this.setInsertedEntry(sendEntry, helpedId, largeId, sendEntry.isEgoTreeRoot());
 
         }
         else{
@@ -404,7 +428,7 @@ public class DeleteProcess {
                 int neighbor1 = ids.get(0);
                 DeleteFinishMessage deleteFinishMessageTo1 = new DeleteFinishMessage(largeId, helpedId,
                         -1, -1, neighbor1);
-                if(this.sendDeleteBaseMessage(deleteFinishMessageTo1, largeId,
+                if(!this.sendDeleteBaseMessage(deleteFinishMessageTo1, largeId,
                         sendEntry, neighbor1, helpedId, node)){
                     sendFlag = false;
                 }
@@ -425,7 +449,7 @@ public class DeleteProcess {
     }
 
 
-    public boolean executeDeleteBaseMessage(DeleteBaseMessage msg, EntryGetter entryGetter, Node node){
+    public boolean executeDeleteBaseMessage(DeleteBaseMessage msg, EntryGetter entryGetter, Node node, int helpedId){
         /*
          *@description  Call this method when receive DeleteBaseMessage
          *@parameters  [msg, entryGetter, node]
@@ -434,13 +458,51 @@ public class DeleteProcess {
          *@create time  2021/3/21
          */
         int largeId = msg.getLargeId();
-        int helpedId = msg.getDeleteTarget();
+
+        if(node.ID == largeId){
+            if(msg instanceof DeletePrepareMessage){
+                DeletePrepareMessage deletePrepareMessage = (DeletePrepareMessage) msg;
+                int deleteTarget = deletePrepareMessage.getDeleteTarget();
+                if(deleteTarget == helpedId){
+                    // means this is it self's DeletePrepareMessage
+                    Tools.warning("The code let the node to send the DCM according to its own DPM!!");
+                    return false;
+                }
+
+
+                DeleteConfirmMessage confirmMessage = new DeleteConfirmMessage(largeId, deleteTarget, helpedId);
+                //int largeId, int dst, Message msg, boolean upward
+                ((MessageSendLayer)node).sendEgoTreeMessage(largeId, deleteTarget, confirmMessage,false);
+                ((CounterBasedBSTLayer)node).setRootNodeSendFlag(false);
+                return false;
+
+            }
+            else if (msg instanceof DeleteConfirmMessage){
+                Tools.warning("Delete Process: Large node " + largeId + " receive a DCM");
+                return false;
+            }
+            else if(msg instanceof DeleteFinishMessage){
+                DeleteFinishMessage deleteFinishMessage = (DeleteFinishMessage) msg;
+
+                int egoTreeId = deleteFinishMessage.getEgoTreeId();
+                int trueId = deleteFinishMessage.getTrueId();
+
+                if(node.ID == largeId){
+                    // which means this is the large node
+                    ((CounterBasedBSTLayer)node).setRootSendId(trueId);
+                    ((CounterBasedBSTLayer)node).setRootEgoTreeId(egoTreeId);
+                    ((CounterBasedBSTLayer)node).setRootNodeSendFlag(true);
+                    return false;
+                }
+            }
+        }
 
         if(msg instanceof DeletePrepareMessage){
             SendEntry entry = entryGetter.getCorrespondingEntry(helpedId, largeId);
             int targetEgoTreeId = ((DeletePrepareMessage) msg).getSendTargetEgoTreeId();
             this.receiveDeletePrepareMessage(entry,(DeletePrepareMessage) msg);
-            System.out.println("Delete Process : Ego Node " + targetEgoTreeId + " received a DPM " +
+            System.out.println("Delete Process : Ego Node " + targetEgoTreeId + " actual node " + node.ID + "" +
+                    "  received a DPM " +
                     "from " + msg.getDeleteTarget() + ", in the ego-tree of " + largeId);
         }
         else if(msg instanceof DeleteConfirmMessage){
@@ -448,6 +510,10 @@ public class DeleteProcess {
             if(this.receiveDeleteConfirmMessage(entry, (DeleteConfirmMessage)msg)){
                 System.out.println("Delete Process : Ego Node " + helpedId + " got all DCM," +
                         " in the ego-tree of " + largeId);
+                CustomGlobal.deleteNum -- ;
+                System.out.println("Node "+ node.ID + " corresponding helpedId is "+ helpedId + " want to send DeleteFinishMessage in " +
+                        "the egoTree(" + largeId + "), current deleteNum is " + CustomGlobal.deleteNum );
+
                 return this.sendDeleteFinishMessage(entry,largeId, helpedId, node);
                 // Remember to remove Entry outside
             }

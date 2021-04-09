@@ -1,17 +1,20 @@
 package projects.cbrenet.nodes.nodeImplementations.nodeHelper;
 
 import projects.cbrenet.nodes.messages.RoutingMessage;
-import projects.cbrenet.nodes.messages.controlMessage.AcceptClusterMessage;
+import projects.cbrenet.nodes.messages.controlMessage.clusterMessage.AcceptClusterMessage;
 import projects.cbrenet.nodes.tableEntry.NodeInfo;
-import projects.cbrenet.nodes.messages.controlMessage.RequestClusterMessage;
+import projects.cbrenet.nodes.messages.controlMessage.clusterMessage.RequestClusterMessage;
 import projects.cbrenet.nodes.nodeImplementations.CounterBasedBSTLayer;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
+import projects.cbrenet.DataCollection;
 import sinalgo.tools.Tools;
 
 import java.util.LinkedList;
 import java.util.Queue;
 
 public class RotationHelper {
+
+    private DataCollection data = DataCollection.getInstance();
 
     private double log2(long value) {
         if(value == 0){
@@ -40,21 +43,29 @@ public class RotationHelper {
 
             if(relation1 == 'l' && relation2 == 'l'){
                 // weight , integer is enough
-                int wYAfter = info1.getCounterOfCurNode() + info0.getWeightOfCurNode()
-                        + info2.getCounterOfCurNode() + info1.getWeightOfRightChild() + info2.getWeightOfRightChild();
+//                int wYAfter = info1.getCounterOfCurNode() + info0.getWeightOfCurNode()
+//                        + info2.getCounterOfCurNode() + info1.getWeightOfRightChild() + info2.getWeightOfRightChild();
+//
+//                int wZBefore = info2.getWeightOfCurNode();
 
-                int wZBefore = info2.getWeightOfCurNode();
 
-                result = this.log2(wYAfter) - this.log2(wZBefore);
+                int wZAfter = info2.getCounterOfCurNode() + info2.getWeightOfRightChild() + info1.getWeightOfRightChild();
+                int wYBefore = info1.getCounterOfCurNode() + info1.getWeightOfRightChild() + info0.getWeightOfCurNode();
+
+
+                result = this.log2(wZAfter) - this.log2(wYBefore);
 
             }
             else if( relation1 == 'r' && relation2 == 'r' ){
-                int wYAfter = info1.getCounterOfCurNode() + info0.getWeightOfCurNode()
-                        + info2.getCounterOfCurNode() + info1.getWeightOfLeftChild() + info2.getWeightOfLeftChild();
+                //int wYAfter = info1.getCounterOfCurNode() + info0.getWeightOfCurNode()
+                  //      + info2.getCounterOfCurNode() + info1.getWeightOfLeftChild() + info2.getWeightOfLeftChild();
 
-                int wZBefore = info2.getWeightOfCurNode();
+                //int wZBefore = info2.getWeightOfCurNode();
 
-                result = this.log2(wYAfter) - this.log2(wZBefore);
+                int wZAfter = info2.getCounterOfCurNode() + info2.getWeightOfLeftChild() + info1.getWeightOfLeftChild();
+                int wYBefore = info1.getCounterOfCurNode() + info1.getWeightOfLeftChild() + info0.getWeightOfCurNode();
+
+                result = this.log2(wZAfter) - this.log2(wYBefore);
 
             }
             else if( relation1 == 'l' && relation2 == 'r'){
@@ -129,8 +140,8 @@ public class RotationHelper {
             NodeInfo info1 = requestClusterMessage.getNodeInfoOf(1);
             NodeInfo info2 = requestClusterMessage.getNodeInfoOf(2);
 
-            int pEgoTreeId = requestClusterMessage.getTheMostUpperEgoTreeId();
-            int pSendId = requestClusterMessage.getTheMostUpperSendId();
+            int pEgoTreeId = requestClusterMessage.getTheMostUpperNodeEgoTreeId();
+            int pSendId = requestClusterMessage.getTheMostUpperNodeSendId();
             boolean lNFlag = requestClusterMessage.isLnFlag();
 
             assert position == 3 || lNFlag;
@@ -171,6 +182,9 @@ public class RotationHelper {
                       / \
                      A   B
               */
+
+                data.addRotations(3);
+
                 int cSendId = info1.getSendIdOfRightChild();
                 int cEgoTreeId = info1.getEgoTreeIdOfRightChild();
                 int cWeight = info1.getWeightOfRightChild();
@@ -220,6 +234,8 @@ public class RotationHelper {
                               / \
                              C   D
               */
+                data.addRotations(3);
+
                 int bEgoTreeId = info1.getEgoTreeIdOfLeftChild();
                 int bSendId = info1.getSendIdOfLeftChild();
                 int bWeight = info1.getWeightOfLeftChild();
@@ -259,7 +275,7 @@ public class RotationHelper {
 
             }
             else if(relation1 == 'l' && relation2 == 'r'){
-                /*
+                /*          /                   /
                     2      z                   x
                           / \                /   \
                    1     A   y              z     y
@@ -268,6 +284,8 @@ public class RotationHelper {
                           / \
                          C   D
               */
+                data.addRotations(5);
+
                 int cEgoTreeId = info0.getEgoTreeIdOfLeftChild();
                 int cSendId = info0.getSendIdOfLeftChild();
                 int cWeight = info0.getWeightOfLeftChild();
@@ -344,6 +362,8 @@ public class RotationHelper {
                           / \
                          B   C
               */
+                data.addRotations(5);
+
                 int bEgoTreeId = info0.getEgoTreeIdOfLeftChild();
                 int bSendId = info0.getSendIdOfLeftChild();
                 int bWeight = info0.getWeightOfLeftChild();
@@ -491,6 +511,16 @@ public class RotationHelper {
                 }
             }
 
+            entryForX.adjustCompleted(acceptClusterMessage);
+            entryForY.adjustCompleted(acceptClusterMessage);
+            entryForZ.adjustCompleted(acceptClusterMessage);
+            if(position == 3){
+                EntryGetter entryGetterForP = (EntryGetter)Tools.getNodeByID(pSendId);
+                assert entryGetterForP != null;
+                SendEntry entryForP = entryGetterForP.getCorrespondingEntry(pEgoTreeId, largeId);
+                entryForP.adjustCompleted(acceptClusterMessage);
+            }
+            // 少更新了parent的。。
 
         }
         else if(position == 1){
@@ -512,8 +542,8 @@ public class RotationHelper {
             int yEgoTreeId = info1.getCurNodeEgoId();
 
 
-            int pEgoTreeId = requestClusterMessage.getTheMostUpperEgoTreeId();
-            int pSendId = requestClusterMessage.getTheMostUpperSendId();
+            int pEgoTreeId = requestClusterMessage.getTheMostUpperNodeEgoTreeId();
+            int pSendId = requestClusterMessage.getTheMostUpperNodeSendId();
             // X
             EntryGetter entryGetterForX = (EntryGetter)Tools.getNodeByID(xSendId);
             assert entryGetterForX != null;
@@ -532,6 +562,7 @@ public class RotationHelper {
                       / \                   / \
                      A   B                 B   C
               */
+                data.addRotations(3);
 
                 int bEgoTreeId = info0.getEgoTreeIdOfRightChild();
                 int bSendId = info0.getSendIdOfRightChild();
@@ -580,6 +611,7 @@ public class RotationHelper {
                          / \            / \
                         A   B          C   A
               */
+                data.addRotations(3);
 
                 int aEgoTreeId = info0.getEgoTreeIdOfLeftChild();
                 int aSendId = info0.getSendIdOfLeftChild();
@@ -641,6 +673,9 @@ public class RotationHelper {
             else{
                 Tools.warning("In position 1 rotation, it must have the Ln node as upper node ");
             }
+
+            entryForX.adjustCompleted(acceptClusterMessage);
+            entryForY.adjustCompleted(acceptClusterMessage);
 
         }
 

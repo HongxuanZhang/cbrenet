@@ -67,6 +67,11 @@ public abstract class CounterBasedBSTStructureLayer extends CommunicatePartnerLa
         this.setRootSendId(id);
     }
 
+    public void removeRootNode(){
+        this.setRootEgoTreeId(-1);
+        this.setRootSendId(-1);
+    }
+
 
 
 

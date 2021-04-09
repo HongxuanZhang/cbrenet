@@ -1,5 +1,7 @@
 package projects.cbrenet.nodes.nodeImplementations;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -26,6 +28,28 @@ public class SDNApp extends SDNNode{
     }
 
 
+    public void outputGlobalSituationInSDN(){
+        System.out.println("--------SDN Report-------");
+
+        HashMap<Integer, Boolean> map = this.smallStatusBits;
+        ArrayList<Integer> smallNode = new ArrayList<>();
+        ArrayList<Integer> bigNode = new ArrayList<>();
+
+        ArrayList<Integer> keys = new ArrayList<Integer>(map.keySet());
+
+        for(int keyId : keys){
+            if(map.get(keyId)){
+                smallNode.add(keyId);
+            }
+            else{
+                bigNode.add(keyId);
+            }
+        }
+
+        System.out.println("Small Nodes: " + smallNode);
+        System.out.println("Big Nodes: " + bigNode);
+
+    }
 
     // make large
 

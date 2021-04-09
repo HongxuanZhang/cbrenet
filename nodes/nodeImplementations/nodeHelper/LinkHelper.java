@@ -7,7 +7,22 @@ import sinalgo.tools.Tools;
 
 public class LinkHelper {
 
-    boolean realLink = false;
+    boolean realLink;
+
+    private static LinkHelper linkHelper = null;
+
+    private LinkHelper(){
+        this.realLink = false;
+    }
+
+    public static LinkHelper getInstance() {
+        if (linkHelper == null) {
+            linkHelper = new LinkHelper();
+        }
+        return linkHelper;
+    }
+
+
 
 
     // change link p l r, 这里就要考虑Auxiliary Node的问题了

@@ -116,4 +116,15 @@ public class RoutingMessage extends NetworkMessage {
         return this;
     }
 
+    @Override
+    public String toString() {
+        return "RoutingMessage{" +
+                "nextHop=" + nextHop +
+                ", largeId=" + largeId +
+                ", upForward=" + upForward +
+                ", specialHop=" + specialHop +
+                ", specialHopFlag=" + specialHopFlag +
+                ", payload=" + payload.toString() +
+                '}';
+    }
 }

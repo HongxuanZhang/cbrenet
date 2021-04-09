@@ -5,12 +5,12 @@ import java.util.Queue;
 import java.util.Random;
 
 import projects.cbrenet.nodes.messages.CbRenetMessage;
+import projects.cbrenet.nodes.routeEntry.SendEntry;
 import projects.cbrenet.nodes.tableEntry.Request;
 import sinalgo.nodes.messages.Message;
 import sinalgo.runtime.Global;
 import sinalgo.tools.Tools;
 
-import projects.defaultProject.DataCollection;
 
 /**
  * CBNetNode
@@ -44,21 +44,21 @@ public class CBNetNode extends LinkLayer {
         // only the first time request would be sent to SDN
         while(!this.unknownRequestsToSDN.isEmpty()){
             Request request = this.unknownRequestsToSDN.poll();
-            if(!this.sendMessageAccordingToRequest(request, true)){
-                unsatisfiedRequest.add(request);
+            if(this.sendMessageAccordingToRequest(request, true)){
+                this.updatePartnerOrder(request);
             }
             else{
-                this.updatePartnerOrder(request);
+                unsatisfiedRequest.add(request);
             }
         }
 
         while(!this.bufferRequest.isEmpty()) {
             Request request = this.bufferRequest.poll();
-            if(!this.sendMessageAccordingToRequest(request,false)){
-                unsatisfiedRequest.add(request);
+            if(this.sendMessageAccordingToRequest(request,false)){
+                this.updatePartnerOrder(request);
             }
             else{
-                this.updatePartnerOrder(request);
+                unsatisfiedRequest.add(request);
             }
         }
 
@@ -97,6 +97,7 @@ public class CBNetNode extends LinkLayer {
         super.receiveMessage(msg);
         if(msg instanceof CbRenetMessage){
             CbRenetMessage message = (CbRenetMessage)msg;
+            message.incrementRouting();
             System.out.println("Node " + ID + ": message received from " + message.getSrc() + " routing" +
                     " " + message.getRouting());
             this.communicationCompleted(message);

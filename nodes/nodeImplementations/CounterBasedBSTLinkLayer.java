@@ -11,7 +11,7 @@ import sinalgo.tools.Tools;
 
 public abstract class CounterBasedBSTLinkLayer extends CounterBasedBSTStructureLayer{
 
-    LinkHelper linkHelper = new LinkHelper();
+    LinkHelper linkHelper = LinkHelper.getInstance();
 
     // change link p l r, 这里就要考虑Auxiliary Node的问题了
     // 调用这个函数的时候，基本上也就是Delete过程或者Rotation过程了

@@ -21,6 +21,17 @@ public class LinkMessage extends StatusRelatedMessage {
     * F : remove link
     * */
 
+    private boolean parentIsLnFlag = false;
+
+    public void setParentIsLnFlag() {
+        this.parentIsLnFlag = true;
+    }
+
+    public boolean isParentIsLnFlag() {
+        return parentIsLnFlag;
+    }
+
+
     final private ArrayList<Integer> targets;
     final private ArrayList<Character> relationships; // use with targets to indicate the relationship between node
     // and target

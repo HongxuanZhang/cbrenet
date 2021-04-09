@@ -1,4 +1,4 @@
-package projects.cbrenet.nodes.messages.controlMessage;
+package projects.cbrenet.nodes.messages.controlMessage.clusterMessage;
 
 import projects.cbrenet.nodes.tableEntry.NodeInfo;
 import sinalgo.nodes.messages.Message;
@@ -8,9 +8,8 @@ import java.util.HashMap;
 /**
  * RequestCluster
  */
-public class RequestClusterMessage extends Message implements Comparable<RequestClusterMessage> {
+public class RequestClusterMessage extends ClusterRelatedMessage implements Comparable<RequestClusterMessage> {
 
-    private final int largeId;
     private int currentNode;
     private int requesterId;
 
@@ -19,9 +18,16 @@ public class RequestClusterMessage extends Message implements Comparable<Request
     private int position;
     private boolean isFinalNode; // keep track if this node is final node in current request
 
+    public int ddl = 50;
+
+    public boolean ddlMinus(){
+        this.ddl --;
+        return ddl <= 0;
+    }
+
 
     public RequestClusterMessage(int largeId, int currentNode, int requesterId, int position, double generateTime) {
-        this.largeId = largeId;
+        super(largeId);
         this.currentNode = currentNode;
         this.requesterId = requesterId;
 
@@ -31,21 +37,23 @@ public class RequestClusterMessage extends Message implements Comparable<Request
 
         this.nodeInfoMap = new HashMap<>();
 
-        this.theEgoTreeMasterOfCluster = -1;
+        this.theEgoTreeIdOfClusterMaster = -1;
         this.theSendIdOfClusterMaster = -1;
     }
 
 
+
+
     // master id , 是cluster的master,与 theMostUpperEgoTreId不一定一样，下面那个可以是LN
     // 这个用用于指示 reject 信息传播的
-    private int theEgoTreeMasterOfCluster; // the 3 node, would be used in adjust，
+    private int theEgoTreeIdOfClusterMaster; // the 3 node, would be used in adjust，
     // when 2 node or 3 node is the root of the ego-tree. it would equal to the most upper ego tree id.
     private int theSendIdOfClusterMaster;
 
 
     // 用于指示整个子树旋转后的父亲结点。。。
-    private int theMostUpperEgoTreeId;     // 这几个如果是3结点，那他们跟上面的是一样的。
-    private int theMostUpperSendId;        // 毕竟还是要相连的嘛//
+    private int theMostUpperNodeEgoTreeId;     // 这几个如果是3结点，那他们跟上面的是一样的。
+    private int theMostUpperNodeSendId;        // 毕竟还是要相连的嘛//
     private boolean isLnFlag;              // 用于指示cluster最上层的那个结点是否就是LN
 
 
@@ -87,12 +95,12 @@ public class RequestClusterMessage extends Message implements Comparable<Request
 
 
 
-    public void setTheEgoTreeMasterOfCluster(int theEgoTreeMasterOfCluster) {
-        this.theEgoTreeMasterOfCluster = theEgoTreeMasterOfCluster;
+    public void setTheEgoTreeIdOfClusterMaster(int theEgoTreeIdOfClusterMaster) {
+        this.theEgoTreeIdOfClusterMaster = theEgoTreeIdOfClusterMaster;
     }
 
-    public int getTheEgoTreeMasterOfCluster() {
-        return theEgoTreeMasterOfCluster;
+    public int getTheEgoTreeIdOfClusterMaster() {
+        return theEgoTreeIdOfClusterMaster;
     }
 
     // getter
@@ -143,20 +151,16 @@ public class RequestClusterMessage extends Message implements Comparable<Request
         this.isFinalNode = true;
     }
 
-    public int getLargeId() {
-        return largeId;
-    }
-
     public int getTheSendIdOfClusterMaster() {
         return theSendIdOfClusterMaster;
     }
 
-    public int getTheMostUpperEgoTreeId() {
-        return theMostUpperEgoTreeId;
+    public int getTheMostUpperNodeEgoTreeId() {
+        return theMostUpperNodeEgoTreeId;
     }
 
-    public int getTheMostUpperSendId() {
-        return theMostUpperSendId;
+    public int getTheMostUpperNodeSendId() {
+        return theMostUpperNodeSendId;
     }
 
     public boolean isLnFlag() {
@@ -167,12 +171,12 @@ public class RequestClusterMessage extends Message implements Comparable<Request
         this.theSendIdOfClusterMaster = theSendIdOfClusterMaster;
     }
 
-    public void setTheMostUpperEgoTreeId(int theMostUpperEgoTreeId) {
-        this.theMostUpperEgoTreeId = theMostUpperEgoTreeId;
+    public void setTheMostUpperNodeEgoTreeId(int theMostUpperNodeEgoTreeId) {
+        this.theMostUpperNodeEgoTreeId = theMostUpperNodeEgoTreeId;
     }
 
-    public void setTheMostUpperSendId(int theMostUpperSendId) {
-        this.theMostUpperSendId = theMostUpperSendId;
+    public void setTheMostUpperNodeSendId(int theMostUpperNodeSendId) {
+        this.theMostUpperNodeSendId = theMostUpperNodeSendId;
     }
 
     public void setLnFlag(boolean lnFlag) {

@@ -1,17 +1,16 @@
-package projects.cbrenet.nodes.messages.controlMessage;
+package projects.cbrenet.nodes.messages.controlMessage.clusterMessage;
 
 import sinalgo.nodes.messages.Message;
 
-public class AcceptOrRejectBaseMessage extends Message {
+public class AcceptOrRejectBaseMessage extends ClusterRelatedMessage {
 
     int masterId;
-
-    int largeId;    // in which ego-tree
     int clusterId;  // which is also the requester 's ID
 
     protected AcceptOrRejectBaseMessage(int masterId, int largeId, int clusterId){
+        super(largeId);
+
         this.masterId = masterId;
-        this.largeId = largeId;
         this.clusterId = clusterId;
     }
 
@@ -20,10 +19,6 @@ public class AcceptOrRejectBaseMessage extends Message {
     @Override
     public Message clone() {
         return this;
-    }
-
-    public int getLargeId() {
-        return largeId;
     }
 
     public int getClusterId() {

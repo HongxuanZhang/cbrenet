@@ -1,9 +1,14 @@
 package projects.cbrenet.nodes.nodeImplementations;
 
 import projects.cbrenet.nodes.messages.AuxiliaryNodeMessage.AuxiliaryRequestMessage;
+import projects.cbrenet.nodes.messages.CbRenetMessage;
 import projects.cbrenet.nodes.messages.RoutingMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.LargeInsertMessage;
+import projects.cbrenet.nodes.messages.controlMessage.clusterMessage.ClusterRelatedMessage;
 import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteBaseMessage;
+import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteConfirmMessage;
+import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteFinishMessage;
+import projects.cbrenet.nodes.messages.deletePhaseMessages.DeletePrepareMessage;
 import projects.cbrenet.nodes.nodeImplementations.deleteProcedure.DeleteProcess;
 import projects.cbrenet.nodes.routeEntry.AuxiliarySendEntry;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
@@ -28,6 +33,9 @@ public class AuxiliaryNode extends AuxiliaryNodeMessageQueueLayer{
 
     private void executeRoutingMessage(RoutingMessage routingMessage){
         Message payload = routingMessage.getPayload();
+        System.out.println("Auxiliary Node " + this.ID + " receive a routing message contains " +
+                "" + payload.getClass().getSimpleName() + ", content is " + payload.toString());
+
         if(payload instanceof LargeInsertMessage){
             // check whether this need to make the node return.
             int largeId = routingMessage.getLargeId();
@@ -53,18 +61,36 @@ public class AuxiliaryNode extends AuxiliaryNodeMessageQueueLayer{
             DeleteBaseMessage deleteBaseMessage = (DeleteBaseMessage) payload;
 
             int largeId = deleteBaseMessage.getLargeId();
-            int helpedId = deleteBaseMessage.getDeleteTarget();
+            int helpedId = -1;
+
+            if(deleteBaseMessage instanceof DeletePrepareMessage){
+                helpedId = ((DeletePrepareMessage)deleteBaseMessage).getSendTargetEgoTreeId();
+            }
+            else if(deleteBaseMessage instanceof DeleteConfirmMessage){
+                helpedId = ((DeleteConfirmMessage)deleteBaseMessage).getDeleteTarget();
+            }
+            else if(deleteBaseMessage instanceof DeleteFinishMessage){
+                helpedId = ((DeleteFinishMessage)deleteBaseMessage).getTargetEgoTreeId();
+            }
+
             SendEntry entry = this.getCorrespondingEntry(helpedId, largeId);
             if(entry != null){
                 // the DBM got the destination
-                if(this.deleteProcess.executeDeleteBaseMessage(deleteBaseMessage, this, this)){
+                if(this.deleteProcess.executeDeleteBaseMessage(deleteBaseMessage, this, this, helpedId)){
                     // remove entry.
                     this.removeCorrespondingEntry(helpedId,largeId);
                 }
             }
             return;
         }
-        //else if() 聚类和旋转的部分
+        else if(payload instanceof CbRenetMessage){
+            ((CbRenetMessage) payload).incrementRouting();
+        }
+        else if(payload instanceof ClusterRelatedMessage){
+            this.clusterHelper.receiveClusterRelatedMessage((ClusterRelatedMessage) payload, this,this,
+                    routingMessage.getNextHop());
+            return;
+        }
 
         if(!this.forwardMessage( routingMessage )){
             this.addRoutingMessageToQueue(routingMessage.getNextHop(), routingMessage);
@@ -86,6 +112,7 @@ public class AuxiliaryNode extends AuxiliaryNodeMessageQueueLayer{
 
             }
             else if(msg instanceof AuxiliaryRequestMessage){
+                // todo 这里没有用上哦。。
                 AuxiliaryRequestMessage auxiliaryRequestMessage = (AuxiliaryRequestMessage) msg;
                 int helpedId = auxiliaryRequestMessage.getHelpedId();
                 int largeId = auxiliaryRequestMessage.getLargeId();

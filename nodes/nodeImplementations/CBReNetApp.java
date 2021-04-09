@@ -5,7 +5,7 @@ import java.awt.Graphics;
 
 import projects.cbrenet.CustomGlobal;
 import projects.cbrenet.nodes.messages.CbRenetMessage;
-import projects.defaultProject.DataCollection;
+import projects.cbrenet.DataCollection;
 import sinalgo.gui.transformation.PositionTransformation;
 
 /**
@@ -39,7 +39,6 @@ public class CBReNetApp extends CBNetNode {
       super.communicationCompleted(msg);
       CustomGlobal.mustGenerateSplay = true;
       this.data.addRouting(msg.getRouting());
-      this.data.addRoundsPerSplay(msg.finalTime - msg.initialTime);
       this.data.incrementCompletedRequests();
   }
 

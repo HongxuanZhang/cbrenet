@@ -47,7 +47,7 @@ public class SDNNode extends Node {
     // used to present the node of Integer id is big or small
     // true : small
     // false : big
-    private HashMap<Integer, Boolean> smallStatusBits;
+    public HashMap<Integer, Boolean> smallStatusBits;
 
     private HashMap<Integer, Integer> cpNumber;
 
@@ -652,6 +652,10 @@ public class SDNNode extends Node {
 
     // create ego tree part
     private void createEgoTree(int largeNodeId){
+        if(largeNodeId == 49){
+            int djioasd = 2;
+        }
+
         HashSet<Integer> small_cp = this.cp_smallNodes.getOrDefault(largeNodeId, null);
         if(small_cp == null){
             Tools.fatalError("SDN: In createEgoTree of SDN, the small partner of " + largeNodeId + " is null" );
@@ -760,6 +764,9 @@ public class SDNNode extends Node {
             //dst, insertFlag, largeId, targets, relationships, statusId
             LinkMessage linkMessage = new LinkMessage(curNodeId, true, largeNodeId, targets, relationships,
                     this.globalStatusId);
+            if(p == largeNodeId){
+                linkMessage.setParentIsLnFlag();
+            }
             this.sendMessage(curNodeId, linkMessage);
             Tools.appendToOutput("Send Link Message to " + curNodeId + " " +
                     "" + linkMessage.toString());

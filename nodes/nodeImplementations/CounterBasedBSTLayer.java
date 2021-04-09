@@ -1,11 +1,16 @@
 package projects.cbrenet.nodes.nodeImplementations;
 
+import projects.cbrenet.CustomGlobal;
 import projects.cbrenet.nodes.messages.CbRenetMessage;
 import projects.cbrenet.nodes.messages.RoutingMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.*;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteEgoTreeRequestMessage;
 import projects.cbrenet.nodes.messages.controlMessage.DeleteRequestMessage;
+import projects.cbrenet.nodes.messages.controlMessage.clusterMessage.AcceptOrRejectBaseMessage;
+import projects.cbrenet.nodes.messages.controlMessage.clusterMessage.ClusterRelatedMessage;
 import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteBaseMessage;
+import projects.cbrenet.nodes.nodeImplementations.nodeHelper.ClusterHelper;
+import projects.cbrenet.nodes.nodeImplementations.nodeHelper.SimpleClusterHelper;
 import projects.cbrenet.nodes.routeEntry.SendEntry;
 import sinalgo.configuration.WrongConfigurationException;
 import sinalgo.nodes.messages.Inbox;
@@ -20,6 +25,9 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
 
     // The insertMessageExecuteFlags use to direct what to do when receive a LIM.
     private HashMap<Integer, Boolean> insertMessageExecuteFlags;
+
+    //ClusterHelper clusterHelper = ClusterHelper.getInstance();
+    SimpleClusterHelper clusterHelper = SimpleClusterHelper.getInstance();
 
 
     @Override
@@ -219,6 +227,12 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
      */
     @Override
     public void handleMessages(Inbox inbox) {
+
+        if(this.ID == 530)
+        {
+            int saidjo =2 ;
+        }
+
         while (inbox.hasNext()) {
             Message msg = inbox.next();
             if (msg instanceof RoutingMessage) {
@@ -228,8 +242,14 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
                 if(routingMessageTmp.getDestination() == this.ID){
                     // have achieve the destination
                     if(payload instanceof CbRenetMessage) {
-                        this.receiveMessage(payload);
 
+                        SendEntry entry = this.getCorrespondingEntry(-1, largeId);
+                        // counter ++;
+                        if(entry != null) {
+                            entry.incrementCounter();
+                            entry.setRotationAbleFlag(true);
+                        }
+                        this.receiveMessage(payload);
                     }
                     else if(payload instanceof DeleteRequestMessage){
                         this.executeDeleteRequestMessage((DeleteRequestMessage) payload);
@@ -237,9 +257,14 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
                     else if(payload instanceof DeleteBaseMessage){
                         this.receiveMessage(payload);
                     }
-                    // todo 这里或许还需要几种message
+                    else if(payload instanceof ClusterRelatedMessage){
+                        this.receiveMessage(payload);
+                    }
+                    else if(payload instanceof LargeInsertMessage){
+                        this.receiveMessage(payload);
+                    }
                     else{
-                        Tools.fatalError("Some message in the RoutingMessage is " + msg.getClass() + " and being received");
+                        Tools.warning("CBBSTLayer: Some messages in the RoutingMessage is " + msg.getClass().getSimpleName() + " and being received");
                     }
                 }
                 else{
@@ -250,12 +275,32 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
                             this.addLargeInsertMessage(routingMessageTmp);
                         }
                     }
+                    else if(payload instanceof AcceptOrRejectBaseMessage){
+                        // 如果是RejectMessage的话，也需要关心一下
+                        this.receiveMessage(payload);
+                    }
                     else{
                         // not InsertMessage and not get destination
                         // only need to forward
                         if(payload instanceof CbRenetMessage){
                             ((CbRenetMessage) payload).incrementRouting();
+
+                            if(routingMessageTmp.isUpForward()){
+                                // come from child, so i need to increment the weight
+                                int src =  ((CbRenetMessage) payload).getSrc();
+
+                                SendEntry entry = this.getCorrespondingEntry(-1, largeId);
+                                if(src < this.ID){
+                                    // left child
+                                    entry.incrementWeightOfLeft();
+                                }
+                                else{
+                                    entry.incrementWeightOfRight();
+                                }
+                            }
+                            //自上而下的消息，weight在转发时增加
                         }
+
 
                         if(!this.forwardMessage(routingMessageTmp)){
                             ((MessageQueueLayer)this).addInRoutingMessageQueue(routingMessageTmp);
@@ -267,7 +312,6 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
                 CbRenetMessage cm = (CbRenetMessage) msg;
                 int destination = cm.getDestination();
                 if(destination == this.ID){
-                    cm.incrementRouting();
                     this.receiveMessage(msg);
                 }
                 else{
@@ -295,7 +339,16 @@ public abstract class CounterBasedBSTLayer extends CounterBasedBSTLinkLayer impl
                         }
                     }
                     else {
-                        this.sendEgoTreeMessage(this.ID, target, msg);
+
+                        if(this.getRootSendId() > 0){
+                            this.sendEgoTreeMessage(this.ID, target, msg);
+                        }
+                        else{
+                            this.addLinkToRootNode(largeId, target);
+                            insertMessage.setLeafId(this.ID);
+                            this.sendEgoTreeMessage(this.ID, target, msg);
+                        }
+
                     }
                 }
                 else if(target == this.ID){

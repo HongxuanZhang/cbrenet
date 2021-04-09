@@ -1,9 +1,11 @@
 package projects.cbrenet.nodes.routeEntry;
 
+import projects.cbrenet.CustomGlobal;
 import projects.cbrenet.nodes.messages.RoutingMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.DeleteMessage;
 import projects.cbrenet.nodes.messages.SDNMessage.LargeInsertMessage;
-import projects.cbrenet.nodes.messages.controlMessage.RequestClusterMessage;
+import projects.cbrenet.nodes.messages.controlMessage.clusterMessage.AcceptClusterMessage;
+import projects.cbrenet.nodes.messages.controlMessage.clusterMessage.RequestClusterMessage;
 import projects.cbrenet.nodes.messages.deletePhaseMessages.DeleteConfirmMessage;
 import projects.cbrenet.nodes.messages.deletePhaseMessages.DeletePrepareMessage;
 import sinalgo.tools.Tools;
@@ -31,8 +33,9 @@ public class SendEntry {
     int sendIdOfRightChild;
 
 
-    // todo
-    boolean entryExistFlag; // 设定为False 当收到Ln变小的message时
+
+    boolean entryExistFlag; // 设定为False 当收到Ln变小的message时  // todo
+    // 还被用于在有delete需求时通知cluster
     public void setEntryExistFlag(boolean entryExistFlag) {
         this.entryExistFlag = entryExistFlag;
     }
@@ -46,7 +49,19 @@ public class SendEntry {
         return rotationAbleFlag;
     }
     public void setRotationAbleFlag(boolean rotationAbleFlag) {
-        this.rotationAbleFlag = rotationAbleFlag;
+        if(this.egoTreeRoot){
+            this.rotationAbleFlag = false;
+            CustomGlobal.noWaitForAdjust = true;
+        }
+        else{
+            this.rotationAbleFlag = rotationAbleFlag;
+            if(rotationAbleFlag == true){
+                CustomGlobal.noWaitForAdjust = false;
+            }
+            else{
+                CustomGlobal.noWaitForAdjust = true;
+            }
+        }
     }
 
     private int rotationAbleCountDown;
@@ -55,11 +70,20 @@ public class SendEntry {
     // Count base network weight.
     int counter; // 以自身为 src or dst 的 Message数目
 
-
-
-    // todo 完善统计机制， 只统计 LIM CbRenetMessage 即可
+    // only count CbReNetMessage
     int weightOfLeft;
     int weightOfRight;
+
+    public void incrementWeightOfLeft(){
+        this.weightOfLeft ++;
+    }
+    public void incrementWeightOfRight(){
+        this.weightOfRight ++;
+    }
+
+    public void incrementCounter(){
+        this.counter++;
+    }
 
 
     // 第一次想要cluster时就出现，直到cluster被满足。
@@ -77,6 +101,49 @@ public class SendEntry {
     PriorityQueue<RequestClusterMessage> requestClusterMessagePriorityQueue;
 
 
+
+    // for simple cluster
+    RequestClusterMessage currentRequestClusterMessageForSimpleCluster = null;
+
+    public RequestClusterMessage getCurrentRequestClusterMessageForSimpleCluster() {
+        return currentRequestClusterMessageForSimpleCluster;
+    }
+
+    public void setCurrentRequestClusterMessageForSimpleCluster(RequestClusterMessage currentRequestClusterMessageForSimpleCluster) {
+        this.currentRequestClusterMessageForSimpleCluster = currentRequestClusterMessageForSimpleCluster;
+    }
+
+    // for simple cluster end
+
+
+
+
+    public boolean ddlMinus(int helpedId){
+        /*
+         *@description 用于消除一些等待时间过长的RequestClusterMessage.
+         *@parameters  [helpedId]
+         *@return  void
+         *@author  Zhang Hongxuan
+         *@create time  2021/4/8
+         */
+        boolean end = false;
+
+        Queue<RequestClusterMessage> tmpQueue = new LinkedList<>();
+        while(!requestClusterMessagePriorityQueue.isEmpty()){
+            RequestClusterMessage requestClusterMessage = this.requestClusterMessagePriorityQueue.poll();
+            if(!requestClusterMessage.ddlMinus()){
+                // 说明还值得等待
+                tmpQueue.add(requestClusterMessage);
+            }
+            else{
+                if(requestClusterMessage.getRequesterId() == helpedId){
+                    end = true;
+                }
+            }
+        }
+        this.requestClusterMessagePriorityQueue.addAll(tmpQueue);
+        return end;
+    }
 
 
     // 当前自己已经倾心的Cluster， 除非收到NonAck 或者cluster结束才更新的
@@ -105,11 +172,25 @@ public class SendEntry {
     }
 
 
+    public void adjustCompleted(AcceptClusterMessage acceptClusterMessage){
+
+        int largeId = acceptClusterMessage.getLargeId();
+        int clusterId = acceptClusterMessage.getClusterId(); //also the requester's id
+
+        this.unlockUpdateHighestPriorityRequestPermission();
+
+        this.currentRequestClusterMessageForSimpleCluster = null;
+
+        this.highestPriorityRequest = null;
+        this.setCurrentClusterRequesterId(-3);
+        this.deleteCorrespondingRequestClusterMessageInPriorityQueue(largeId, clusterId);
+    }
+
 
     public boolean checkAdjustRequirement(){
         // 判断该结点是否应该发起一个cluster
         // 不仅自己认为自己有希望得到一个cluster， （注意：：：自己可以已经在一个cluster中，只要等到所有都收到就行
-        if(this.deleteFlag){
+        if(this.deleteFlag || this.checkNeighborDeleting()){
             // wait for delete
             return false;
         }
@@ -118,44 +199,41 @@ public class SendEntry {
             return false;
         }
 
-
-        if(this.egoTreeRoot){
-            return false; // 结点都是Ego-Tree的root了还想着去哪呢。。
-        }
-
         return true;
     }
 
-    public boolean checkRotationRequirement(){
-        /*
-         *@description  这个函数用于判断该Entry在现在或者未来的某个时刻是否可能参与cluster，如果已经在某个cluster中，立即返回false;
-         *@parameters  []
-         *@return  boolean
-         *@author  Zhang Hongxuan
-         *@create time  2021/3/24
-         */
-
-        // todo add in delete part,
-
-        if(this.currentClusterRequesterId > 0){
-            return false;
-        }
-
-        if(!this.entryExistFlag){
-            return false;
-        }
-
-        if(this.checkNeighborDeleting()) {
-            // three links should all be available
-            return false;
-        }
-
-        return true;
-    }
+//    public boolean checkRotationRequirement(){
+//        /*
+//         *@description  这个函数用于判断该Entry在现在或者未来的某个时刻是否可能参与cluster，如果已经在某个cluster中，立即返回false;
+//         *@parameters  []
+//         *@return  boolean
+//         *@author  Zhang Hongxuan
+//         *@create time  2021/3/24
+//         */
+//
+//        if(this.currentClusterRequesterId > 0){
+//            return false;
+//        }
+//
+//        if(!this.entryExistFlag){
+//            return false;
+//        }
+//
+//        if(this.checkNeighborDeleting() || this.deleteFlag) {
+//            // three links should all be available
+//            return false;
+//        }
+//
+//        return true;
+//    }
 
 
     public void addRequestClusterMessageIntoPriorityQueue(RequestClusterMessage requestClusterMessage){
         this.requestClusterMessagePriorityQueue.add(requestClusterMessage);
+    }
+
+    public boolean requestClusterMessageQueueIsEmpty(){
+        return this.requestClusterMessagePriorityQueue.isEmpty();
     }
 
     public RequestClusterMessage getRequestClusterMessageFromPriorityQueue(){
@@ -171,6 +249,14 @@ public class SendEntry {
             if (r.getLargeId() == largeId && r.getRequesterId() == clusterId) {
                 flag = true;
                 break;
+            }
+        }
+
+
+        if(this.highestPriorityRequest != null) {
+            if (this.highestPriorityRequest.getRequesterId() == clusterId && this.highestPriorityRequest.getLargeId() == largeId) {
+                this.highestPriorityRequest = null;
+
             }
         }
 
@@ -210,10 +296,11 @@ public class SendEntry {
 
         while(!this.requestClusterMessagePriorityQueue.isEmpty()){
             RequestClusterMessage requestClusterMessageTmp = this.requestClusterMessagePriorityQueue.poll();
-            if(!this.highestPriorityRequest.equals(requestClusterMessageTmp)){
-                // check whether here work
-                resultList.add(this.requestClusterMessagePriorityQueue.poll());
-            }
+//            if(!this.highestPriorityRequest.equals(requestClusterMessageTmp)){
+//                // check whether here work
+//                resultList.add(requestClusterMessageTmp);
+//            }
+            resultList.add(requestClusterMessageTmp);
         }
         return resultList;
     }
@@ -244,7 +331,7 @@ public class SendEntry {
 
     private boolean queueEmpty = true;
     public boolean isQueueEmpty() {
-        return queueEmpty;
+        return queueEmpty && this.requestClusterMessagePriorityQueue.isEmpty();
     }
     public void setQueueEmpty(boolean queueEmpty) {
         this.queueEmpty = queueEmpty;
@@ -268,7 +355,7 @@ public class SendEntry {
         this.sendIdOfRightChild = egoTreeIdOfRightChild;
 
         this.egoTreeRoot = false;
-        this.rotationAbleFlag = true;
+        this.rotationAbleFlag = false;
 
         this.entryExistFlag = true;
 
@@ -409,6 +496,11 @@ public class SendEntry {
     // and would not accept adjust.
     boolean highestDPMChangeBit;
     DeletePrepareMessage curHighestDPM;
+
+    public void resetCurHighestDPM(){
+        this.curHighestDPM = null;
+    }
+
 
 
     PriorityQueue<DeletePrepareMessage> deletePrepareMessagePriorityQueue;
@@ -655,7 +747,8 @@ public class SendEntry {
 
     public List<Integer> getAllEgoTreeIdOfNeighbors(){
         List<Integer> results = new LinkedList<>();
-        if(this.egoTreeIdOfParent > 0){
+        //&& !this.isEgoTreeRoot()
+        if(this.egoTreeIdOfParent > 0 ){
             results.add(this.egoTreeIdOfParent);
         }
         if(this.egoTreeIdOfLeftChild > 0){

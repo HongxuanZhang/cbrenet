@@ -12,21 +12,21 @@ import sinalgo.tools.Tools;
 
 import java.util.List;
 
-public class ClusterHelper {
+public class SimpleClusterHelper {
 
     private double epsilon = -1.5;
 
     private boolean adjustFlag = false;
 
-    private ClusterHelper(){
+    private SimpleClusterHelper(){
 
     }
 
-    private static ClusterHelper clusterHelper = null;
+    private static SimpleClusterHelper clusterHelper = null;
 
-    public static ClusterHelper getInstance() {
+    public static SimpleClusterHelper getInstance() {
         if (clusterHelper == null) {
-            clusterHelper = new ClusterHelper();
+            clusterHelper = new SimpleClusterHelper();
         }
 
         return clusterHelper;
@@ -42,11 +42,14 @@ public class ClusterHelper {
 
 
 
+
+
     public void receiveClusterRelatedMessage(ClusterRelatedMessage msg, EntryGetter entryGetter, Node node, int helpedId){
         int largeId = msg.getLargeId();
         SendEntry entry = entryGetter.getCorrespondingEntry(helpedId, largeId);
 
         if(entry == null){
+            // todo 加一个reject
             return;
         }
 
@@ -75,6 +78,7 @@ public class ClusterHelper {
 
         if(!this.adjustFlag){
             CustomGlobal.adjustNum = 0;
+            entry.setRotationAbleFlag(false);
             return;
         }
 
@@ -88,16 +92,12 @@ public class ClusterHelper {
         System.out.println("Cluster Helper : adjustNum ++ since a node try to rotate, " +
                 " node : " +node.ID + " helpedId is " + helpedId + " , adjustNum is" + CustomGlobal.adjustNum);
 
-
-
-        if(entry.getClusterMessageOfMine() == null){
-
-            RequestClusterMessage clusterMessage = new RequestClusterMessage(largeId, -1,
-                    helpedId, 0, Tools.getGlobalTime());
-
-            entry.setClusterMessageOfMine(clusterMessage);
-
+        if(CustomGlobal.adjustNum > 1){
+            CustomGlobal.adjustNum --;
+            System.out.println("Cluster Helper : adjustNum --  since adjust num > 1");
+            return;
         }
+
 
         if(entry.checkAdjustRequirement() && !entry.isEgoTreeRoot()){
             // send cluster Message
@@ -113,7 +113,7 @@ public class ClusterHelper {
 
             this.sendRequestClusterMessageUp(node, entry, largeId, clusterMessage, helpedId);
 
-            entry.addRequestClusterMessageIntoPriorityQueue(clusterMessage);
+            entry.setCurrentRequestClusterMessageForSimpleCluster(clusterMessage);
 
             entry.setRotationAbleFlag(false);
         }
@@ -136,23 +136,6 @@ public class ClusterHelper {
          */
         assert node instanceof AuxiliaryNode || node.ID == helpedId;
 
-        if(entry.ddlMinus(helpedId)){
-
-            CustomGlobal.adjustNum --;
-            entry.setRotationAbleFlag(false);
-            System.out.println("A DPM minus to zero...., the current adjustNum is " +
-                    "" + CustomGlobal.adjustNum);
-        }
-
-        if(!entry.checkAdjustRequirement()){
-            // 可能自己要删除之类的。
-            List<RequestClusterMessage> listTmp = entry.getAllRequestClusterMessage();
-            for(RequestClusterMessage clusterMessage : listTmp){
-                this.rejectRequest(entry,node, largeId, helpedId, clusterMessage.getRequesterId(),
-                        clusterMessage.getTheEgoTreeIdOfClusterMaster());
-
-            }
-        }
 
         if(entry.getCurrentClusterRequesterId() > 0){
             // mean the node is in the cluster already.
@@ -161,7 +144,7 @@ public class ClusterHelper {
 
         entry.updateHighestPriorityRequest();
 
-        RequestClusterMessage highestRequest = entry.getHighestPriorityRequest();
+        RequestClusterMessage highestRequest = entry.getCurrentRequestClusterMessageForSimpleCluster();
 
         if(highestRequest == null){
             return;
@@ -170,28 +153,17 @@ public class ClusterHelper {
         if(highestRequest.getTheEgoTreeIdOfClusterMaster() == helpedId){
             // if this is the master
 
-            entry.lockUpdateHighestPriorityRequestPermission();
-
             int clusterId = highestRequest.getRequesterId();
 
             entry.setCurrentClusterRequesterId(clusterId);
+            // set current cluster requester id
+
             // remember that masterId equals to helpedId
             AcceptClusterMessage acceptClusterMessage = new AcceptClusterMessage(helpedId, largeId,
                     clusterId, highestRequest.getGenerateTime(), highestRequest);
             this.sendAcceptOrRejectMessage(node, entry, largeId, acceptClusterMessage, helpedId);
         }
 
-
-        // reject else request;
-
-        // 为了毕设。。 先行注释掉
-//        List<RequestClusterMessage> listTmp = entry.getAllRequestClusterMessage();
-//
-//        for(RequestClusterMessage clusterMessage : listTmp){
-//            this.rejectRequest(entry,node, largeId, helpedId, clusterMessage.getRequesterId(),
-//                    clusterMessage.getTheEgoTreeIdOfClusterMaster());
-//
-//        }
     }
 
 
@@ -254,7 +226,7 @@ public class ClusterHelper {
                         // set the upper node of the cluster as LN, which do not need to join in cluster
                         this.setUpperNodeId(requestClusterMessage, entry.getEgoTreeIdOfParent(),
                                 entry.getSendIdOfParent(), true);
-                        entry.addRequestClusterMessageIntoPriorityQueue(requestClusterMessage);
+                        entry.setCurrentRequestClusterMessageForSimpleCluster(requestClusterMessage);
                     }
 
                 }
@@ -272,14 +244,14 @@ public class ClusterHelper {
                         else{
                             // 向上继续发送
                             this.sendRequestClusterMessageUp(node, entry, largeId, requestClusterMessage, helpedId);
-                            entry.addRequestClusterMessageIntoPriorityQueue(requestClusterMessage);
+                            entry.setCurrentRequestClusterMessageForSimpleCluster(requestClusterMessage);
                         }
                     }
                     else{
                         // position == 1 && root == false
                         // 往后发送后，(浅拷贝？)这里也会变吧，看看怎么处理还是没有影响。
                         this.sendRequestClusterMessageUp(node, entry, largeId, requestClusterMessage, helpedId);
-                        entry.addRequestClusterMessageIntoPriorityQueue(requestClusterMessage);
+                        entry.setCurrentRequestClusterMessageForSimpleCluster(requestClusterMessage);
                     }
                 }
             }
@@ -287,14 +259,14 @@ public class ClusterHelper {
                 this.setClusterMaster(helpedId, node.ID, requestClusterMessage);
                 // 由于这里的3号结点并不真正参与旋转，所以不必检测其是否为root
                 this.setUpperNodeId(requestClusterMessage, helpedId, node.ID, false);
-                entry.addRequestClusterMessageIntoPriorityQueue(requestClusterMessage);
+                entry.setCurrentRequestClusterMessageForSimpleCluster(requestClusterMessage);
             }
         }
     }
 
 
     private void receiveAcceptClusterMessage(AcceptClusterMessage acceptClusterMessage, SendEntry entry,
-                                            Node node, int helpedId){
+                                             Node node, int helpedId){
 
         System.out.println("Node " + node.ID + " receive a Accept! In cluster layer!");
 
@@ -321,8 +293,7 @@ public class ClusterHelper {
             return;
         }
 
-        entry.updateHighestPriorityRequest();
-        RequestClusterMessage highestRequest = entry.getHighestPriorityRequest();
+        RequestClusterMessage highestRequest = entry.getCurrentRequestClusterMessageForSimpleCluster();
         if(highestRequest == null){
             return;
         }
@@ -341,8 +312,9 @@ public class ClusterHelper {
 
 
 
-                System.out.println(" Rotate completed! ");
+                System.out.println("Rotate completed! ");
 
+                // these two execute in rotation already
                 entry.unlockUpdateHighestPriorityRequestPermission();
                 entry.setCurrentClusterRequesterId(-3);
 
@@ -372,7 +344,7 @@ public class ClusterHelper {
 
 
     private void receiveRejectClusterMessage(RejectClusterMessage rejectClusterMessage, SendEntry entry,
-                                            Node node, int helpedId){
+                                             Node node, int helpedId){
 
 
         int largeId = rejectClusterMessage.getLargeId();
@@ -382,10 +354,18 @@ public class ClusterHelper {
         // 既然被否决，那就移除吧。
 
         boolean continueSend = false;
-        if(entry.deleteCorrespondingRequestClusterMessageInPriorityQueue(largeId, clusterId)){
-            // 说明自身可能不是这条Reject消息的终点
+
+        RequestClusterMessage requestClusterMessage = entry.getCurrentRequestClusterMessageForSimpleCluster();
+
+        if(requestClusterMessage == null){
+            return;
+        }
+
+        if(requestClusterMessage.getLargeId() == largeId && requestClusterMessage.getRequesterId() == clusterId){
+            entry.setCurrentRequestClusterMessageForSimpleCluster(null);
             continueSend = true;
         }
+
 
         if(helpedId == clusterId){
             CustomGlobal.adjustNum --;
@@ -440,7 +420,6 @@ public class ClusterHelper {
 
 
 
-    // todo 这两个 sendMessage 部分有一点点问题，一个是一个一个传的，第二个是直接找终点的，不太一样，检查是否会导致bug
     // Send Message Part
     private void sendRequestClusterMessageUp(Node node, SendEntry entry, int largeId,
                                              RequestClusterMessage requestClusterMessage, int helpedId){
@@ -484,7 +463,6 @@ public class ClusterHelper {
 
 
     private void rejectRequest(SendEntry entry, Node node, int largeId, int helpedId, int clusterId, int masterId){
-        // todo cluster ID 和 masterId或许可以是随便写的？？
         // 虽然上面的结点接受聚合，但是本结点处还有更高优先级的请求要同意，所以当前的结点不接受聚合
         if(helpedId == clusterId){
             // 自己的，别管了
@@ -514,6 +492,8 @@ public class ClusterHelper {
         requestClusterMessage.setTheMostUpperNodeSendId(sendId);
         requestClusterMessage.setLnFlag(lNFlag);
     }
+
+
 
 
 
