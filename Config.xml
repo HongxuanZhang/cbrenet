@@ -240,15 +240,15 @@
 
         <!--  hpc_exact_boxlib_cns_nospec_large.txt -->
 
-        <input value ="D:\code\Research\CBNetProject-master\CBNetProject-master\file\input\hpc_exact_boxlib_cns_nospec_large.txt" />
-        <output value ="test" />
+        <input value ="D:\code\Research\CBNetProject-master\CBNetProject-master\file\input\hpc_exact_boxlib_cns_nospec_large_10000.txt" />
+        <output value ="CbReNet" />
         <seedId value = "10" />
         <mu value ="20" />
-        <parac value = "4"/>
-        <adjust value="true" />
+        <parac value = "3"/>
+        <adjust value="false"/>
 
         <!-- adjust parameter -->
-        <epsilon value="-1.5" />
+        <epsilon value="-1.7" />
 
         <ExitAfter value="false" rounds="100000000"/>
         <AutoStart value="false"/>
