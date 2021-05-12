@@ -32,7 +32,11 @@ public class CBReNetApp extends CBNetNode {
       this.init();
   }
 
-
+  @Override
+  public void postStep() {
+      super.postStep();
+      data.addCurrentPortNumber(this.ID, this.routeTableInEgoTree.size()*3+( this.largeFlag? this.getCommunicateLargeNodes().size()+1 : this.getCommunicateSmallNodes().size() ));
+  }
 
   @Override
   public void communicationCompleted(CbRenetMessage msg) {

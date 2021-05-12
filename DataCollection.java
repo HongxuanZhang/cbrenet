@@ -4,6 +4,8 @@ import sinalgo.tools.logging.Logging;
 import sinalgo.tools.statistics.DataSeries;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class DataCollection {
 
@@ -13,7 +15,7 @@ public class DataCollection {
   private DataSeries routingData = new DataSeries();
 
   private ArrayList<Long> hopNumForEveryRequest = new ArrayList<>();
-
+  private Map<Integer, ArrayList<Integer>> portNumSequence= new HashMap<>();
 
   private long activeSplays = 0;
   private long activeClusters = 0;
@@ -23,13 +25,16 @@ public class DataCollection {
   // LOGS
 
   private Logging routing_hop_log; // for CB ReNet
+  private Logging port_number_log;
+
 
   private DataCollection() {
 
   }
 
   public void setPath(String path, String filename) {
-    routing_hop_log = Logging.getLogger(path + "/" + filename + ".txt");
+    this.routing_hop_log = Logging.getLogger(path + "/" + filename + ".txt");
+    this.port_number_log = Logging.getLogger(path + "/" + filename + "_port_num" + ".txt");
   }
 
   public static DataCollection getInstance() {
@@ -52,6 +57,19 @@ public class DataCollection {
   public void addRouting(long num) {
     this.routingData.addSample(num);
     this.hopNumForEveryRequest.add(num);
+  }
+
+  public void addCurrentPortNumber(int nodeId, int portNum){
+    if(this.portNumSequence.containsKey(nodeId)){
+      ArrayList<Integer> arrayList = this.portNumSequence.get(nodeId);
+      arrayList.add(portNum);
+      this.portNumSequence.put(nodeId, arrayList);
+    }
+    else{
+      ArrayList<Integer> arrayList = new ArrayList<>();
+      arrayList.add(portNum);
+      this.portNumSequence.put(nodeId, arrayList);
+    }
   }
 
   public void resetCollection() {
@@ -109,6 +127,13 @@ public class DataCollection {
     this.routing_hop_log.log("Adjust total Links:");
     this.routing_hop_log.logln(route_involved_link.toString());
 
+  }
+
+  public void outputPortNum(){
+    for(Integer hop:this.portNumSequence.keySet()){
+      ArrayList<Integer> arrayListTmp = this.portNumSequence.get(hop);
+      this.port_number_log.logln((arrayListTmp.get(arrayListTmp.size()-1)).toString());
+    }
   }
 
 

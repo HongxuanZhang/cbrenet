@@ -59,6 +59,7 @@ public class CustomGlobal extends AbstractCustomGlobal {
       this.data.printRotationData();
       this.data.printRoutingData();
       this.data.outputHopNum();
+      this.data.outputPortNum();
       return true;
     }
     return false;
